@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Loader2, Upload } from "lucide-react";
@@ -19,6 +21,7 @@ type DocumentCategory = "documents" | "lab-results";
 type DocumentAttempt = ManagedUploadAttempt & { category: DocumentCategory };
 
 export function PatientDocumentUpload({ patientId }: { patientId: string }) {
+  const t = useTranslations("records.upload");
   const { data: session } = useSession();
   const utils = trpc.useUtils();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -34,7 +37,7 @@ export function PatientDocumentUpload({ patientId }: { patientId: string }) {
   async function upload() {
     if (!file || busyRef.current) return;
     if (!isAllowedUploadMimeType(file.type) || file.size > PATIENT_DOCUMENT_MAX_BYTES || file.size === 0) {
-      setError("Choose a PDF, JPG, PNG, or WebP file up to 4 MB. Compress or split large records into smaller PDFs.");
+      setError(t("invalidFile"));
       return;
     }
     const current = attempt ?? { ...selectManagedUploadFile(null, file), category };
@@ -56,18 +59,18 @@ export function PatientDocumentUpload({ patientId }: { patientId: string }) {
         const next = settleManagedUploadAttempt(current, { kind: "response", status: response.status });
         setAttempt(next ? current : null);
         const detail = await response.json().catch(() => null);
-        setError(typeof detail?.error === "string" ? detail.error : "Upload failed. Please try again.");
+        setError(typeof detail?.error === "string" ? detail.error : t("failed"));
         return;
       }
       setAttempt(null);
       setFile(null);
       if (inputRef.current) inputRef.current.value = "";
-      toast.success(current.category === "lab-results" ? "Lab report attached" : "Document uploaded");
+      toast.success(current.category === "lab-results" ? t("labAttached") : t("uploaded"));
       // The upload has succeeded even if refreshing the list subsequently fails.
       void utils.records.listPatientFiles.invalidate({ patientId });
     } catch {
       setAttempt(current);
-      setError("The upload could not be confirmed. Retry to safely check and finish the same upload.");
+      setError(t("unconfirmed"));
     } finally {
       busyRef.current = false;
       setUploading(false);
@@ -76,26 +79,26 @@ export function PatientDocumentUpload({ patientId }: { patientId: string }) {
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">
-      <h3 className="text-sm font-medium">Add a patient document</h3>
+      <h3 className="text-sm font-medium">{t("title")}</h3>
       <p className="mt-1 text-xs text-muted-foreground">
-        Attach previous records, referrals, scans, or external lab reports. PDF, JPG, PNG, or WebP; up to 4 MB per file. Compress or split larger files.
+        {t("intro")}
       </p>
       <div className="mt-3 flex flex-wrap items-end gap-3">
         <label className="space-y-1 text-xs font-medium">
-          <span className="block">Document category</span>
+          <span className="block">{t("category")}</span>
           <select
-            aria-label="Document category"
+            aria-label={t("category")}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={category}
             disabled={uploading || !!attempt}
             onChange={(event) => setCategory(event.target.value as DocumentCategory)}
           >
-            <option value="documents">External record</option>
-            <option value="lab-results">Lab report</option>
+            <option value="documents">{t("external")}</option>
+            <option value="lab-results">{t("lab")}</option>
           </select>
         </label>
         <label className="min-w-0 flex-1 space-y-1 text-xs font-medium">
-          <span className="block">File</span>
+          <span className="block">{t("file")}</span>
           <input
             ref={inputRef}
             type="file"
@@ -107,7 +110,7 @@ export function PatientDocumentUpload({ patientId }: { patientId: string }) {
         </label>
         <Button type="button" size="sm" onClick={() => void upload()} disabled={!file || uploading}>
           {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-          {uploading ? "Uploading…" : attempt ? "Retry upload" : "Upload document"}
+          {uploading ? t("uploading") : attempt ? t("retry") : t("upload")}
         </Button>
       </div>
       {category === "lab-results" && <p className="mt-2 text-xs text-muted-foreground">The original report is saved in Documents. Results are not automatically entered into lab values.</p>}

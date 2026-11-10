@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -7,26 +7,14 @@ import { describe, expect, it } from "vitest";
  */
 
 describe("consult companion UI states", () => {
-  const patientPage = readFileSync(
-    "app/(dashboard)/patients/[id]/page.tsx",
-    "utf8",
-  );
-  const soapPage = readFileSync(
-    "app/(dashboard)/records/new-soap/[patientId]/page.tsx",
-    "utf8",
-  );
-  const capturePage = readFileSync("app/capture/[token]/page.tsx", "utf8");
-  const captureClient = readFileSync(
-    "app/capture/[token]/capture-client.tsx",
-    "utf8",
-  );
-  const captureLayout = readFileSync("app/capture/layout.tsx", "utf8");
-  const captureModal = readFileSync(
-    "components/records/capture-photos.tsx",
-    "utf8",
-  );
-  const middleware = readFileSync("middleware.ts", "utf8");
-  const recordsRouter = readFileSync("server/routers/records.ts", "utf8");
+  const patientPage = readTranslatedSource("app/(dashboard)/patients/[id]/page.tsx");
+  const soapPage = readTranslatedSource("app/(dashboard)/records/new-soap/[patientId]/page.tsx");
+  const capturePage = readTranslatedSource("app/capture/[token]/page.tsx");
+  const captureClient = readTranslatedSource("app/capture/[token]/capture-client.tsx");
+  const captureLayout = readTranslatedSource("app/capture/layout.tsx");
+  const captureModal = readTranslatedSource("components/records/capture-photos.tsx");
+  const middleware = readTranslatedSource("middleware.ts");
+  const recordsRouter = readTranslatedSource("server/routers/records.ts");
 
   it("gates the capture button on the patient page behind patient management", () => {
     expect(patientPage).toContain(
@@ -134,19 +122,13 @@ describe("consult companion UI states", () => {
 });
 
 describe("e-sign consent UI states", () => {
-  const patientPage = readFileSync(
-    "app/(dashboard)/patients/[id]/page.tsx",
-    "utf8",
-  );
-  const signPage = readFileSync("app/sign/[token]/page.tsx", "utf8");
-  const signClient = readFileSync("app/sign/[token]/sign-client.tsx", "utf8");
-  const signLayout = readFileSync("app/sign/layout.tsx", "utf8");
-  const consentModal = readFileSync(
-    "components/records/consent-sign.tsx",
-    "utf8",
-  );
-  const middleware = readFileSync("middleware.ts", "utf8");
-  const recordsRouter = readFileSync("server/routers/records.ts", "utf8");
+  const patientPage = readTranslatedSource("app/(dashboard)/patients/[id]/page.tsx");
+  const signPage = readTranslatedSource("app/sign/[token]/page.tsx");
+  const signClient = readTranslatedSource("app/sign/[token]/sign-client.tsx");
+  const signLayout = readTranslatedSource("app/sign/layout.tsx");
+  const consentModal = readTranslatedSource("components/records/consent-sign.tsx");
+  const middleware = readTranslatedSource("middleware.ts");
+  const recordsRouter = readTranslatedSource("server/routers/records.ts");
 
   it("gates the signature button behind patient management", () => {
     expect(patientPage).toContain(

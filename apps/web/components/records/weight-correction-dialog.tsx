@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useState } from "react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -37,6 +39,7 @@ export function WeightCorrectionDialog({
   measurementSystem: MeasurementSystem;
   onSaved: () => void;
 }) {
+  const t = useTranslations("records.weightCorrection");
   const [open, setOpen] = useState(false);
   const [weightKg, setWeightKg] = useState(
     weightDisplayInput(weight.weightKg, measurementSystem),
@@ -45,7 +48,7 @@ export function WeightCorrectionDialog({
   const [reason, setReason] = useState("");
   const correction = trpc.patients.correctWeight.useMutation({
     onSuccess: () => {
-      toast.success("Weight corrected; original preserved in the audit log");
+      toast.success(t("saved"));
       setOpen(false);
       onSaved();
     },
@@ -82,7 +85,7 @@ export function WeightCorrectionDialog({
           setOpen(true);
         }}
       >
-        Correct
+        {t("trigger")}
       </Button>
       <DialogPrimitive.Root
         open={open}
@@ -95,12 +98,10 @@ export function WeightCorrectionDialog({
           <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-background p-6 shadow-lg">
             <div className="mb-4">
               <DialogPrimitive.Title className="text-lg font-semibold">
-                Correct weight
+                {t("title")}
               </DialogPrimitive.Title>
               <DialogPrimitive.Description className="mt-2 text-sm text-muted-foreground">
-                The original measurement is preserved with your name and
-                correction reason in the audit log. Use the same units as the
-                patient chart.
+                {t("description")}
               </DialogPrimitive.Description>
             </div>
             <form
@@ -118,8 +119,7 @@ export function WeightCorrectionDialog({
               }}
             >
               <label className="block text-sm font-medium">
-                Corrected weight (
-                {measurementSystem === "us_customary" ? "lb" : "kg"})
+                {t("weight", { unit: measurementSystem === "us_customary" ? "lb" : "kg" })}
                 <input
                   className="mt-1 w-full rounded-md border bg-background p-2"
                   type="number"
@@ -138,7 +138,7 @@ export function WeightCorrectionDialog({
                 />
               </label>
               <label className="block text-sm font-medium">
-                Measured at ({timeZone})
+                {t("measuredAt", { timeZone: timeZone ?? "" })}
                 <input
                   className="mt-1 w-full rounded-md border bg-background p-2"
                   type="datetime-local"
@@ -152,7 +152,7 @@ export function WeightCorrectionDialog({
                 />
               </label>
               <label className="block text-sm font-medium">
-                Reason for correction
+                {t("reason")}
                 <textarea
                   className="mt-1 w-full rounded-md border bg-background p-2"
                   required
@@ -163,7 +163,7 @@ export function WeightCorrectionDialog({
                 />
               </label>
               <Button type="submit" disabled={!valid || correction.isPending}>
-                {correction.isPending ? "Saving…" : "Save correction"}
+                {correction.isPending ? t("saving") : t("save")}
               </Button>
               <Button
                 type="button"
@@ -172,7 +172,7 @@ export function WeightCorrectionDialog({
                 disabled={correction.isPending}
                 onClick={() => setOpen(false)}
               >
-                Cancel
+                {t("cancel")}
               </Button>
             </form>
           </DialogPrimitive.Content>

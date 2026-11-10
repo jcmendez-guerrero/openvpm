@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "use-intl";
+
 import { useRef, useState } from "react";
 import {
   Check,
@@ -35,16 +37,16 @@ export interface PrescriptionLifecycleControlProps {
   onChanged: () => void | Promise<void>;
 }
 
-function formatEventTime(value: Date | string, timeZone?: string | null) {
+function formatEventTime(value: Date | string, timeZone?: string | null, locale = "en-US") {
   const date = value instanceof Date ? value : new Date(value);
   try {
-    return date.toLocaleString("en-US", {
+    return date.toLocaleString(locale, {
       dateStyle: "medium",
       timeStyle: "short",
       timeZone: timeZone ?? undefined,
     });
   } catch {
-    return date.toLocaleString("en-US", {
+    return date.toLocaleString(locale, {
       dateStyle: "medium",
       timeStyle: "short",
     });
@@ -57,6 +59,8 @@ export function PrescriptionLifecycleControl({
   timeZone,
   onChanged,
 }: PrescriptionLifecycleControlProps) {
+  const t = useTranslations("records.rxLifecycle");
+  const locale = useLocale();
   const [historyOpen, setHistoryOpen] = useState(false);
   const [mode, setMode] = useState<ActionMode | null>(null);
   const [reason, setReason] = useState("");
@@ -80,17 +84,17 @@ export function PrescriptionLifecycleControl({
     onSuccess: (result) =>
       finishAction(
         result.event.eventType === "refill_dispensed"
-          ? "Clinic-stock refill dispensed; billing work created"
-          : "External refill authorized",
+          ? t("refillDispensed")
+          : t("refillAuthorized"),
       ),
     onError: (error) => toast.error(error.message),
   });
   const complete = trpc.records.completePrescription.useMutation({
-    onSuccess: () => finishAction("Prescription completed"),
+    onSuccess: () => finishAction(t("completed")),
     onError: (error) => toast.error(error.message),
   });
   const cancel = trpc.records.cancelPrescription.useMutation({
-    onSuccess: () => finishAction("Prescription cancelled"),
+    onSuccess: () => finishAction(t("cancelled")),
     onError: (error) => toast.error(error.message),
   });
   const isPending = refill.isPending || complete.isPending || cancel.isPending;
@@ -143,7 +147,7 @@ export function PrescriptionLifecycleControl({
           ) : (
             <ChevronDown className="mr-1 h-3.5 w-3.5" />
           )}
-          History
+          {t("history")}
         </Button>
         {canManage && isActive ? (
           <>
@@ -155,16 +159,16 @@ export function PrescriptionLifecycleControl({
               title={
                 canRefill
                   ? isExternalPrescription
-                    ? "Authorize one external-pharmacy refill"
-                    : "Dispense one clinic-stock refill"
+                    ? t("authorizeTitle")
+                    : t("dispenseTitle")
                   : hasInvalidInventoryLink
-                    ? "The linked inventory prescription is missing a positive dispensing quantity"
-                    : "This prescription has no remaining refills"
+                    ? t("invalidLink")
+                    : t("noRefills")
               }
               onClick={() => openAction("refill")}
             >
               <RotateCcw className="mr-1 h-3.5 w-3.5" />
-              {isExternalPrescription ? "Authorize refill" : "Refill"}
+              {isExternalPrescription ? t("authorize") : t("refill")}
             </Button>
             <Button
               type="button"
@@ -174,7 +178,7 @@ export function PrescriptionLifecycleControl({
               onClick={() => openAction("complete")}
             >
               <Check className="mr-1 h-3.5 w-3.5" />
-              Complete
+              {t("complete")}
             </Button>
             <Button
               type="button"
@@ -184,7 +188,7 @@ export function PrescriptionLifecycleControl({
               onClick={() => openAction("cancel")}
             >
               <X className="mr-1 h-3.5 w-3.5" />
-              Cancel
+              {t("cancel")}
             </Button>
           </>
         ) : null}
@@ -195,24 +199,24 @@ export function PrescriptionLifecycleControl({
           <p className="text-sm font-medium">
             {mode === "refill"
               ? isExternalPrescription
-                ? "Authorize external-pharmacy refill"
-                : `Dispense ${prescription.quantity ?? "--"} from inventory`
+                ? t("authorizeHeading")
+                : t("dispenseHeading", { quantity: prescription.quantity ?? "--" })
               : mode === "complete"
-                ? "Complete prescription"
-                : "Cancel prescription"}
+                ? t("completeHeading")
+                : t("cancelHeading")}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             {mode === "refill"
               ? isExternalPrescription
-                ? "This records authorization and uses one refill. It does not dispense stock or contact the pharmacy. An optional note is retained in history."
-                : "This deducts the original quantity from stock, records the refill, uses one refill, and creates an unbilled dispense in Billing. Billing staff still confirm the draft invoice or an admin records a no-charge reason."
-              : "Enter a clinical reason (at least 5 characters). The status change is permanent and audited."}
+                ? t("authorizeHelp")
+                : t("dispenseHelp")
+              : t("reasonHelp")}
           </p>
           <Textarea
             className="mt-2 min-h-16"
             value={reason}
             maxLength={PRESCRIPTION_LIFECYCLE_REASON_MAX_LENGTH}
-            aria-label={mode === "refill" ? "Refill note" : "Clinical reason"}
+            aria-label={mode === "refill" ? t("refillNote") : t("clinicalReason")}
             aria-invalid={
               mode !== "refill" &&
               reason.length > 0 &&
@@ -220,8 +224,8 @@ export function PrescriptionLifecycleControl({
             }
             placeholder={
               mode === "refill"
-                ? "Optional dispensing note"
-                : "Required clinical reason"
+                ? t("notePlaceholder")
+                : t("reasonPlaceholder")
             }
             onChange={(event) => {
               setReason(event.target.value);
@@ -230,9 +234,7 @@ export function PrescriptionLifecycleControl({
           />
           {mode === "refill" && !isExternalPrescription ? (
             <p className="mt-2 rounded bg-amber-50 px-2 py-1.5 text-xs text-amber-900">
-              Controlled-substance log entries are not automated. If applicable,
-              complete the required controlled drug record separately before
-              dispensing.
+              {t("controlledWarning")}
             </p>
           ) : null}
           <div className="mt-2 flex justify-end gap-2">
@@ -243,7 +245,7 @@ export function PrescriptionLifecycleControl({
               disabled={isPending}
               onClick={resetAction}
             >
-              Back
+              {t("back")}
             </Button>
             <Button
               type="button"
@@ -258,7 +260,7 @@ export function PrescriptionLifecycleControl({
               {isPending ? (
                 <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
               ) : null}
-              Confirm
+              {t("confirm")}
             </Button>
           </div>
         </div>
@@ -268,13 +270,13 @@ export function PrescriptionLifecycleControl({
         <div className="ml-auto max-w-sm rounded-md border border-border bg-muted/30 p-3">
           {history.isLoading ? (
             <p className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading history…
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("loadingHistory")}
             </p>
           ) : history.error || !history.data ? (
             <div className="space-y-2">
               <p className="text-xs text-destructive">
                 {history.error?.message ??
-                  "Unable to load prescription history."}
+                  t("historyFailed")}
               </p>
               <Button
                 type="button"
@@ -282,12 +284,12 @@ export function PrescriptionLifecycleControl({
                 size="sm"
                 onClick={() => history.refetch()}
               >
-                Retry
+                {t("retry")}
               </Button>
             </div>
           ) : history.data.length === 0 ? (
             <p className="text-xs text-muted-foreground">
-              No lifecycle history recorded.
+              {t("noHistory")}
             </p>
           ) : (
             <ol className="space-y-3">
@@ -304,24 +306,22 @@ export function PrescriptionLifecycleControl({
                     })}
                   </p>
                   <p className="text-muted-foreground">
-                    {formatEventTime(event.createdAt, timeZone)} ·{" "}
+                    {formatEventTime(event.createdAt, timeZone, locale)} ·{" "}
                     {event.actorName}
                   </p>
                   {event.eventType === "refill_dispensed" ? (
                     <p className="text-muted-foreground">
-                      Dispensed {event.quantity}; {event.refillsAfter} refill
-                      {event.refillsAfter === 1 ? "" : "s"} remaining
+                      {t("dispensedRemaining", { quantity: event.quantity ?? "", count: event.refillsAfter ?? 0 })}
                     </p>
                   ) : event.eventType === "refill_authorized" ? (
                     <p className="text-muted-foreground">
-                      External refill authorized; {event.refillsAfter} refill
-                      {event.refillsAfter === 1 ? "" : "s"} remaining
+                      {t("authorizedRemaining", { count: event.refillsAfter ?? 0 })}
                     </p>
                   ) : null}
                   {event.dispenseChargeStatus ? (
                     <p className="mt-1 font-medium">
-                      Billing: {event.dispenseChargeStatus}
-                      {event.dispenseChargeInvoiceId ? " on invoice" : ""}
+                      {t("billing", { status: event.dispenseChargeStatus })}
+                      {event.dispenseChargeInvoiceId ? ` ${t("onInvoice")}` : ""}
                     </p>
                   ) : null}
                   {event.reason ? <p className="mt-1">{event.reason}</p> : null}

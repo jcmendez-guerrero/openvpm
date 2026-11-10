@@ -1,7 +1,7 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
-const read = (path: string) => readFileSync(path, "utf8");
+const read = (path: string) => readTranslatedSource(path);
 
 function sourceSection(source: string, start: string, end: string): string {
   const startAt = source.indexOf(start);

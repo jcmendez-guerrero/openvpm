@@ -1,10 +1,12 @@
+import { useTranslations } from "use-intl";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 /** The PDF inbox and ordered results are two views of the same lab workspace. */
 export function LabNavigation({ active }: { active: "results" | "reports" }) {
+  const t = useTranslations("labs.nav");
   return (
-    <nav className="flex flex-wrap gap-2" aria-label="Lab workspace">
+    <nav className="flex flex-wrap gap-2" aria-label={t("label")}>
       <Button
         asChild
         variant={active === "results" ? "secondary" : "ghost"}
@@ -14,7 +16,7 @@ export function LabNavigation({ active }: { active: "results" | "reports" }) {
           href="/lab-results"
           aria-current={active === "results" ? "page" : undefined}
         >
-          Results &amp; follow-up
+          {t("results")}
         </Link>
       </Button>
       <Button
@@ -26,7 +28,7 @@ export function LabNavigation({ active }: { active: "results" | "reports" }) {
           href="/lab-reports"
           aria-current={active === "reports" ? "page" : undefined}
         >
-          Report PDFs
+          {t("reports")}
         </Link>
       </Button>
     </nav>

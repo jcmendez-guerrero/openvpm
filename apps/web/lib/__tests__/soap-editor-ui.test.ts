@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
   PATIENT_SEARCH_MAX_LENGTH,
@@ -61,7 +61,7 @@ import { SOAP_NOTE_TEMPLATES } from "../records/soap-templates";
 
 describe("SOAP note editor UX", () => {
   it("keeps placeholder copy out of the editable document content", () => {
-    const source = readFileSync("components/SoapNoteEditor.tsx", "utf8");
+    const source = readTranslatedSource("components/SoapNoteEditor.tsx");
 
     expect(source).toContain('content: value || ""');
     expect(source).toContain('onChange(editor.isEmpty ? "" : editor.getHTML())');
@@ -78,10 +78,7 @@ describe("SOAP note editor UX", () => {
   });
 
   it("autosaves drafts and disables finalization until content is ready", () => {
-    const source = readFileSync(
-      "app/(dashboard)/records/new-soap/[patientId]/page.tsx",
-      "utf8"
-    );
+    const source = readTranslatedSource("app/(dashboard)/records/new-soap/[patientId]/page.tsx");
 
     expect(source).toContain("const canSave = hasSoapContent");
     expect(source).toContain(
@@ -104,11 +101,8 @@ describe("SOAP note editor UX", () => {
   });
 
   it("recovers the revision-guarded SOAP draft after reconnect without browser persistence", () => {
-    const source = readFileSync(
-      "app/(dashboard)/records/new-soap/[patientId]/page.tsx",
-      "utf8"
-    );
-    const onlineHook = readFileSync("lib/use-online-status.ts", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/records/new-soap/[patientId]/page.tsx");
+    const onlineHook = readTranslatedSource("lib/use-online-status.ts");
 
     expect(source).toContain(
       'import { useOnlineStatus } from "@/lib/use-online-status"',
@@ -141,10 +135,7 @@ describe("SOAP note editor UX", () => {
   });
 
   it("offers structured SOAP templates without clobbering drafts by default", () => {
-    const source = readFileSync(
-      "app/(dashboard)/records/new-soap/[patientId]/page.tsx",
-      "utf8"
-    );
+    const source = readTranslatedSource("app/(dashboard)/records/new-soap/[patientId]/page.tsx");
 
     expect(SOAP_NOTE_TEMPLATES.length).toBeGreaterThanOrEqual(4);
     expect(SOAP_NOTE_TEMPLATES.map((template) => template.id)).toContain(
@@ -166,10 +157,7 @@ describe("SOAP note editor UX", () => {
   });
 
   it("keeps the SOAP author access gate after hooks are declared", () => {
-    const source = readFileSync(
-      "app/(dashboard)/records/new-soap/[patientId]/page.tsx",
-      "utf8"
-    );
+    const source = readTranslatedSource("app/(dashboard)/records/new-soap/[patientId]/page.tsx");
 
     expect(source).toContain(
       "function canCreateSoapNoteRole(role?: string | null): boolean"
@@ -199,10 +187,7 @@ describe("SOAP note editor UX", () => {
   });
 
   it("surfaces New SOAP patient load failures before rendering the editor", () => {
-    const source = readFileSync(
-      "app/(dashboard)/records/new-soap/[patientId]/page.tsx",
-      "utf8"
-    );
+    const source = readTranslatedSource("app/(dashboard)/records/new-soap/[patientId]/page.tsx");
 
     expect(source).toContain(
       'import { EmptyState } from "@/components/common/empty-state"'
@@ -220,10 +205,7 @@ describe("SOAP note editor UX", () => {
   });
 
   it("serializes dirty in-app link navigation through save-before-leave", () => {
-    const source = readFileSync(
-      "app/(dashboard)/records/new-soap/[patientId]/page.tsx",
-      "utf8",
-    );
+    const source = readTranslatedSource("app/(dashboard)/records/new-soap/[patientId]/page.tsx");
 
     expect(source).toContain("const navigationAttemptRef = useRef");
     expect(source).toContain("guardedSoapNavigationDestination({");
@@ -247,10 +229,7 @@ describe("SOAP note editor UX", () => {
   });
 
   it("preserves and exposes unsaved local text when another session finalizes", () => {
-    const source = readFileSync(
-      "app/(dashboard)/records/new-soap/[patientId]/page.tsx",
-      "utf8",
-    );
+    const source = readTranslatedSource("app/(dashboard)/records/new-soap/[patientId]/page.tsx");
 
     expect(source).toContain("localSoapTextForClipboard");
     expect(source).toContain("copyTextToClipboard");
@@ -277,11 +256,8 @@ describe("SOAP note editor UX", () => {
 
 describe("records prescription form UX", () => {
   it("keeps prescription form controls aligned to shared policy", () => {
-    const source = readFileSync("app/(dashboard)/records/page.tsx", "utf8");
-    const inventoryPicker = readFileSync(
-      "components/records/prescription-inventory-product-picker.tsx",
-      "utf8"
-    );
+    const source = readTranslatedSource("app/(dashboard)/records/page.tsx");
+    const inventoryPicker = readTranslatedSource("components/records/prescription-inventory-product-picker.tsx");
 
     expect(PRESCRIPTION_MEDICATION_NAME_MAX_LENGTH).toBe(255);
     expect(PRESCRIPTION_DOSAGE_MAX_LENGTH).toBe(128);
@@ -333,10 +309,8 @@ describe("records prescription form UX", () => {
     expect(source).not.toContain("{ limit: 100, offset: 0 }");
     expect(source).toContain("prescriptionQuantity <= linkedPrescriptionProduct.stockQuantity");
     expect(source).toContain("Quantity (inventory units)");
-    expect(inventoryPicker).toContain("{product.stockQuantity} units on hand");
-    expect(inventoryPicker).toMatch(
-      /\{product\.unitPrice\}\s*(?:\{" "\})?\s*each/
-    );
+    expect(inventoryPicker).toContain("{count} units on hand");
+    expect(inventoryPicker).toContain("{price} each");
     expect(source).toContain("The prescription quantity will be");
     expect(source).toContain("charged in that same unit.");
     expect(source).toContain("isPrescriptionOptionalQuantityInputValid");
@@ -351,7 +325,7 @@ describe("records prescription form UX", () => {
   });
 
   it("prevents prescription end dates before the start date", () => {
-    const source = readFileSync("app/(dashboard)/records/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/records/page.tsx");
 
     expect(source).toMatch(
       /End Date[\s\S]*?<Input[\s\S]*?type="date"[\s\S]*?min=\{prescriptionForm\.startDate \|\| undefined\}/
@@ -361,7 +335,7 @@ describe("records prescription form UX", () => {
 
 describe("records lab result form UX", () => {
   it("keeps lab result form controls aligned to shared policy", () => {
-    const source = readFileSync("app/(dashboard)/records/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/records/page.tsx");
 
     expect(LAB_TEST_NAME_MAX_LENGTH).toBe(255);
     expect(LAB_RESULT_VALUE_MAX_LENGTH).toBe(128);
@@ -399,7 +373,7 @@ describe("records lab result form UX", () => {
   });
 
   it("clearly presents lab results as manual entry until provider adapters are connected", () => {
-    const source = readFileSync("app/(dashboard)/records/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/records/page.tsx");
 
     expect(source).toContain("Manual lab entry only");
     expect(source).toMatch(
@@ -410,11 +384,8 @@ describe("records lab result form UX", () => {
   });
 
   it("renders shipped lab result trends from repeated numeric manual results", () => {
-    const recordsSource = readFileSync("app/(dashboard)/records/page.tsx", "utf8");
-    const chartSource = readFileSync(
-      "components/patients/patient-trend-charts.tsx",
-      "utf8"
-    );
+    const recordsSource = readTranslatedSource("app/(dashboard)/records/page.tsx");
+    const chartSource = readTranslatedSource("components/patients/patient-trend-charts.tsx");
 
     expect(recordsSource).toContain("buildLabTrends(");
     expect(recordsSource).toContain(
@@ -429,11 +400,8 @@ describe("records lab result form UX", () => {
 
 describe("records vaccination form UX", () => {
   it("adds vaccinations through bounded controls aligned to shared policy", () => {
-    const source = readFileSync("app/(dashboard)/records/page.tsx", "utf8");
-    const fieldsSource = readFileSync(
-      "components/records/vaccination-form-fields.tsx",
-      "utf8"
-    );
+    const source = readTranslatedSource("app/(dashboard)/records/page.tsx");
+    const fieldsSource = readTranslatedSource("components/records/vaccination-form-fields.tsx");
 
     expect(VACCINATION_NAME_MAX_LENGTH).toBe(255);
     expect(VACCINATION_LOT_NUMBER_MAX_LENGTH).toBe(64);
@@ -464,7 +432,7 @@ describe("records vaccination form UX", () => {
 
 describe("records problem list UX", () => {
   it("adds and updates problems through bounded clinical controls", () => {
-    const source = readFileSync("app/(dashboard)/records/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/records/page.tsx");
 
     expect(PROBLEM_DESCRIPTION_MAX_LENGTH).toBe(500);
     expect(PROBLEM_STATUSES).toEqual(["active", "resolved", "chronic"]);
@@ -492,7 +460,7 @@ describe("records problem list UX", () => {
 
 describe("records procedure form UX", () => {
   it("keeps procedure form controls aligned to shared policy", () => {
-    const source = readFileSync("app/(dashboard)/records/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/records/page.tsx");
 
     expect(PROCEDURE_NAME_MAX_LENGTH).toBe(255);
     expect(PROCEDURE_DESCRIPTION_MAX_LENGTH).toBe(5000);
@@ -528,7 +496,7 @@ describe("records procedure form UX", () => {
 
 describe("records page state handling", () => {
   it("renders Records clinical dates through the practice timezone contract", () => {
-    const source = readFileSync("app/(dashboard)/records/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/records/page.tsx");
 
     expect(source).toContain("function formatClinicalDate");
     expect(source).toContain("function getVaccineDueStatus");
@@ -581,7 +549,7 @@ describe("records page state handling", () => {
   });
 
   it("keeps Records query errors exclusive from empty clinical lists", () => {
-    const source = readFileSync("app/(dashboard)/records/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/records/page.tsx");
 
     expect(PATIENT_SEARCH_MAX_LENGTH).toBe(128);
     expect(isPatientSearchInputValid(" Maple ")).toBe(true);
@@ -632,7 +600,7 @@ describe("records page state handling", () => {
   });
 
   it("does not show restricted Records tabs as active content for front desk users", () => {
-    const source = readFileSync("app/(dashboard)/records/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/records/page.tsx");
 
     expect(source).toContain("const visibleTabs = tabs.filter");
     expect(source).toContain("const currentTab = visibleTabs.some");
@@ -642,7 +610,7 @@ describe("records page state handling", () => {
   });
 
   it("keeps Records write controls aligned to clinical role gates", () => {
-    const source = readFileSync("app/(dashboard)/records/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/records/page.tsx");
 
     expect(source).not.toContain("const canCreateSoapNotes =");
     expect(source).toMatch(
@@ -672,7 +640,7 @@ describe("records page state handling", () => {
   });
 
   it("surfaces prescription safety check failures before a clean bill of health", () => {
-    const source = readFileSync("app/(dashboard)/records/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/records/page.tsx");
 
     expect(source).toContain("errorMessage?: string");
     expect(source).toContain("if (errorMessage)");

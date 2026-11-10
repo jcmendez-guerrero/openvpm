@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useEffect, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
@@ -20,11 +22,14 @@ interface SoapNoteEditorProps {
 export function SoapNoteEditor({
   value,
   onChange,
-  placeholder = "Enter text here...",
+  placeholder: placeholderProp,
   className,
   editable = true,
-  ariaLabel = "SOAP note section",
+  ariaLabel: ariaLabelProp,
 }: SoapNoteEditorProps) {
+  const t = useTranslations("records.editor");
+  const placeholder = placeholderProp ?? t("placeholder");
+  const ariaLabel = ariaLabelProp ?? t("ariaLabel");
   const [isEmpty, setIsEmpty] = useState(!value);
   const editor = useEditor({
     immediatelyRender: false,
@@ -101,7 +106,7 @@ export function SoapNoteEditor({
             size="sm"
             variant={editor.isActive("bold") ? "default" : "outline"}
             onClick={toggleBold}
-            title="Bold (Ctrl+B)"
+            title={t("bold")}
             className="h-8 w-8 p-0"
           >
             <Bold className="h-4 w-4" />
@@ -111,7 +116,7 @@ export function SoapNoteEditor({
             size="sm"
             variant={editor.isActive("italic") ? "default" : "outline"}
             onClick={toggleItalic}
-            title="Italic (Ctrl+I)"
+            title={t("italic")}
             className="h-8 w-8 p-0"
           >
             <Italic className="h-4 w-4" />
@@ -121,7 +126,7 @@ export function SoapNoteEditor({
             size="sm"
             variant={editor.isActive("underline") ? "default" : "outline"}
             onClick={toggleUnderline}
-            title="Underline (Ctrl+U)"
+            title={t("underline")}
             className="h-8 w-8 p-0"
           >
             <u className="text-sm font-bold">U</u>
@@ -136,7 +141,7 @@ export function SoapNoteEditor({
             size="sm"
             variant="outline"
             onClick={() => editor.chain().focus().toggleBulletList().run()}
-            title="Bullet List"
+            title={t("bullets")}
             className="h-8 px-2 text-xs"
           >
             • List
@@ -146,7 +151,7 @@ export function SoapNoteEditor({
             size="sm"
             variant="outline"
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            title="Ordered List"
+            title={t("numbered")}
             className="h-8 px-2 text-xs"
           >
             1. List
@@ -160,7 +165,7 @@ export function SoapNoteEditor({
           size="sm"
           variant="outline"
           onClick={clearFormatting}
-          title="Clear Formatting"
+          title={t("clear")}
           className="h-8 w-8 p-0"
         >
           <Trash2 className="h-4 w-4" />

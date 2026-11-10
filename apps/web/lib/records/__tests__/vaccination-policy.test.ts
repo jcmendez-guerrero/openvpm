@@ -8,11 +8,25 @@ describe("rabies vaccine identification", () => {
     "RABIES-BOOSTER",
     "rabies_vaccine",
     "Rabies/Feline",
+    "Rabia",
+    "Vacuna antirrábica",
+    "ANTIRRABICA 3 años",
+    "Antirrábico canino",
+    "Vacuna anti-rabia",
+    "Vacuna antirrábica", // accent typed as a separate combining mark
   ])("recognizes %s", (name) => {
     expect(isRabiesVaccineName(name)).toBe(true);
   });
 
-  it.each(["Parvovirus", "Coronavirus", "Crabies", "Rabieslike"])(
+  it.each([
+    "Parvovirus",
+    "Coronavirus",
+    "Crabies",
+    "Rabieslike",
+    "Rabiar",
+    "Sarabia",
+    "Antirrábicaxyz",
+  ])(
     "does not classify %s as rabies",
     (name) => {
       expect(isRabiesVaccineName(name)).toBe(false);

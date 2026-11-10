@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import { CheckCircle2, FileSignature, Loader2, RefreshCw, X } from "lucide-react";
@@ -27,6 +29,7 @@ export function ConsentSign({
   patientId: string;
   appointmentId?: string;
 }) {
+  const t = useTranslations("records.consent");
   const [open, setOpen] = useState(false);
   const [formId, setFormId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -107,7 +110,7 @@ export function ConsentSign({
     <>
       <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
         <FileSignature className="mr-2 h-4 w-4" />
-        Get signature
+        {t("title")}
       </Button>
 
       {open && (
@@ -115,25 +118,25 @@ export function ConsentSign({
           className="fixed inset-0 z-[90] overflow-y-auto bg-black/50 p-4"
           role="dialog"
           aria-modal="true"
-          aria-label="Get signature"
+          aria-label={t("title")}
         >
           <div className="flex min-h-full items-center justify-center">
             <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="font-heading text-base font-semibold">
-                    Get signature
+                    {t("title")}
                   </h3>
                   <p className="mt-1 text-sm text-muted-foreground">
                     {request
-                      ? "Scan with any phone. The code works for 60 minutes."
-                      : "Check the consent text, then make the code."}
+                      ? t("scan")
+                      : t("check")}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleClose}
-                  aria-label="Close"
+                  aria-label={t("close")}
                   className="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <X className="h-5 w-5" />
@@ -147,12 +150,12 @@ export function ConsentSign({
                       htmlFor="consent-form"
                       className="mb-1 block text-sm font-medium"
                     >
-                      Form
+                      {t("form")}
                     </label>
                     {forms.isLoading || !forms.data ? (
                       <div className="flex h-9 items-center gap-2 rounded-md border border-border bg-background px-3 text-sm text-muted-foreground">
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        Loading forms...
+                        {t("loadingForms")}
                       </div>
                     ) : (
                       <select
@@ -169,8 +172,7 @@ export function ConsentSign({
                       </select>
                     )}
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Starter templates. Have your attorney look them over,
-                      and fill in any blanks before you send.
+                      {t("templatesHelp")}
                     </p>
                   </div>
                   <div>
@@ -178,7 +180,7 @@ export function ConsentSign({
                       htmlFor="consent-title"
                       className="mb-1 block text-sm font-medium"
                     >
-                      Title
+                      {t("consentTitle")}
                     </label>
                     <input
                       id="consent-title"
@@ -194,7 +196,7 @@ export function ConsentSign({
                       htmlFor="consent-body"
                       className="mb-1 block text-sm font-medium"
                     >
-                      Consent text
+                      {t("body")}
                     </label>
                     <textarea
                       id="consent-body"
@@ -229,7 +231,7 @@ export function ConsentSign({
                       ) : (
                         <FileSignature className="mr-2 h-4 w-4" />
                       )}
-                      Make the code
+                      {t("make")}
                     </Button>
                   </div>
                   {createRequest.isError && (
@@ -249,7 +251,7 @@ export function ConsentSign({
                         }
                       >
                         <RefreshCw className="mr-2 h-4 w-4" />
-                        Try again
+                        {t("retry")}
                       </Button>
                     </div>
                   )}
@@ -260,7 +262,7 @@ export function ConsentSign({
                     <div className="flex w-full flex-col items-center gap-3 rounded-lg border border-border bg-muted/30 p-6 text-center">
                       <CheckCircle2 className="h-10 w-10 text-primary" />
                       <p className="text-sm font-medium">
-                        Signed by {activeConsent?.signerName}
+                        {t("signedBy", { name: activeConsent?.signerName ?? "" })}
                       </p>
                       {activeConsent?.fileUrl && (
                         <a
@@ -269,11 +271,11 @@ export function ConsentSign({
                           rel="noreferrer"
                           className="text-sm font-medium text-primary underline underline-offset-4"
                         >
-                          Open the signed PDF
+                          {t("openPdf")}
                         </a>
                       )}
                       <p className="text-xs text-muted-foreground">
-                        Saved on this patient under Documents.
+                        {t("saved")}
                       </p>
                     </div>
                   ) : (
@@ -282,7 +284,7 @@ export function ConsentSign({
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={qrDataUrl}
-                          alt="QR code for the consent signing link"
+                          alt={t("qrAlt")}
                           className="h-60 w-60 rounded-lg border border-border bg-white p-2"
                         />
                       ) : (
@@ -294,7 +296,7 @@ export function ConsentSign({
                         {request.url}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Waiting for a signature…
+                        {t("waiting")}
                       </p>
                     </>
                   )}
@@ -303,7 +305,7 @@ export function ConsentSign({
 
               <div className="mt-5 flex justify-end">
                 <Button variant="outline" size="sm" onClick={handleClose}>
-                  Done
+                  {t("done")}
                 </Button>
               </div>
             </div>
