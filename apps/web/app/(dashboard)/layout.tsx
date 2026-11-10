@@ -15,12 +15,14 @@ import { VerifyEmailBanner } from "@/components/layout/verify-email-banner";
 import { DemoConversionBar } from "@/components/demo/demo-conversion-bar";
 import { DemoFunnelTracker } from "@/components/demo/demo-funnel-tracker";
 import { RecoveryReviewBanner } from "@/components/layout/recovery-review-banner";
+import { useTranslations } from "use-intl";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const t = useTranslations("shell");
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -51,12 +53,12 @@ export default function DashboardLayout({
             <div
               role="dialog"
               aria-modal="true"
-              aria-label="Main navigation"
+              aria-label={t("mainNavigation")}
               className="fixed inset-0 z-50 lg:hidden"
             >
               <button
                 type="button"
-                aria-label="Close navigation"
+                aria-label={t("closeNavigation")}
                 className="absolute inset-0 bg-black/40"
                 onClick={() => setMobileNavOpen(false)}
               />
@@ -69,7 +71,7 @@ export default function DashboardLayout({
                 />
                 <button
                   type="button"
-                  aria-label="Close navigation"
+                  aria-label={t("closeNavigation")}
                   className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
                   onClick={() => setMobileNavOpen(false)}
                 >

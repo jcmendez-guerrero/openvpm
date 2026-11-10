@@ -1,0 +1,132 @@
+{
+  "common": {
+    "actions": {
+      "save": "Save",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "edit": "Edit",
+      "back": "Back",
+      "close": "Close",
+      "search": "Search",
+      "loading": "Loading..."
+    },
+    "states": {
+      "empty": "Nothing here yet.",
+      "error": "Something went wrong.",
+      "retry": "Try again"
+    },
+    "skipToContent": "Skip to main content"
+  },
+  "language": {
+    "label": "Language",
+    "clinicDefault": "Clinic default",
+    "names": {
+      "en": "English",
+      "es": "Español"
+    }
+  },
+  "schedule": {
+    "appointmentCount": "{count, plural, one {# appointment} other {# appointments}}"
+  },
+  "shell": {
+    "nav": {
+      "dashboard": "Dashboard",
+      "patients": "Patients",
+      "clients": "Clients",
+      "schedule": "Schedule",
+      "records": "Records",
+      "labInbox": "Lab Inbox",
+      "billing": "Billing",
+      "inventory": "Inventory",
+      "inbox": "Inbox",
+      "recalls": "Recalls",
+      "vaccinationRecalls": "Vaccination Recalls",
+      "careReminders": "Care Reminders",
+      "importedHistory": "Imported History",
+      "whiteboard": "Whiteboard",
+      "agent": "Agent",
+      "controlledSubstances": "Controlled Substances",
+      "reports": "Reports",
+      "settings": "Settings"
+    },
+    "newActions": {
+      "client": "New Client",
+      "patient": "New Patient",
+      "appointment": "New Appointment",
+      "invoice": "New Invoice",
+      "button": "New"
+    },
+    "mainNavigation": "Main navigation",
+    "openNavigation": "Open navigation",
+    "closeNavigation": "Close navigation",
+    "openSearch": "Open search",
+    "searchButton": "Search...",
+    "signOut": "Sign out",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar",
+    "practiceLogo": "Practice logo",
+    "unreadInbox": "{count} unread inbox conversations",
+    "roles": {
+      "admin": "admin",
+      "veterinarian": "veterinarian",
+      "technician": "technician",
+      "front_desk": "front desk",
+      "viewer": "viewer"
+    },
+    "languageNotSaved": "Language changed on this device, but it couldn't be saved to your account.",
+    "search": {
+      "dialog": "Search",
+      "placeholder": "Search patients, clients, or navigate...",
+      "unavailableTitle": "Unable to load search results",
+      "unavailableBody": "Retry before deciding this client or patient is missing.",
+      "retry": "Retry search",
+      "accessTitle": "Unable to confirm search access",
+      "accessBody": "Close and reopen search after your session is ready.",
+      "empty": "No patients or clients found.",
+      "patients": "Patients",
+      "clients": "Clients",
+      "navigation": "Navigation",
+      "quickActions": "Quick Actions",
+      "owner": "Owner:"
+    },
+    "recovery": {
+      "label": "Protected data review mode",
+      "title": "Protected data review mode is active",
+      "body": "You can inspect imported history safely. Operational changes, automated activity, and external delivery remain paused.",
+      "link": "Continue the data review"
+    },
+    "trial": {
+      "checking": "Checking billing status",
+      "billing": "Billing",
+      "unavailable": "Billing status unavailable",
+      "pastDue": "Payment retrying · Review billing",
+      "unpaid": "Payment unpaid · Read only",
+      "connected": "Billing connected · Manage billing",
+      "previewStart": "{timeLeft} · Start free trial",
+      "previewHours": "Preview: {hours}h left",
+      "previewDays": "{days, plural, one {Preview: # day left} other {Preview: # days left}}",
+      "startTrial": "Start trial · Add a card",
+      "activate": "Activate account",
+      "activateSuffix": "· Activate account",
+      "endsToday": "Trial ends today",
+      "daysLeft": "{days, plural, one {# day left in trial} other {# days left in trial}}",
+      "ended": "Trial ended, read only · Turn it back on"
+    },
+    "verifyEmail": {
+      "checking": "Checking email verification status...",
+      "dismiss": "Dismiss",
+      "unableToCheck": "Unable to check email verification status.",
+      "retry": "Retry",
+      "prompt": "Verify your email to secure your account and keep reminders deliverable.",
+      "promptWithEmail": "Verify your email ({email}) to secure your account and keep reminders deliverable.",
+      "resend": "Resend email"
+    }
+  },
+  "settings": {
+    "practice": {
+      "defaultLanguage": "Default language",
+      "defaultLanguageHelp": "Used for staff and clients who haven't chosen a language.",
+      "defaultLanguageSaved": "Default language updated"
+    }
+  }
+}

@@ -46,6 +46,8 @@ export const clients = pgTable(
     preferredContactMethod: contactMethodEnum(
       "preferred_contact_method",
     ).default("phone"),
+    // Language for portal pages, messages, and documents; null follows the clinic default.
+    preferredLanguage: varchar("preferred_language", { length: 8 }),
     // SMS opt-in for TCPA: consent state + an audit trail of how/when it was
     // captured and the exact disclosure shown. Required before texting a client.
     smsConsent: boolean("sms_consent").notNull().default(false),

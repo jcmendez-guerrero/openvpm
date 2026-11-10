@@ -29,6 +29,8 @@ import {
   LogOut,
 } from "lucide-react";
 import { PawMark } from "@/components/brand/paw-mark";
+import { useTranslations } from "use-intl";
+import { MyLanguageSwitch } from "@/components/layout/my-language-switch";
 
 type UserRole =
   | "admin"
@@ -51,67 +53,67 @@ function isUserRole(role?: string | null): role is UserRole {
 
 const navItems: {
   href: string;
-  label: string;
+  labelKey: string;
   icon: React.ElementType;
   roles: UserRole[];
 }[] = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard, roles: allRoles },
-  { href: "/patients", label: "Patients", icon: PawPrint, roles: allRoles },
-  { href: "/clients", label: "Clients", icon: Users, roles: allRoles },
-  { href: "/schedule", label: "Schedule", icon: Calendar, roles: allRoles },
-  { href: "/records", label: "Records", icon: FileText, roles: allRoles },
+  { href: "/", labelKey: "dashboard", icon: LayoutDashboard, roles: allRoles },
+  { href: "/patients", labelKey: "patients", icon: PawPrint, roles: allRoles },
+  { href: "/clients", labelKey: "clients", icon: Users, roles: allRoles },
+  { href: "/schedule", labelKey: "schedule", icon: Calendar, roles: allRoles },
+  { href: "/records", labelKey: "records", icon: FileText, roles: allRoles },
   {
     href: "/lab-results",
-    label: "Lab Inbox",
+    labelKey: "labInbox",
     icon: FlaskConical,
     roles: ["admin", "veterinarian", "technician", "front_desk", "viewer"],
   },
-  { href: "/billing", label: "Billing", icon: Receipt, roles: allRoles },
-  { href: "/inventory", label: "Inventory", icon: Package, roles: allRoles },
-  { href: "/inbox", label: "Inbox", icon: MessageSquare, roles: allRoles },
+  { href: "/billing", labelKey: "billing", icon: Receipt, roles: allRoles },
+  { href: "/inventory", labelKey: "inventory", icon: Package, roles: allRoles },
+  { href: "/inbox", labelKey: "inbox", icon: MessageSquare, roles: allRoles },
   {
     href: "/recalls",
-    label: "Recalls",
+    labelKey: "recalls",
     icon: Syringe,
     roles: ["admin", "veterinarian", "front_desk"],
   },
   {
     href: "/care-reminders",
-    label: "Care Reminders",
+    labelKey: "careReminders",
     icon: BellRing,
     roles: allRoles,
   },
   {
     href: "/migration-archive",
-    label: "Imported History",
+    labelKey: "importedHistory",
     icon: Archive,
     roles: allRoles,
   },
   {
     href: "/whiteboard",
-    label: "Whiteboard",
+    labelKey: "whiteboard",
     icon: ClipboardList,
     roles: allRoles,
   },
   {
     href: "/agent",
-    label: "Agent",
+    labelKey: "agent",
     icon: Bot,
     roles: ["admin", "veterinarian"],
   },
   {
     href: "/controlled-substances",
-    label: "Controlled Substances",
+    labelKey: "controlledSubstances",
     icon: ShieldAlert,
     roles: ["admin", "veterinarian"],
   },
   {
     href: "/reports",
-    label: "Reports",
+    labelKey: "reports",
     icon: BarChart3,
     roles: ["admin", "veterinarian"],
   },
-  { href: "/settings", label: "Settings", icon: Settings, roles: ["admin"] },
+  { href: "/settings", labelKey: "settings", icon: Settings, roles: ["admin"] },
 ];
 
 type SidebarProps = {
@@ -128,6 +130,7 @@ export function Sidebar({
   width = "fixed",
 }: SidebarProps = {}) {
   const [collapsed, setCollapsed] = useState(false);
+  const t = useTranslations("shell");
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const role = isUserRole(session?.user?.role) ? session.user.role : undefined;
@@ -164,7 +167,7 @@ export function Sidebar({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={branding.logoUrl}
-              alt={branding.name ?? "Practice logo"}
+              alt={branding.name ?? t("practiceLogo")}
               className="h-8 w-8 rounded-lg object-cover"
             />
           ) : (
@@ -182,7 +185,7 @@ export function Sidebar({
       <nav
         className="flex-1 overflow-y-auto px-2 py-2"
         role="navigation"
-        aria-label="Main navigation"
+        aria-label={t("mainNavigation")}
       >
         <ul className="space-y-0.5">
           {visibleNavItems.map((item) => {
@@ -212,19 +215,19 @@ export function Sidebar({
                     item.href === "/inbox" &&
                     unreadInboxCount > 0 ? (
                       <span
-                        aria-label={`${unreadInboxCount} unread inbox conversations`}
+                        aria-label={t("unreadInbox", { count: unreadInboxCount })}
                         className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-surface"
                       />
                     ) : null}
                   </span>
                   {!isCollapsed && (
-                    <span className="truncate">{item.label}</span>
+                    <span className="truncate">{t(`nav.${item.labelKey}`)}</span>
                   )}
                   {!isCollapsed &&
                   item.href === "/inbox" &&
                   unreadInboxCount > 0 ? (
                     <span
-                      aria-label={`${unreadInboxCount} unread inbox conversations`}
+                      aria-label={t("unreadInbox", { count: unreadInboxCount })}
                       className="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary-foreground"
                     >
                       {unreadInboxLabel}
@@ -253,22 +256,23 @@ export function Sidebar({
                 {session.user.name}
               </p>
               <p className="truncate text-xs text-muted-foreground capitalize">
-                {session.user.role?.replace("_", " ")}
+                {role ? t(`roles.${role}`) : session.user.role?.replace("_", " ")}
               </p>
             </div>
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
-              aria-label="Sign out"
+              aria-label={t("signOut")}
               className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
             >
               <LogOut className="h-4 w-4" />
             </button>
           </div>
         )}
+        {session?.user && !isCollapsed && <MyLanguageSwitch className="mb-2 px-3" />}
         {collapsible && (
           <button
             onClick={() => setCollapsed(!collapsed)}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={collapsed ? t("expandSidebar") : t("collapseSidebar")}
             className="flex w-full items-center justify-center rounded-md p-2 text-muted-foreground hover:bg-accent hover:text-foreground"
           >
             {collapsed ? (

@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
+import { useTranslations } from "use-intl";
 import { trpc } from "@/lib/trpc";
 
 export function RecoveryReviewBanner() {
+  const t = useTranslations("shell.recovery");
   const status = trpc.migrationArchive.reviewStatus.useQuery(undefined, {
     staleTime: 60_000,
   });
@@ -13,22 +15,21 @@ export function RecoveryReviewBanner() {
 
   return (
     <aside
-      aria-label="Protected data review mode"
+      aria-label={t("label")}
       className="border-b border-amber-300/70 bg-amber-50 px-4 py-3 text-amber-950 dark:border-amber-700/70 dark:bg-amber-950/50 dark:text-amber-100 sm:px-6"
     >
       <div className="mx-auto flex max-w-7xl items-start gap-3">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
         <div className="min-w-0 text-sm">
-          <p className="font-semibold">Protected data review mode is active</p>
+          <p className="font-semibold">{t("title")}</p>
           <p className="mt-0.5 leading-5 opacity-90">
-            You can inspect imported history safely. Operational changes,
-            automated activity, and external delivery remain paused.
+            {t("body")}
           </p>
           <Link
             href="/migration-archive"
             className="mt-1 inline-flex min-h-8 items-center font-semibold underline underline-offset-4"
           >
-            Continue the data review
+            {t("link")}
           </Link>
         </div>
       </div>

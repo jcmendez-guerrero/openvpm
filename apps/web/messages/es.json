@@ -1,0 +1,132 @@
+{
+  "common": {
+    "actions": {
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "delete": "Eliminar",
+      "edit": "Editar",
+      "back": "Atrás",
+      "close": "Cerrar",
+      "search": "Buscar",
+      "loading": "Cargando..."
+    },
+    "states": {
+      "empty": "Todavía no hay nada aquí.",
+      "error": "Algo salió mal.",
+      "retry": "Intentar de nuevo"
+    },
+    "skipToContent": "Ir al contenido principal"
+  },
+  "language": {
+    "label": "Idioma",
+    "clinicDefault": "Predeterminado de la clínica",
+    "names": {
+      "en": "English",
+      "es": "Español"
+    }
+  },
+  "schedule": {
+    "appointmentCount": "{count, plural, one {# cita} other {# citas}}"
+  },
+  "shell": {
+    "nav": {
+      "dashboard": "Panel",
+      "patients": "Pacientes",
+      "clients": "Clientes",
+      "schedule": "Agenda",
+      "records": "Expedientes",
+      "labInbox": "Bandeja de laboratorio",
+      "billing": "Facturación",
+      "inventory": "Inventario",
+      "inbox": "Bandeja de entrada",
+      "recalls": "Recordatorios de vacunas",
+      "vaccinationRecalls": "Recordatorios de vacunación",
+      "careReminders": "Recordatorios de cuidado",
+      "importedHistory": "Historial importado",
+      "whiteboard": "Pizarra",
+      "agent": "Agente",
+      "controlledSubstances": "Sustancias controladas",
+      "reports": "Informes",
+      "settings": "Configuración"
+    },
+    "newActions": {
+      "client": "Nuevo cliente",
+      "patient": "Nuevo paciente",
+      "appointment": "Nueva cita",
+      "invoice": "Nueva factura",
+      "button": "Nuevo"
+    },
+    "mainNavigation": "Navegación principal",
+    "openNavigation": "Abrir navegación",
+    "closeNavigation": "Cerrar navegación",
+    "openSearch": "Abrir búsqueda",
+    "searchButton": "Buscar...",
+    "signOut": "Cerrar sesión",
+    "expandSidebar": "Expandir barra lateral",
+    "collapseSidebar": "Contraer barra lateral",
+    "practiceLogo": "Logotipo de la clínica",
+    "unreadInbox": "{count, plural, one {# conversación sin leer} other {# conversaciones sin leer}}",
+    "roles": {
+      "admin": "administrador",
+      "veterinarian": "veterinario",
+      "technician": "técnico",
+      "front_desk": "recepción",
+      "viewer": "solo lectura"
+    },
+    "languageNotSaved": "El idioma cambió en este dispositivo, pero no se pudo guardar en su cuenta.",
+    "search": {
+      "dialog": "Buscar",
+      "placeholder": "Buscar pacientes, clientes o navegar...",
+      "unavailableTitle": "No se pudieron cargar los resultados",
+      "unavailableBody": "Vuelva a intentarlo antes de concluir que el cliente o paciente no existe.",
+      "retry": "Reintentar búsqueda",
+      "accessTitle": "No se pudo confirmar el acceso a la búsqueda",
+      "accessBody": "Cierre y vuelva a abrir la búsqueda cuando su sesión esté lista.",
+      "empty": "No se encontraron pacientes ni clientes.",
+      "patients": "Pacientes",
+      "clients": "Clientes",
+      "navigation": "Navegación",
+      "quickActions": "Acciones rápidas",
+      "owner": "Propietario:"
+    },
+    "recovery": {
+      "label": "Modo de revisión de datos protegidos",
+      "title": "El modo de revisión de datos protegidos está activo",
+      "body": "Puede revisar el historial importado de forma segura. Los cambios operativos, la actividad automática y los envíos externos siguen en pausa.",
+      "link": "Continuar la revisión de datos"
+    },
+    "trial": {
+      "checking": "Comprobando el estado de facturación",
+      "billing": "Facturación",
+      "unavailable": "Estado de facturación no disponible",
+      "pastDue": "Reintentando el pago · Revisar facturación",
+      "unpaid": "Pago pendiente · Solo lectura",
+      "connected": "Facturación conectada · Gestionar facturación",
+      "previewStart": "{timeLeft} · Iniciar prueba gratuita",
+      "previewHours": "Vista previa: quedan {hours} h",
+      "previewDays": "{days, plural, one {Vista previa: queda # día} other {Vista previa: quedan # días}}",
+      "startTrial": "Iniciar prueba · Agregar una tarjeta",
+      "activate": "Activar cuenta",
+      "activateSuffix": "· Activar cuenta",
+      "endsToday": "La prueba termina hoy",
+      "daysLeft": "{days, plural, one {Queda # día de prueba} other {Quedan # días de prueba}}",
+      "ended": "Prueba finalizada, solo lectura · Reactivarla"
+    },
+    "verifyEmail": {
+      "checking": "Comprobando la verificación del correo...",
+      "dismiss": "Descartar",
+      "unableToCheck": "No se pudo comprobar la verificación del correo.",
+      "retry": "Reintentar",
+      "prompt": "Verifique su correo para proteger su cuenta y que los recordatorios se puedan entregar.",
+      "promptWithEmail": "Verifique su correo ({email}) para proteger su cuenta y que los recordatorios se puedan entregar.",
+      "resend": "Reenviar correo"
+    }
+  },
+  "settings": {
+    "practice": {
+      "defaultLanguage": "Idioma predeterminado",
+      "defaultLanguageHelp": "Se usa para el personal y los clientes que no han elegido un idioma.",
+      "defaultLanguageSaved": "Idioma predeterminado actualizado"
+    }
+  }
+}

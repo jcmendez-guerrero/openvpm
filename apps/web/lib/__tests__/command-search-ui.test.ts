@@ -1,8 +1,9 @@
-import { readFileSync } from "node:fs";
+import en from "@/messages/en.json";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("command search UI", () => {
-  const source = readFileSync("components/common/command-search.tsx", "utf8");
+  const source = readTranslatedSource("components/common/command-search.tsx");
 
   it("keeps navigation and quick actions role-aware", () => {
     expect(source).toContain('import { useSession } from "next-auth/react"');
@@ -15,8 +16,9 @@ describe("command search UI", () => {
       'status === "authenticated" && role !== undefined'
     );
     expect(source).toContain(
-      "{ label: \"Settings\", href: \"/settings\", Icon: Settings, roles: [\"admin\"] }"
+      "{ labelKey: \"nav.settings\", href: \"/settings\", Icon: Settings, roles: [\"admin\"] }"
     );
+    expect(en.shell.nav.settings).toBe("Settings");
     expect(source).toContain("const quickActionItems: CommandItemConfig[] =");
     expect(source).toContain(
       'roles: ["admin", "veterinarian", "technician", "front_desk"]'

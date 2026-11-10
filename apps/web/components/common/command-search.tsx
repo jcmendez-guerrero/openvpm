@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "use-intl";
 import { Command } from "cmdk";
 import {
   PawPrint,
@@ -37,7 +38,7 @@ type UserRole =
   | "viewer";
 
 type CommandItemConfig = {
-  label: string;
+  labelKey: string;
   href: string;
   Icon: React.ElementType;
   roles: UserRole[];
@@ -52,62 +53,62 @@ const allRoles: UserRole[] = [
 ];
 
 const navigationItems: CommandItemConfig[] = [
-  { label: "Dashboard", href: "/", Icon: BarChart3, roles: allRoles },
-  { label: "Patients", href: "/patients", Icon: PawPrint, roles: allRoles },
-  { label: "Clients", href: "/clients", Icon: Users, roles: allRoles },
-  { label: "Schedule", href: "/schedule", Icon: Calendar, roles: allRoles },
+  { labelKey: "nav.dashboard", href: "/", Icon: BarChart3, roles: allRoles },
+  { labelKey: "nav.patients", href: "/patients", Icon: PawPrint, roles: allRoles },
+  { labelKey: "nav.clients", href: "/clients", Icon: Users, roles: allRoles },
+  { labelKey: "nav.schedule", href: "/schedule", Icon: Calendar, roles: allRoles },
   {
-    label: "Whiteboard",
+    labelKey: "nav.whiteboard",
     href: "/whiteboard",
     Icon: Clipboard,
     roles: allRoles,
   },
-  { label: "Records", href: "/records", Icon: FileText, roles: allRoles },
+  { labelKey: "nav.records", href: "/records", Icon: FileText, roles: allRoles },
   {
-    label: "Lab Inbox",
+    labelKey: "nav.labInbox",
     href: "/lab-results",
     Icon: FlaskConical,
     roles: ["admin", "veterinarian", "technician", "front_desk", "viewer"],
   },
-  { label: "Billing", href: "/billing", Icon: DollarSign, roles: allRoles },
-  { label: "Inventory", href: "/inventory", Icon: Package, roles: allRoles },
-  { label: "Inbox", href: "/inbox", Icon: Mail, roles: allRoles },
+  { labelKey: "nav.billing", href: "/billing", Icon: DollarSign, roles: allRoles },
+  { labelKey: "nav.inventory", href: "/inventory", Icon: Package, roles: allRoles },
+  { labelKey: "nav.inbox", href: "/inbox", Icon: Mail, roles: allRoles },
   {
-    label: "Vaccination Recalls",
+    labelKey: "nav.vaccinationRecalls",
     href: "/recalls",
     Icon: Syringe,
     roles: ["admin", "veterinarian", "front_desk"],
   },
   {
-    label: "Care Reminders",
+    labelKey: "nav.careReminders",
     href: "/care-reminders",
     Icon: BellRing,
     roles: allRoles,
   },
   {
-    label: "Imported History",
+    labelKey: "nav.importedHistory",
     href: "/migration-archive",
     Icon: Archive,
     roles: allRoles,
   },
-  { label: "Settings", href: "/settings", Icon: Settings, roles: ["admin"] },
+  { labelKey: "nav.settings", href: "/settings", Icon: Settings, roles: ["admin"] },
 ];
 
 const quickActionItems: CommandItemConfig[] = [
   {
-    label: "New Client",
+    labelKey: "newActions.client",
     href: "/clients/new",
     Icon: Users,
     roles: ["admin", "veterinarian", "technician", "front_desk"],
   },
   {
-    label: "New Patient",
+    labelKey: "newActions.patient",
     href: "/patients/new",
     Icon: PawPrint,
     roles: ["admin", "veterinarian", "technician", "front_desk"],
   },
   {
-    label: "New Invoice",
+    labelKey: "newActions.invoice",
     href: "/billing/new",
     Icon: DollarSign,
     roles: ["admin", "front_desk"],
@@ -126,6 +127,7 @@ export function CommandSearch({
   onClose: () => void;
 }) {
   const router = useRouter();
+  const t = useTranslations("shell");
   const { data: session, status } = useSession();
   const role = isUserRole(session?.user?.role) ? session.user.role : undefined;
   const canUseCommandSearch = status === "authenticated" && role !== undefined;
@@ -188,7 +190,7 @@ export function CommandSearch({
     <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh]"
       role="dialog"
-      aria-label="Search"
+      aria-label={t("search.dialog")}
       aria-modal="true"
     >
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
@@ -203,7 +205,7 @@ export function CommandSearch({
             <Command.Input
               value={search}
               onValueChange={setSearch}
-              placeholder="Search patients, clients, or navigate..."
+              placeholder={t("search.placeholder")}
               className="flex h-11 w-full bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
             />
             <button
@@ -219,10 +221,10 @@ export function CommandSearch({
               <div className="px-3 py-6 text-center text-sm text-muted-foreground">
                 <AlertCircle className="mx-auto mb-2 h-5 w-5 text-destructive" />
                 <p className="font-medium text-foreground">
-                  Unable to load search results
+                  {t("search.unavailableTitle")}
                 </p>
                 <p className="mt-1">
-                  Retry before deciding this client or patient is missing.
+                  {t("search.unavailableBody")}
                 </p>
                 <button
                   type="button"
@@ -232,7 +234,7 @@ export function CommandSearch({
                   }}
                   className="mt-3 rounded-md border border-input px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent"
                 >
-                  Retry search
+                  {t("search.retry")}
                 </button>
               </div>
             )}
@@ -241,10 +243,10 @@ export function CommandSearch({
               <div className="px-3 py-6 text-center text-sm text-muted-foreground">
                 <AlertCircle className="mx-auto mb-2 h-5 w-5 text-destructive" />
                 <p className="font-medium text-foreground">
-                  Unable to confirm search access
+                  {t("search.accessTitle")}
                 </p>
                 <p className="mt-1">
-                  Close and reopen search after your session is ready.
+                  {t("search.accessBody")}
                 </p>
               </div>
             )}
@@ -255,14 +257,14 @@ export function CommandSearch({
               !searchUnavailable &&
               !hasResults && (
                 <Command.Empty className="px-3 py-6 text-center text-sm text-muted-foreground">
-                  No patients or clients found.
+                  {t("search.empty")}
                 </Command.Empty>
               )}
 
             {/* Live search results */}
             {hasQuery && !searchUnavailable && patientResults.length > 0 && (
               <Command.Group
-                heading="Patients"
+                heading={t("search.patients")}
                 className="mb-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground"
               >
                 {patientResults.map((patient) => (
@@ -284,7 +286,7 @@ export function CommandSearch({
                     )}
                     {(patient.clientFirstName || patient.clientLastName) && (
                       <span className="text-muted-foreground">
-                        Owner:{" "}
+                        {t("search.owner")}{" "}
                         {[patient.clientFirstName, patient.clientLastName]
                           .filter(Boolean)
                           .join(" ")}
@@ -297,7 +299,7 @@ export function CommandSearch({
 
             {hasQuery && !searchUnavailable && clientResults.length > 0 && (
               <Command.Group
-                heading="Clients"
+                heading={t("search.clients")}
                 className="mb-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground"
               >
                 {clientResults.map((client) => (
@@ -324,17 +326,17 @@ export function CommandSearch({
             {/* Navigation (shown when no search query) */}
             {!hasQuery && visibleNavigationItems.length > 0 && (
               <Command.Group
-                heading="Navigation"
+                heading={t("search.navigation")}
                 className="mb-2 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground"
               >
-                {visibleNavigationItems.map(({ label, href, Icon }) => (
+                {visibleNavigationItems.map(({ labelKey, href, Icon }) => (
                   <Command.Item
                     key={href}
                     onSelect={() => navigate(href)}
                     className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm aria-selected:bg-accent"
                   >
                     <Icon className="h-4 w-4" />
-                    {label}
+                    {t(labelKey)}
                   </Command.Item>
                 ))}
               </Command.Group>
@@ -342,17 +344,17 @@ export function CommandSearch({
 
             {!hasQuery && visibleQuickActionItems.length > 0 && (
               <Command.Group
-                heading="Quick Actions"
+                heading={t("search.quickActions")}
                 className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground"
               >
-                {visibleQuickActionItems.map(({ label, href, Icon }) => (
+                {visibleQuickActionItems.map(({ labelKey, href, Icon }) => (
                   <Command.Item
                     key={href}
                     onSelect={() => navigate(href)}
                     className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm aria-selected:bg-accent"
                   >
                     <Icon className="h-4 w-4" />
-                    {label}
+                    {t(labelKey)}
                   </Command.Item>
                 ))}
               </Command.Group>

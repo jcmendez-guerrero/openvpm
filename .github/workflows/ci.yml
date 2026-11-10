@@ -104,6 +104,9 @@ jobs:
 
       - run: pnpm type-check
 
+      - name: Check translation catalogs
+        run: pnpm i18n:check
+
       - run: pnpm test
 
       - run: pnpm build

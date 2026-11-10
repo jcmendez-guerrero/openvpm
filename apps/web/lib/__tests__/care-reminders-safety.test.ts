@@ -1,8 +1,9 @@
-import { readFileSync } from "node:fs";
+import en from "@/messages/en.json";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 function read(path: string): string {
-  return readFileSync(path, "utf8");
+  return readTranslatedSource(path);
 }
 
 describe("care reminder safety contract", () => {
@@ -69,7 +70,8 @@ describe("care reminder safety contract", () => {
       'href: "/care-reminders"',
     );
     expect(read("components/layout/top-bar.tsx")).toContain(
-      '"/care-reminders": "Care Reminders"',
+      '"/care-reminders": "careReminders"',
     );
+    expect(en.shell.nav.careReminders).toBe("Care Reminders");
   });
 });

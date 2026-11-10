@@ -1,9 +1,10 @@
-import { readFileSync } from "node:fs";
+import en from "@/messages/en.json";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("responsive dashboard shell", () => {
   it("uses a desktop-only sidebar plus a mobile navigation dialog", () => {
-    const source = readFileSync("app/(dashboard)/layout.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/layout.tsx");
 
     expect(source).toContain('<Sidebar className="hidden lg:flex" />');
     expect(source).toContain('role="dialog"');
@@ -14,7 +15,7 @@ describe("responsive dashboard shell", () => {
   });
 
   it("keeps the mobile nav button accessible and phone-sized top bar controls compact", () => {
-    const source = readFileSync("components/layout/top-bar.tsx", "utf8");
+    const source = readTranslatedSource("components/layout/top-bar.tsx");
 
     expect(source).toContain('aria-label="Open navigation"');
     expect(source).toContain("lg:hidden");
@@ -27,10 +28,12 @@ describe("responsive dashboard shell", () => {
   });
 
   it("keeps top bar labels and quick-create actions aligned with app roles", () => {
-    const source = readFileSync("components/layout/top-bar.tsx", "utf8");
+    const source = readTranslatedSource("components/layout/top-bar.tsx");
 
-    expect(source).toContain('"/agent": "Agent"');
-    expect(source).toContain('"/controlled-substances": "Controlled Substances"');
+    expect(source).toContain('"/agent": "agent"');
+    expect(source).toContain('"/controlled-substances": "controlledSubstances"');
+    expect(en.shell.nav.agent).toBe("Agent");
+    expect(en.shell.nav.controlledSubstances).toBe("Controlled Substances");
     expect(source).toContain("useSession()");
     expect(source).toContain("availableNewActions");
     expect(source).toContain(
@@ -42,7 +45,7 @@ describe("responsive dashboard shell", () => {
   });
 
   it("allows the sidebar to render full width inside the mobile drawer without collapse controls", () => {
-    const source = readFileSync("components/layout/sidebar.tsx", "utf8");
+    const source = readTranslatedSource("components/layout/sidebar.tsx");
 
     expect(source).toContain('width?: "fixed" | "full"');
     expect(source).toContain('width === "full" ? "w-full"');
@@ -51,7 +54,7 @@ describe("responsive dashboard shell", () => {
   });
 
   it("does not default the sidebar to a writable staff role before session resolution", () => {
-    const source = readFileSync("components/layout/sidebar.tsx", "utf8");
+    const source = readTranslatedSource("components/layout/sidebar.tsx");
 
     expect(source).toContain("function isUserRole(role?: string | null): role is UserRole");
     expect(source).toContain("const { data: session, status } = useSession()");
@@ -66,7 +69,7 @@ describe("responsive dashboard shell", () => {
   });
 
   it("shows a live inbox unread badge without querying before nav access is known", () => {
-    const source = readFileSync("components/layout/sidebar.tsx", "utf8");
+    const source = readTranslatedSource("components/layout/sidebar.tsx");
 
     expect(source).toContain(
       "trpc.communications.listConversations.useQuery"

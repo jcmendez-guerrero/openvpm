@@ -37,6 +37,8 @@ export const users = pgTable(
     sessionVersion: integer("session_version").notNull().default(1),
     name: varchar("name", { length: 255 }).notNull(),
     role: userRoleEnum("role").notNull().default("front_desk"),
+    // Saved UI language; null follows the clinic default.
+    language: varchar("language", { length: 8 }),
     // Authorization and clinical identity are intentionally separate. A
     // clinic owner can remain the required administrator while also appearing
     // as a veterinarian provider for scheduling and clinical sign-off.

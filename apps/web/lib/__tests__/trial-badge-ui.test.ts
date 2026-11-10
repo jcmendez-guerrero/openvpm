@@ -1,16 +1,10 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("trial badge UI", () => {
-  const source = readFileSync("components/layout/trial-badge.tsx", "utf8");
-  const settingsSource = readFileSync(
-    "app/(dashboard)/settings/page.tsx",
-    "utf8",
-  );
-  const addCardSource = readFileSync(
-    "components/onboarding/steps/add-a-card.tsx",
-    "utf8",
-  );
+  const source = readTranslatedSource("components/layout/trial-badge.tsx");
+  const settingsSource = readTranslatedSource("app/(dashboard)/settings/page.tsx");
+  const addCardSource = readTranslatedSource("components/onboarding/steps/add-a-card.tsx");
 
   it("surfaces subscription loading and failures before hiding the badge", () => {
     expect(source).toContain("const { data, isLoading, error }");

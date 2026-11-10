@@ -47,6 +47,7 @@ import { EmptyState } from "@/components/common/empty-state";
 import { AccentColorPicker } from "@/components/brand/accent-color-picker";
 import { MessagingTab } from "@/components/settings/messaging-tab";
 import { BookingTab } from "@/components/settings/booking-tab";
+import { ClinicLanguageField } from "@/components/settings/clinic-language-field";
 import { ProviderHours } from "@/components/settings/provider-hours";
 import { MigrationHelpRequest } from "@/components/onboarding/migration-help-request";
 import { ServicesTab } from "@/components/settings/services-tab";
@@ -815,6 +816,7 @@ function PracticeInfoTab() {
                 />
               </label>
             </div>
+            <ClinicLanguageField />
           </div>
         </div>
 
