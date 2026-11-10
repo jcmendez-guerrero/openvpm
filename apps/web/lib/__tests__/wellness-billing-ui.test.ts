@@ -1,9 +1,9 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("wellness billing UI", () => {
   it("keeps due membership invoice generation reachable from Billing", () => {
-    const source = readFileSync("app/(dashboard)/billing/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/billing/page.tsx");
 
     expect(source).toContain("Wellness invoices due");
     expect(source).toContain("Invoice schedule");
@@ -18,7 +18,7 @@ describe("wellness billing UI", () => {
   });
 
   it("surfaces missing due membership payloads before treating them as empty", () => {
-    const source = readFileSync("app/(dashboard)/billing/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/billing/page.tsx");
 
     expect(source).toContain("const dueMembershipsMissing =");
     expect(source).toContain("const dueMembershipsUnavailable =");
@@ -35,7 +35,7 @@ describe("wellness billing UI", () => {
   });
 
   it("waits for billing settings before rendering due membership dates", () => {
-    const source = readFileSync("app/(dashboard)/billing/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/billing/page.tsx");
 
     expect(source).toContain("const verifiedBillingConfig =");
     expect(source).toContain("const billingSettingsReady = verifiedBillingConfig !== null");
@@ -49,7 +49,7 @@ describe("wellness billing UI", () => {
   });
 
   it("describes wellness billing as invoice scheduling instead of autopay", () => {
-    const source = readFileSync("app/(dashboard)/billing/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/billing/page.tsx");
 
     expect(source).toContain("scheduled invoice");
     expect(source).toContain("OpenVPM generates invoices for each billing date");

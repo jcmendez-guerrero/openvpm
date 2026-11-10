@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronsUpDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -44,6 +46,7 @@ export function ServicePicker({
   searchError?: string;
   onRetry?: () => void;
 }) {
+  const t = useTranslations("billing.servicePicker");
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [highlight, setHighlight] = useState(0);
@@ -149,7 +152,7 @@ export function ServicePicker({
         )}
       >
         <span className="truncate">
-          {selected ? selected.name : "Search services..."}
+          {selected ? selected.name : t("searchServices2")}
         </span>
         <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
       </button>
@@ -164,8 +167,8 @@ export function ServicePicker({
               maxLength={120}
               onChange={(e) => changeQuery(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Type a service name..."
-              aria-label="Search services"
+              placeholder={t("typeAServiceName")}
+              aria-label={t("searchServices")}
               className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </div>
@@ -231,9 +234,9 @@ export function ServicePicker({
             className="px-3 text-xs text-muted-foreground"
           >
             {loading
-              ? "Loading products…"
+              ? t("loadingProducts")
               : searchError
-                ? "Products could not be loaded."
+                ? t("productsCouldNotBeLoaded")
                 : null}
           </div>
           {searchError ? (
@@ -242,7 +245,7 @@ export function ServicePicker({
               onClick={onRetry}
               className="w-full p-2 text-sm"
             >
-              Retry products
+              {t("retryProducts")}
             </button>
           ) : null}
           {hasMore ? (
@@ -252,7 +255,7 @@ export function ServicePicker({
               onClick={onLoadMore}
               className="w-full p-2 text-sm"
             >
-              Load more products
+              {t("loadMoreProducts")}
             </button>
           ) : null}
         </div>

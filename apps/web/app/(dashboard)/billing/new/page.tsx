@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "use-intl";
+
 import { browserUuid } from "@/lib/browser-uuid";
 
 import { quantityLineTotalCents } from "@/lib/quantity";
@@ -89,6 +91,7 @@ function defaultDueDate(timeZone?: string | null): string {
 }
 
 export default function NewInvoicePage() {
+  const t = useTranslations("billing.newInvoice");
   const router = useRouter();
   const { data: session, status } = useSession();
 
@@ -96,7 +99,7 @@ export default function NewInvoicePage() {
     return (
       <div className="mx-auto max-w-3xl">
         <InlineQueryMessage kind="loading">
-          Checking billing access...
+          {t("checkingBillingAccess")}
         </InlineQueryMessage>
       </div>
     );
@@ -112,14 +115,14 @@ export default function NewInvoicePage() {
           onClick={() => router.push("/billing")}
         >
           <ArrowLeft className="mr-1 h-4 w-4" />
-          Back to Billing
+          {t("backToBilling")}
         </Button>
         <EmptyState
           icon={FileText}
-          title="Billing actions are read-only"
-          description="Only admins and front desk staff can create invoices or estimates."
+          title={t("billingActionsAreReadOnly")}
+          description={t("onlyAdminsAndFrontDesk")}
           action={{
-            label: "Back to Billing",
+            label: t("backToBilling"),
             onClick: () => router.push("/billing"),
           }}
         />
@@ -131,7 +134,7 @@ export default function NewInvoicePage() {
     <Suspense
       fallback={
         <InlineQueryMessage kind="loading">
-          Loading invoice...
+          {t("loadingInvoice")}
         </InlineQueryMessage>
       }
     >
@@ -141,6 +144,7 @@ export default function NewInvoicePage() {
 }
 
 function PatientInvoiceContext() {
+  const t = useTranslations("billing.newInvoice");
   const searchParams = useSearchParams();
   const patientId = searchParams.get("patientId");
   const validPatientId = isUuid(patientId ?? "");
@@ -152,13 +156,13 @@ function PatientInvoiceContext() {
   if (!validPatientId)
     return (
       <InlineQueryMessage kind="error">
-        The patient link is invalid. Open the patient chart and try again.
+        {t("thePatientLinkIsInvalid")}
       </InlineQueryMessage>
     );
   if (patient.isLoading)
     return (
       <InlineQueryMessage kind="loading">
-        Loading patient and owner...
+        {t("loadingPatientAndOwner")}
       </InlineQueryMessage>
     );
   if (
@@ -169,10 +173,9 @@ function PatientInvoiceContext() {
   ) {
     return (
       <InlineQueryMessage kind="error">
-        Unable to load this patient's owner. Open the patient chart and check
-        the owner before creating an invoice.{" "}
+        {t("ownerFailed")}{" "}
         <Button variant="outline" onClick={() => void patient.refetch()}>
-          Retry
+          {t("retry")}
         </Button>
       </InlineQueryMessage>
     );
@@ -197,6 +200,8 @@ function NewInvoiceForm({
   initialPatientId?: string;
   initialClient?: { id: string; firstName: string; lastName: string } | null;
 }) {
+  const t = useTranslations("billing.newInvoice");
+  const locale = useLocale();
   const router = useRouter();
 
   // Client search
@@ -280,7 +285,7 @@ function NewInvoiceForm({
   const utils = trpc.useUtils();
   const createInvoice = trpc.billing.createInvoice.useMutation({
     onSuccess: () => {
-      toast.success("Invoice created");
+      toast.success(t("invoiceCreated"));
       utils.billing.listInvoices.invalidate();
       router.push("/billing");
     },
@@ -296,7 +301,7 @@ function NewInvoiceForm({
   const currency = taxConfigReady && taxConfig ? taxConfig.currency : "usd";
   const country = taxConfigReady && taxConfig ? taxConfig.country : "US";
   const fmt = (v: number | string | null | undefined) =>
-    formatCurrency(v, currency, country);
+    formatCurrency(v, currency, country, locale);
   const previewTotals = useMemo(
     () =>
       tryCalculateInvoiceTaxTotals(
@@ -394,18 +399,18 @@ function NewInvoiceForm({
         onClick={() => router.push("/billing")}
       >
         <ArrowLeft className="mr-1 h-4 w-4" />
-        Back to Billing
+        {t("backToBilling")}
       </Button>
 
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-heading text-xl font-semibold">
-            {isEstimate ? "New Estimate" : "New Invoice"}
+            {isEstimate ? t("newEstimate") : t("newInvoice")}
           </h2>
           <p className="text-sm text-muted-foreground">
             {isEstimate
-              ? "Create an estimate that can be converted to an invoice later."
-              : "Create a new invoice for a client."}
+              ? t("createAnEstimateThatCan")
+              : t("createANewInvoiceFor")}
           </p>
         </div>
         <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -437,13 +442,13 @@ function NewInvoiceForm({
                   setClientSearch("");
                 }}
               >
-                Change
+                {t("change")}
               </Button>
             </div>
           ) : (
             <div className="relative">
               <Input
-                placeholder="Search clients..."
+                placeholder={t("searchClients")}
                 value={clientSearch}
                 maxLength={CLIENT_SEARCH_MAX_LENGTH}
                 onChange={(e) => setClientSearch(e.target.value)}
@@ -457,16 +462,16 @@ function NewInvoiceForm({
                   {clientResults.error || clientResultsMissing ? (
                     <div className="px-4 py-3 text-sm text-destructive">
                       {clientResults.error?.message ??
-                        "Unable to search clients. Please retry."}
+                        t("searchFailed")}
                     </div>
                   ) : clientResults.isLoading ? (
                     <div className="flex items-center gap-2 px-4 py-3 text-sm text-muted-foreground">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Searching clients...
+                      {t("searchingClients")}
                     </div>
                   ) : clientOptions.length === 0 ? (
                     <div className="px-4 py-3 text-sm text-muted-foreground">
-                      No clients found
+                      {t("noClientsFound")}
                     </div>
                   ) : (
                     clientOptions.map((client) => (
@@ -507,7 +512,7 @@ function NewInvoiceForm({
               htmlFor="invoice-patient"
               className="block text-sm font-medium mb-1"
             >
-              Patient (optional)
+              {t("patientOptional")}
             </label>
             <select
               id="invoice-patient"
@@ -515,7 +520,7 @@ function NewInvoiceForm({
               value={selectedPatientId}
               onChange={(e) => setSelectedPatientId(e.target.value)}
             >
-              <option value="">-- No patient --</option>
+              <option value="">{t("noPatient")}</option>
               {patientOptions.map((patient) => (
                 <option key={patient.id} value={patient.id}>
                   {patient.name} ({patient.species})
@@ -525,13 +530,13 @@ function NewInvoiceForm({
             {patientResults.error || patientResultsMissing ? (
               <InlineQueryMessage kind="error">
                 {patientResults.error
-                  ? `Unable to load client patients. ${patientResults.error.message}`
-                  : "Unable to load client patients. Please retry."}
+                  ? t("patientsFailedMessage", { message: patientResults.error.message })
+                  : t("unableToLoadClientPatients")}
               </InlineQueryMessage>
             ) : patientResults.isLoading ? (
               <div className="mt-2">
                 <InlineQueryMessage kind="loading">
-                  Loading client patients...
+                  {t("loadingClientPatients")}
                 </InlineQueryMessage>
               </div>
             ) : null}
@@ -545,12 +550,12 @@ function NewInvoiceForm({
             {servicesQuery.error || servicesMissing ? (
               <InlineQueryMessage kind="error">
                 {servicesQuery.error
-                  ? `Unable to load billing services. ${servicesQuery.error.message}`
-                  : "Unable to load billing services. Please retry."}
+                  ? t("servicesFailedMessage", { message: servicesQuery.error.message })
+                  : t("unableToLoadBillingServices")}
               </InlineQueryMessage>
             ) : servicesQuery.isLoading ? (
               <InlineQueryMessage kind="loading">
-                Loading billing services...
+                {t("loadingBillingServices")}
               </InlineQueryMessage>
             ) : null}
             <div className="grid grid-cols-2 items-end gap-3 lg:grid-cols-12 lg:gap-2">
@@ -571,11 +576,11 @@ function NewInvoiceForm({
                   htmlFor="invoice-item-description"
                   className="mb-1 block text-xs font-medium text-muted-foreground"
                 >
-                  Description
+                  {t("description")}
                 </label>
                 <Input
                   id="invoice-item-description"
-                  placeholder="Description"
+                  placeholder={t("description")}
                   value={itemDescription}
                   maxLength={BILLING_INVOICE_LINE_DESCRIPTION_MAX_LENGTH}
                   onChange={(e) => setItemDescription(e.target.value)}
@@ -586,16 +591,16 @@ function NewInvoiceForm({
                   htmlFor="invoice-item-quantity"
                   className="mb-1 block text-xs font-medium text-muted-foreground"
                 >
-                  Qty
+                  {t("qty")}
                 </label>
                 <Input
                   id="invoice-item-quantity"
-                  aria-label="Quantity"
+                  aria-label={t("quantity")}
                   type="number"
                   min={BILLING_INVOICE_LINE_QUANTITY_MIN}
                   max={BILLING_INVOICE_LINE_QUANTITY_MAX}
                   step="0.001"
-                  placeholder="Qty"
+                  placeholder={t("qty")}
                   value={itemQuantity}
                   onChange={(e) =>
                     setItemQuantity(Number(e.target.value))
@@ -607,7 +612,7 @@ function NewInvoiceForm({
                   htmlFor="invoice-item-unit-price"
                   className="mb-1 block text-xs font-medium text-muted-foreground"
                 >
-                  Unit price
+                  {t("unitPrice")}
                 </label>
                 <Input
                   id="invoice-item-unit-price"
@@ -615,7 +620,7 @@ function NewInvoiceForm({
                   step="0.01"
                   min={0}
                   max={BILLING_UNIT_PRICE_MAX}
-                  placeholder="Unit Price"
+                  placeholder={t("unitPrice2")}
                   value={itemUnitPrice}
                   onChange={(e) => setItemUnitPrice(e.target.value)}
                 />
@@ -629,7 +634,7 @@ function NewInvoiceForm({
                   disabled={!canAddItem}
                 >
                   <Plus className="mr-1 h-4 w-4" />
-                  Add
+                  {t("add")}
                 </Button>
               </div>
             </div>
@@ -641,16 +646,16 @@ function NewInvoiceForm({
                   <thead>
                     <tr className="border-b border-border">
                       <th className="py-2 text-left font-medium text-muted-foreground">
-                        Description
+                        {t("description")}
                       </th>
                       <th className="px-2 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">
-                        Qty
+                        {t("qty")}
                       </th>
                       <th className="px-2 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">
-                        Unit Price
+                        {t("unitPrice2")}
                       </th>
                       <th className="px-2 py-2 text-right font-medium text-muted-foreground whitespace-nowrap">
-                        Total
+                        {t("total")}
                       </th>
                       <th className="py-2 w-10" />
                     </tr>
@@ -664,7 +669,7 @@ function NewInvoiceForm({
                         <td className="py-2">
                           {item.description}
                           <span className="ml-2 text-xs text-muted-foreground">
-                            {item.taxable ? "Taxable" : "Not taxable"}
+                            {item.taxable ? t("taxable") : t("notTaxable")}
                           </span>
                         </td>
                         <td className="px-2 py-2 text-right tabular-nums whitespace-nowrap">
@@ -679,7 +684,7 @@ function NewInvoiceForm({
                         <td className="py-2 text-right">
                           <button
                             type="button"
-                            aria-label={`Remove ${item.description}`}
+                            aria-label={t("remove", { name: item.description })}
                             className="text-muted-foreground hover:text-destructive transition-colors"
                             onClick={() => handleRemoveItem(item.id)}
                           >
@@ -701,22 +706,19 @@ function NewInvoiceForm({
             {!previewTotals && taxConfigReady ? (
               <div className="mb-3">
                 <InlineQueryMessage kind="error">
-                  Set the practice tax rate between 0 and 100% and keep the
-                  invoice total within the supported currency range before
-                  creating this invoice.
+                  {t("setThePracticeTaxRate")}
                 </InlineQueryMessage>
               </div>
             ) : taxConfigQuery.error || taxConfigMissing ? (
               <div className="mb-3">
                 <InlineQueryMessage kind="error">
-                  Unable to load practice tax settings. Preview totals omit tax
-                  until settings load.
+                  {t("unableToLoadPracticeTax")}
                 </InlineQueryMessage>
               </div>
             ) : taxConfigQuery.isLoading ? (
               <div className="mb-3">
                 <InlineQueryMessage kind="loading">
-                  Loading practice tax settings...
+                  {t("loadingPracticeTaxSettings")}
                 </InlineQueryMessage>
               </div>
             ) : null}
@@ -729,7 +731,7 @@ function NewInvoiceForm({
               <span className="tabular-nums">{fmt(tax)}</span>
             </div>
             <div className="flex justify-between font-semibold border-t border-border pt-1">
-              <span>Total</span>
+              <span>{t("total")}</span>
               <span className="tabular-nums">{fmt(total)}</span>
             </div>
           </div>
@@ -748,12 +750,12 @@ function NewInvoiceForm({
           />
           {!dueDate && taxConfigQuery.isLoading ? (
             <p className="mt-1 text-xs text-muted-foreground">
-              Loading practice date settings...
+              {t("loadingPracticeDateSettings")}
             </p>
           ) : null}
           {!dueDate && (taxConfigQuery.error || taxConfigMissing) ? (
             <p className="mt-1 text-xs text-destructive">
-              Choose a due date manually. Practice settings could not load.
+              {t("chooseADueDateManually")}
             </p>
           ) : null}
         </div>
@@ -767,13 +769,13 @@ function NewInvoiceForm({
             }
           >
             {createInvoice.isPending
-              ? "Creating..."
+              ? t("creating")
               : isEstimate
-              ? "Create Estimate"
-              : "Create Invoice"}
+              ? t("createEstimate")
+              : t("createInvoice")}
           </Button>
           <Button variant="outline" onClick={() => router.push("/billing")}>
-            Cancel
+            {t("cancel")}
           </Button>
         </div>
 
