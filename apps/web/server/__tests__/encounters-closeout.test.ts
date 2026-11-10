@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 
 const mocks = vi.hoisted(() => ({
   recordAuditLog: vi.fn(async () => undefined),
@@ -184,12 +185,11 @@ describe("encounter closeout database locking", () => {
   });
 
   it("offers an audited no-charge outcome for saved zero-dollar invoices", () => {
-    const pageSource = readFileSync(
+    const pageSource = readTranslatedSource(
       new URL(
         "../../app/(dashboard)/encounters/[appointmentId]/page.tsx",
         import.meta.url,
       ),
-      "utf8",
     );
 
     expect(pageSource).toContain("const zeroDollarInvoiceReady = Boolean(");
@@ -235,12 +235,11 @@ describe("encounter prescription lifecycle semantics", () => {
       'medication.effectiveStatus === "active"',
     );
 
-    const pageSource = readFileSync(
+    const pageSource = readTranslatedSource(
       new URL(
         "../../app/(dashboard)/encounters/[appointmentId]/page.tsx",
         import.meta.url,
       ),
-      "utf8",
     );
     expect(pageSource).toContain(
       "linkedPrescriptions={closeoutQuery.data?.medications ?? []}",
