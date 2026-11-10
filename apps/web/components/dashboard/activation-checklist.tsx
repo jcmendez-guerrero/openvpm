@@ -13,6 +13,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
+import { useTranslations } from "use-intl";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -32,17 +33,7 @@ type Milestone = {
   done: boolean;
 } & ({ href: string; onClick?: never } | { onClick: () => void; href?: never });
 
-const JOURNEY_STEP_LABELS: Record<string, string> = {
-  intent: "your starting path",
-  basics: "clinic basics",
-  branding: "branding",
-  team: "your team",
-  data: "data import",
-  agent: "the AI helper",
-  phone: "texting",
-  billing: "billing",
-  allSet: "the final review",
-};
+const JOURNEY_STEPS = ["intent", "basics", "branding", "team", "data", "agent", "phone", "billing", "allSet"];
 
 /**
  * Persistent activation checklist shown on the dashboard through the whole
@@ -52,6 +43,7 @@ const JOURNEY_STEP_LABELS: Record<string, string> = {
  * concrete reason to come back, all the way to confirming billing is connected.
  */
 export function ActivationChecklist() {
+  const t = useTranslations("dashboard.checklist");
   const { start } = useTour();
   const { openJourney } = useOnboardingJourney();
   const [hidden, setHidden] = useState(false);
@@ -80,7 +72,7 @@ export function ActivationChecklist() {
   const requestSetupHelp = trpc.settings.requestOnboardingHelp.useMutation({
     onSuccess: async () => {
       await utils.settings.getOnboardingState.invalidate();
-      toast.success("Setup request received");
+      toast.success(t("helpRequestedToast"));
     },
     onError: (error) => toast.error(error.message),
   });
@@ -136,7 +128,7 @@ export function ActivationChecklist() {
   ) {
     return (
       <ActivationChecklistError
-        message="Setup checklist data was unavailable. Try loading it again."
+        message={t("dataUnavailable")}
         onRetry={() => {
           void Promise.all([
             state.refetch(),
@@ -167,7 +159,7 @@ export function ActivationChecklist() {
     checklistState.tourStatus === "skipped";
   const brandColor = (practiceData.settings as { brandColor?: string } | null)
     ?.brandColor;
-  const practiceName = practiceData.name ?? "your practice";
+  const practiceName = practiceData.name ?? t("yourPractice");
   const pathway = getOnboardingIntentOption(
     checklistState.onboardingIntent ?? DEFAULT_ONBOARDING_INTENT,
   );
@@ -177,29 +169,29 @@ export function ActivationChecklist() {
   const explorationMilestones: Milestone[] = [
     {
       key: "tour",
-      label: "Take the 60-second tour",
-      hint: "See the schedule, records, billing, and AI in a minute.",
+      label: t("milestones.explore.tour.label"),
+      hint: t("milestones.explore.tour.hint"),
       done: tourDone,
       onClick: () => start(),
     },
     {
       key: "brand",
-      label: "Make it your brand",
-      hint: "Add your logo and accent color.",
+      label: t("milestones.explore.brand.label"),
+      hint: t("milestones.explore.brand.hint"),
       done: !!practiceData.logoUrl || !!brandColor,
       href: "/settings?tab=practice",
     },
     {
       key: "team",
-      label: "Invite a teammate",
-      hint: "Bring your doctors and front desk in. Staff is unlimited.",
+      label: t("milestones.explore.team.label"),
+      hint: t("milestones.explore.team.hint"),
       done: (subscriptionData.billableSeatCount ?? 1) > 1,
       href: "/settings?tab=staff",
     },
     {
       key: "ai",
-      label: "Ask the AI assistant something",
-      hint: "Try “Which pets are overdue for vaccines?”",
+      label: t("milestones.explore.ai.label"),
+      hint: t("milestones.explore.ai.hint"),
       done: (subscriptionData.usage?.aiRuns ?? 0) > 0,
       href: "/agent",
     },
@@ -208,22 +200,22 @@ export function ActivationChecklist() {
   const goLiveMilestones: Milestone[] = [
     {
       key: "data",
-      label: "Add one real client and pet",
-      hint: "Start small: create one client, then add their pet.",
+      label: t("milestones.goLive.data.label"),
+      hint: t("milestones.goLive.data.hint"),
       done: onboardingData.hasRealData,
       href: "/clients/new",
     },
     {
       key: "firstAppointment",
-      label: "Book that pet's first appointment",
-      hint: "Put one real appointment on the schedule. Your current PIMS can stay in place.",
+      label: t("milestones.goLive.firstAppointment.label"),
+      hint: t("milestones.goLive.firstAppointment.hint"),
       done: onboardingData.hasRealAppointment,
       href: "/schedule",
     },
     {
       key: "firstVisit",
-      label: "Complete your first visit",
-      hint: "Check in, start the exam, finalize the owner handoff, save the charge or no-charge reason, and complete checkout.",
+      label: t("milestones.goLive.firstVisit.label"),
+      hint: t("milestones.goLive.firstVisit.hint"),
       done: onboardingData.hasCompletedRealVisit,
       href: onboardingData.nextRealAppointmentId
         ? `/encounters/${onboardingData.nextRealAppointmentId}`
@@ -231,15 +223,15 @@ export function ActivationChecklist() {
     },
     {
       key: "team",
-      label: "Invite a teammate",
-      hint: "Test the handoff between a doctor and the front desk.",
+      label: t("milestones.goLive.team.label"),
+      hint: t("milestones.goLive.team.hint"),
       done: (subscriptionData.billableSeatCount ?? 1) > 1,
       href: "/settings?tab=staff",
     },
     {
       key: "booking",
-      label: "Configure appointment requests",
-      hint: "Choose which visit types and times clients can request, then publish the page.",
+      label: t("milestones.goLive.booking.label"),
+      hint: t("milestones.goLive.booking.hint"),
       done:
         bookingData.page?.published === true &&
         bookingData.page.config.bookableTypeIds.length > 0,
@@ -249,8 +241,8 @@ export function ActivationChecklist() {
       ? [
           {
             key: "texting",
-            label: "Finish texting activation",
-            hint: "Submit carrier registration and wait for approval. Texting is not live until an active number is enabled.",
+            label: t("milestones.goLive.texting.label"),
+            hint: t("milestones.goLive.texting.hint"),
             done: textingData.hasActiveNumber,
             href: "/settings?tab=messaging&setup=texting",
           } as Milestone,
@@ -260,8 +252,8 @@ export function ActivationChecklist() {
       ? [
           {
             key: "clientPayments",
-            label: "Set up client card payments",
-            hint: "Connect the clinic's Stripe account so pet-owner payments go directly to the clinic.",
+            label: t("milestones.goLive.clientPayments.label"),
+            hint: t("milestones.goLive.clientPayments.hint"),
             done: clientPaymentData.enabled,
             href: "/settings?tab=billing",
           } as Milestone,
@@ -271,8 +263,8 @@ export function ActivationChecklist() {
       ? [
           {
             key: "billing",
-            label: "Confirm billing is connected",
-            hint: "A saved card lets the trial convert without interrupting access. Cancel anytime.",
+            label: t("milestones.goLive.billing.label"),
+            hint: t("milestones.goLive.billing.hint"),
             done: !!subscriptionData.hasBillingAccount,
             href: "/settings?tab=billing",
           } as Milestone,
@@ -328,9 +320,10 @@ export function ActivationChecklist() {
   const guidedSetupStarted = Boolean(
     checklistState.onboardingIntentSelectedAt || checklistState.journeyStepId,
   );
-  const guidedSetupStage = checklistState.journeyStepId
-    ? JOURNEY_STEP_LABELS[checklistState.journeyStepId]
-    : null;
+  const guidedSetupStage =
+    checklistState.journeyStepId && JOURNEY_STEPS.includes(checklistState.journeyStepId)
+      ? t(`journeySteps.${checklistState.journeyStepId}`)
+      : null;
 
   // The corner X just hides the checklist for this session — it comes back next
   // visit ("show later"). "Don't show this again" dismisses it for good.
@@ -351,11 +344,10 @@ export function ActivationChecklist() {
           </span>
           <div className="min-w-0 flex-1">
             <p className="font-heading text-sm font-semibold">
-              Guided setup checks complete
+              {t("completeTitle")}
             </p>
             <p className="text-xs text-zinc-400">
-              Keep validating real clinic workflows with your team before
-              switching systems.
+              {t("completeBody")}
             </p>
           </div>
           <button
@@ -363,7 +355,7 @@ export function ActivationChecklist() {
             onClick={dontShowAgain}
             className="text-xs font-medium text-zinc-400 transition-colors hover:text-zinc-100"
           >
-            Dismiss
+            {t("dismiss")}
           </button>
         </div>
       </div>
@@ -378,8 +370,8 @@ export function ActivationChecklist() {
         <button
           type="button"
           onClick={snooze}
-          aria-label="Hide for now"
-          title="Hide for now"
+          aria-label={t("hide")}
+          title={t("hide")}
           className="absolute right-3 top-3 rounded-md p-1 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
         >
           <X className="h-4 w-4" />
@@ -391,10 +383,10 @@ export function ActivationChecklist() {
           </span>
           <div className="min-w-0">
             <p className="truncate font-heading text-sm font-semibold">
-              Finish {practiceName}&apos;s setup checks
+              {t("title", { practice: practiceName })}
             </p>
             <p className="text-xs text-zinc-400">
-              {pathway.shortLabel} · {doneCount} of {total} done
+              {pathway.shortLabel} · {t("progress", { done: doneCount, total })}
             </p>
           </div>
         </div>
@@ -414,13 +406,13 @@ export function ActivationChecklist() {
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-semibold">
                 {guidedSetupStarted
-                  ? "Resume guided setup"
-                  : "Start guided setup"}
+                  ? t("resumeGuided")
+                  : t("startGuided")}
               </span>
               <span className="block truncate text-xs text-emerald-950/75">
                 {guidedSetupStage
-                  ? `Continue at ${guidedSetupStage}`
-                  : "Choose your path and save progress as you go"}
+                  ? t("continueAt", { step: guidedSetupStage })
+                  : t("choosePath")}
               </span>
             </span>
             <ArrowRight className="h-4 w-4 shrink-0" />
@@ -485,7 +477,7 @@ export function ActivationChecklist() {
           {setupHelpRequestedAt ? (
             <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400">
               <Check className="h-3.5 w-3.5" />
-              Setup help requested
+              {t("helpRequested")}
             </span>
           ) : (
             <button
@@ -499,7 +491,7 @@ export function ActivationChecklist() {
               ) : (
                 <Headphones className="h-3.5 w-3.5" />
               )}
-              Help me set this up
+              {t("helpMe")}
             </button>
           )}
           <button
@@ -507,7 +499,7 @@ export function ActivationChecklist() {
             onClick={dontShowAgain}
             className="text-xs font-medium text-zinc-500 transition-colors hover:text-zinc-200"
           >
-            Don&apos;t show this again
+            {t("dontShowAgain")}
           </button>
         </div>
       </div>
@@ -527,13 +519,14 @@ function ActivationChecklistError({
   message: string;
   onRetry: () => void;
 }) {
+  const t = useTranslations("dashboard.checklist");
   return (
     <div className="relative z-20 w-full sm:fixed sm:bottom-4 sm:right-4 sm:z-[70] sm:w-[340px]">
       <div className="flex items-start gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 p-4 text-zinc-50 shadow-2xl shadow-black/30">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold">
-            Setup checklist could not load
+            {t("loadFailed")}
           </p>
           <p className="mt-1 text-xs text-zinc-400">{message}</p>
           <Button
@@ -542,7 +535,7 @@ function ActivationChecklistError({
             onClick={onRetry}
             className="mt-2 border-zinc-700 bg-transparent text-zinc-100 hover:bg-zinc-800"
           >
-            Retry
+            {t("retry")}
           </Button>
         </div>
       </div>

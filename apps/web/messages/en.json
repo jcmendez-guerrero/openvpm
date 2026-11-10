@@ -1097,5 +1097,157 @@
       "void": "void",
       "estimate": "estimate"
     }
+  },
+  "dashboard": {
+    "fieldVisits": {
+      "title": "Unfinished field visits",
+      "intro": "Return to notes and closeout after your farm calls. Taking payment does not sign or finish a clinical record.",
+      "loadFailed": "Could not load unfinished visits.",
+      "retry": "Retry",
+      "pending": "Notes or closeout pending",
+      "resume": "Resume visit",
+      "empty": "No unfinished field visits on this page.",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "kpi": {
+      "todayAppointments": {
+        "label": "Today's Appointments",
+        "description": "Scheduled for today"
+      },
+      "patientsSeen": {
+        "label": "Patients Seen Today",
+        "description": "Checked out today"
+      },
+      "revenueMtd": {
+        "label": "Net collections (MTD)",
+        "description": "Payments less refunds this month"
+      },
+      "pendingInvoices": {
+        "label": "Pending Invoices",
+        "description": "Sent or overdue"
+      }
+    },
+    "metricsFailed": "Unable to load dashboard metrics.",
+    "pleaseRetry": "Please retry.",
+    "followUps": {
+      "title": "Follow-up work queue",
+      "intro": "Signed visit obligations that still need an owner.",
+      "open": "{count} open",
+      "loadFailed": "Follow-up obligations could not be loaded. Refresh before ending the shift.",
+      "due": "{patient} · due {date}",
+      "owner": "Owner: {name}",
+      "assigned": "Assigned to {name}",
+      "resolve": "Resolve follow-up",
+      "empty": "No pending follow-up obligations."
+    },
+    "upcoming": {
+      "title": "Upcoming Appointments",
+      "loadFailed": "Unable to load upcoming appointments.",
+      "emptyTitle": "No visits booked yet",
+      "emptyHelp": "Book your first visit and it shows up here.",
+      "bookFirst": "Book your first visit",
+      "openPatient": "Open patient",
+      "unknownPatient": "Unknown Patient",
+      "withDoctor": "with {name}"
+    },
+    "chartsFailed": "Unable to load dashboard charts.",
+    "chartsEmptyTitle": "Your charts show up once you start",
+    "chartsEmptyHelp": "As you book visits and send bills, your trends and totals fill in here.",
+    "charts": {
+      "appointmentsWeek": "Appointments This Week",
+      "completed": "Completed",
+      "scheduled": "Scheduled",
+      "cancelled": "Cancelled",
+      "species": "Species Distribution",
+      "collections30": "Net collections (Last 30 Days)",
+      "collections": "Net collections",
+      "byDoctor": "Net collections by doctor (MTD)"
+    },
+    "checklist": {
+      "milestones": {
+        "explore": {
+          "tour": {
+            "label": "Take the 60-second tour",
+            "hint": "See the schedule, records, billing, and AI in a minute."
+          },
+          "brand": {
+            "label": "Make it your brand",
+            "hint": "Add your logo and accent color."
+          },
+          "team": {
+            "label": "Invite a teammate",
+            "hint": "Bring your doctors and front desk in. Staff is unlimited."
+          },
+          "ai": {
+            "label": "Ask the AI assistant something",
+            "hint": "Try “Which pets are overdue for vaccines?”"
+          }
+        },
+        "goLive": {
+          "data": {
+            "label": "Add one real client and pet",
+            "hint": "Start small: create one client, then add their pet."
+          },
+          "firstAppointment": {
+            "label": "Book that pet's first appointment",
+            "hint": "Put one real appointment on the schedule. Your current PIMS can stay in place."
+          },
+          "firstVisit": {
+            "label": "Complete your first visit",
+            "hint": "Check in, start the exam, finalize the owner handoff, save the charge or no-charge reason, and complete checkout."
+          },
+          "team": {
+            "label": "Invite a teammate",
+            "hint": "Test the handoff between a doctor and the front desk."
+          },
+          "booking": {
+            "label": "Configure appointment requests",
+            "hint": "Choose which visit types and times clients can request, then publish the page."
+          },
+          "texting": {
+            "label": "Finish texting activation",
+            "hint": "Submit carrier registration and wait for approval. Texting is not live until an active number is enabled."
+          },
+          "clientPayments": {
+            "label": "Set up client card payments",
+            "hint": "Connect the clinic's Stripe account so pet-owner payments go directly to the clinic."
+          },
+          "billing": {
+            "label": "Confirm billing is connected",
+            "hint": "A saved card lets the trial convert without interrupting access. Cancel anytime."
+          }
+        }
+      },
+      "helpRequestedToast": "Setup request received",
+      "dataUnavailable": "Setup checklist data was unavailable. Try loading it again.",
+      "yourPractice": "your practice",
+      "journeySteps": {
+        "intent": "your starting path",
+        "basics": "clinic basics",
+        "branding": "branding",
+        "team": "your team",
+        "data": "data import",
+        "agent": "the AI helper",
+        "phone": "texting",
+        "billing": "billing",
+        "allSet": "the final review"
+      },
+      "completeTitle": "Guided setup checks complete",
+      "completeBody": "Keep validating real clinic workflows with your team before switching systems.",
+      "dismiss": "Dismiss",
+      "hide": "Hide for now",
+      "title": "Finish {practice}'s setup checks",
+      "progress": "{done} of {total} done",
+      "resumeGuided": "Resume guided setup",
+      "startGuided": "Start guided setup",
+      "continueAt": "Continue at {step}",
+      "choosePath": "Choose your path and save progress as you go",
+      "helpRequested": "Setup help requested",
+      "helpMe": "Help me set this up",
+      "dontShowAgain": "Don't show this again",
+      "loadFailed": "Setup checklist could not load",
+      "retry": "Retry"
+    }
   }
 }

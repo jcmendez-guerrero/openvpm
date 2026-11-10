@@ -1097,5 +1097,157 @@
       "void": "anulada",
       "estimate": "presupuesto"
     }
+  },
+  "dashboard": {
+    "fieldVisits": {
+      "title": "Visitas a domicilio sin terminar",
+      "intro": "Vuelva a las notas y al cierre después de sus visitas. Cobrar no firma ni termina un registro clínico.",
+      "loadFailed": "No se pudieron cargar las visitas sin terminar.",
+      "retry": "Reintentar",
+      "pending": "Notas o cierre pendientes",
+      "resume": "Retomar visita",
+      "empty": "No hay visitas a domicilio sin terminar en esta página.",
+      "previous": "Anterior",
+      "next": "Siguiente"
+    },
+    "kpi": {
+      "todayAppointments": {
+        "label": "Citas de hoy",
+        "description": "Programadas para hoy"
+      },
+      "patientsSeen": {
+        "label": "Pacientes atendidos hoy",
+        "description": "Finalizados hoy"
+      },
+      "revenueMtd": {
+        "label": "Cobros netos (mes en curso)",
+        "description": "Pagos menos reembolsos de este mes"
+      },
+      "pendingInvoices": {
+        "label": "Facturas pendientes",
+        "description": "Enviadas o vencidas"
+      }
+    },
+    "metricsFailed": "No se pudieron cargar los indicadores del panel.",
+    "pleaseRetry": "Inténtelo de nuevo.",
+    "followUps": {
+      "title": "Seguimientos pendientes",
+      "intro": "Tareas de visitas firmadas que aún necesitan responsable.",
+      "open": "{count} abiertas",
+      "loadFailed": "No se pudieron cargar los seguimientos. Actualice antes de terminar el turno.",
+      "due": "{patient} · vence el {date}",
+      "owner": "Propietario: {name}",
+      "assigned": "Asignado a {name}",
+      "resolve": "Resolver seguimiento",
+      "empty": "No hay seguimientos pendientes."
+    },
+    "upcoming": {
+      "title": "Próximas citas",
+      "loadFailed": "No se pudieron cargar las próximas citas.",
+      "emptyTitle": "Todavía no hay visitas agendadas",
+      "emptyHelp": "Agende su primera visita y aparecerá aquí.",
+      "bookFirst": "Agende su primera visita",
+      "openPatient": "Abrir paciente",
+      "unknownPatient": "Paciente desconocido",
+      "withDoctor": "con {name}"
+    },
+    "chartsFailed": "No se pudieron cargar los gráficos del panel.",
+    "chartsEmptyTitle": "Sus gráficos aparecerán cuando empiece",
+    "chartsEmptyHelp": "A medida que agende visitas y envíe facturas, aquí se llenarán sus tendencias y totales.",
+    "charts": {
+      "appointmentsWeek": "Citas de esta semana",
+      "completed": "Completadas",
+      "scheduled": "Programadas",
+      "cancelled": "Canceladas",
+      "species": "Distribución por especie",
+      "collections30": "Cobros netos (últimos 30 días)",
+      "collections": "Cobros netos",
+      "byDoctor": "Cobros netos por médico (mes en curso)"
+    },
+    "checklist": {
+      "milestones": {
+        "explore": {
+          "tour": {
+            "label": "Haga el recorrido de 60 segundos",
+            "hint": "Vea la agenda, la historia clínica, la facturación y la IA en un minuto."
+          },
+          "brand": {
+            "label": "Póngale su marca",
+            "hint": "Agregue su logo y su color principal."
+          },
+          "team": {
+            "label": "Invite a un compañero",
+            "hint": "Sume a sus médicos y a recepción. El personal es ilimitado."
+          },
+          "ai": {
+            "label": "Pregúntele algo al asistente de IA",
+            "hint": "Pruebe con “¿Qué mascotas tienen vacunas atrasadas?”"
+          }
+        },
+        "goLive": {
+          "data": {
+            "label": "Agregue un cliente y una mascota reales",
+            "hint": "Empiece de a poco: cree un cliente y luego agregue su mascota."
+          },
+          "firstAppointment": {
+            "label": "Agende la primera cita de esa mascota",
+            "hint": "Ponga una cita real en la agenda. Su sistema de gestión actual puede seguir funcionando."
+          },
+          "firstVisit": {
+            "label": "Complete su primera visita",
+            "hint": "Registre la llegada, inicie la consulta, finalice la entrega al propietario, guarde el cargo o el motivo sin cargo y complete el cierre."
+          },
+          "team": {
+            "label": "Invite a un compañero",
+            "hint": "Pruebe el traspaso entre un médico y recepción."
+          },
+          "booking": {
+            "label": "Configure las solicitudes de cita",
+            "hint": "Elija qué tipos de visita y horarios pueden solicitar los clientes y luego publique la página."
+          },
+          "texting": {
+            "label": "Termine de activar los mensajes de texto",
+            "hint": "Envíe el registro ante el operador y espere la aprobación. Los mensajes no funcionan hasta que haya un número activo."
+          },
+          "clientPayments": {
+            "label": "Configure los pagos con tarjeta de clientes",
+            "hint": "Conecte la cuenta de Stripe de la clínica para que los pagos de los propietarios lleguen directamente a la clínica."
+          },
+          "billing": {
+            "label": "Confirme que la facturación está conectada",
+            "hint": "Una tarjeta guardada permite que la prueba continúe sin cortar el acceso. Cancele cuando quiera."
+          }
+        }
+      },
+      "helpRequestedToast": "Recibimos su solicitud de ayuda",
+      "dataUnavailable": "Los datos de la lista de configuración no estaban disponibles. Intente cargarlos de nuevo.",
+      "yourPractice": "su clínica",
+      "journeySteps": {
+        "intent": "su punto de partida",
+        "basics": "datos básicos de la clínica",
+        "branding": "marca",
+        "team": "su equipo",
+        "data": "importación de datos",
+        "agent": "el asistente de IA",
+        "phone": "mensajes de texto",
+        "billing": "facturación",
+        "allSet": "la revisión final"
+      },
+      "completeTitle": "Revisión de la configuración guiada completa",
+      "completeBody": "Siga validando los flujos reales de la clínica con su equipo antes de cambiar de sistema.",
+      "dismiss": "Descartar",
+      "hide": "Ocultar por ahora",
+      "title": "Termine la configuración de {practice}",
+      "progress": "{done} de {total} listos",
+      "resumeGuided": "Retomar configuración guiada",
+      "startGuided": "Iniciar configuración guiada",
+      "continueAt": "Continuar en {step}",
+      "choosePath": "Elija su camino y guarde el avance a medida que avanza",
+      "helpRequested": "Ayuda de configuración solicitada",
+      "helpMe": "Ayúdenme a configurarlo",
+      "dontShowAgain": "No volver a mostrar",
+      "loadFailed": "No se pudo cargar la lista de configuración",
+      "retry": "Reintentar"
+    }
   }
 }

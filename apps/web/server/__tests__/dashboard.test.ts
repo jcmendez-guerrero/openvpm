@@ -94,16 +94,16 @@ describe("dashboard router", () => {
 
     await expect(callerWithDb(db).getCharts()).resolves.toEqual({
       appointmentsByDay: [
-        { date: "Wed", scheduled: 0, completed: 0, cancelled: 0 },
-        { date: "Thu", scheduled: 0, completed: 0, cancelled: 0 },
-        { date: "Fri", scheduled: 0, completed: 0, cancelled: 0 },
-        { date: "Sat", scheduled: 0, completed: 0, cancelled: 0 },
-        { date: "Sun", scheduled: 0, completed: 0, cancelled: 0 },
-        { date: "Mon", scheduled: 0, completed: 0, cancelled: 0 },
-        { date: "Tue", scheduled: 2, completed: 1, cancelled: 0 },
+        { date: "Wed", dateInput: "2026-07-08", scheduled: 0, completed: 0, cancelled: 0 },
+        { date: "Thu", dateInput: "2026-07-09", scheduled: 0, completed: 0, cancelled: 0 },
+        { date: "Fri", dateInput: "2026-07-10", scheduled: 0, completed: 0, cancelled: 0 },
+        { date: "Sat", dateInput: "2026-07-11", scheduled: 0, completed: 0, cancelled: 0 },
+        { date: "Sun", dateInput: "2026-07-12", scheduled: 0, completed: 0, cancelled: 0 },
+        { date: "Mon", dateInput: "2026-07-13", scheduled: 0, completed: 0, cancelled: 0 },
+        { date: "Tue", dateInput: "2026-07-14", scheduled: 2, completed: 1, cancelled: 0 },
       ],
-      revenueByDay: [{ date: "Jul 14", revenue: 450.25 }],
-      speciesDistribution: [{ name: "Canine", value: 4 }],
+      revenueByDay: [{ date: "Jul 14", dateInput: "2026-07-14", revenue: 450.25 }],
+      speciesDistribution: [{ name: "Canine", species: "canine", value: 4 }],
       productionByDoctor: [
         { doctorName: "Dr. Ada Chen", production: 925.5 },
         { doctorName: "Unassigned", production: 125 },

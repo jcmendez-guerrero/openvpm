@@ -1,25 +1,13 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("request-only booking UI", () => {
-  const publicPage = readFileSync("app/book/[slug]/page.tsx", "utf8");
-  const settingsTab = readFileSync(
-    "components/settings/booking-tab.tsx",
-    "utf8",
-  );
-  const portalPage = readFileSync("app/portal/[token]/book/page.tsx", "utf8");
-  const activationChecklist = readFileSync(
-    "components/dashboard/activation-checklist.tsx",
-    "utf8",
-  );
-  const allSetStep = readFileSync(
-    "components/onboarding/steps/all-set.tsx",
-    "utf8",
-  );
-  const firstDayRecommendations = readFileSync(
-    "components/onboarding/first-day-recommendations.tsx",
-    "utf8",
-  );
+  const publicPage = readTranslatedSource("app/book/[slug]/page.tsx");
+  const settingsTab = readTranslatedSource("components/settings/booking-tab.tsx");
+  const portalPage = readTranslatedSource("app/portal/[token]/book/page.tsx");
+  const activationChecklist = readTranslatedSource("components/dashboard/activation-checklist.tsx");
+  const allSetStep = readTranslatedSource("components/onboarding/steps/all-set.tsx");
+  const firstDayRecommendations = readTranslatedSource("components/onboarding/first-day-recommendations.tsx");
 
   it("describes every public submission as a request that the clinic confirms", () => {
     expect(publicPage).toContain("Request an appointment");
