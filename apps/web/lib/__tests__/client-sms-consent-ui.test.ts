@@ -1,14 +1,8 @@
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
 
-const NEW_CLIENT_SOURCE = readFileSync(
-  new URL("../../app/(dashboard)/clients/new/page.tsx", import.meta.url),
-  "utf8",
-);
-const EDIT_CLIENT_SOURCE = readFileSync(
-  new URL("../../app/(dashboard)/clients/[id]/edit/page.tsx", import.meta.url),
-  "utf8",
-);
+const NEW_CLIENT_SOURCE = readTranslatedSource(new URL("../../app/(dashboard)/clients/new/page.tsx", import.meta.url));
+const EDIT_CLIENT_SOURCE = readTranslatedSource(new URL("../../app/(dashboard)/clients/[id]/edit/page.tsx", import.meta.url));
 
 describe("client SMS consent forms", () => {
   it("renders the shared server-owned disclosure in both forms", () => {

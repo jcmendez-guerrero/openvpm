@@ -73,7 +73,8 @@ function toDate(value: Date | string | null): Date | null {
 
 export function buildWeightTrend(
   weights: readonly WeightTrendInput[],
-  timeZone?: string | null
+  timeZone?: string | null,
+  locale = "en-US"
 ): WeightTrendPoint[] {
   return weights
     .map((weight) => {
@@ -81,7 +82,7 @@ export function buildWeightTrend(
       const weightKg = parseClinicalNumber(weight.weightKg);
       if (!date || weightKg === null) return null;
       const key = clinicalDateKey(date, timeZone);
-      const label = clinicalDateLabel(date, timeZone);
+      const label = clinicalDateLabel(date, timeZone, locale);
       if (!key || !label) return null;
       return {
         date: key,
@@ -99,14 +100,15 @@ function normalizeTrendText(value: string | null | undefined): string {
 
 export function buildVitalTrend(
   vitals: readonly VitalTrendInput[],
-  timeZone?: string | null
+  timeZone?: string | null,
+  locale = "en-US"
 ): VitalTrendPoint[] {
   return vitals
     .map((vital) => {
       const date = toDate(vital.recordedAt);
       if (!date) return null;
       const key = clinicalDateKey(date, timeZone);
-      const label = clinicalDateLabel(date, timeZone);
+      const label = clinicalDateLabel(date, timeZone, locale);
       if (!key || !label) return null;
       return {
         date: key,
@@ -126,7 +128,8 @@ export function buildVitalTrend(
 export function buildLabTrends(
   labResults: readonly LabTrendInput[],
   timeZone?: string | null,
-  maxGroups = 4
+  maxGroups = 4,
+  locale = "en-US"
 ): LabTrendGroup[] {
   const groups = new Map<
     string,
@@ -142,7 +145,7 @@ export function buildLabTrends(
 
     const key = `${testName.toLowerCase()}\u0000${unit.toLowerCase()}`;
     const dateKey = clinicalDateKey(date, timeZone);
-    const dateLabel = clinicalDateLabel(date, timeZone);
+    const dateLabel = clinicalDateLabel(date, timeZone, locale);
     if (!dateKey || !dateLabel) continue;
 
     const group = groups.get(key) ?? {

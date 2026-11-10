@@ -36,3 +36,21 @@ describe("inlineEnglish", () => {
     expect(out).toContain("Billing Save {t(`nav.${k}`)} {t(\"missing\")}");
   });
 });
+
+describe("inlineEnglish with one translator name in several components", () => {
+  it("uses the nearest declaration above each call", () => {
+    const source =
+      'function A() { const t = useTranslations("shell"); return <p>{t("mainNavigation")}</p>; }\n' +
+      'function B() { const t = useTranslations("shell.trial"); return <p>{t("billing")}</p>; }';
+    const out = inlineEnglish(source);
+    expect(out).toContain("<p>Main navigation</p>");
+    expect(out).toContain("<p>Billing</p>");
+  });
+
+  it("does not borrow a key from another component's namespace", () => {
+    const source =
+      'function A() { const t = useTranslations("shell.trial"); }\n' +
+      'function B() { const t = useTranslations("shell"); return <p>{t("billing")}</p>; }';
+    expect(inlineEnglish(source)).toContain('<p>{t("billing")}</p>');
+  });
+});

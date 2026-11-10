@@ -1,14 +1,8 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
-const scheduleSource = readFileSync(
-  "app/(dashboard)/schedule/page.tsx",
-  "utf8",
-);
-const whiteboardSource = readFileSync(
-  "app/(dashboard)/whiteboard/page.tsx",
-  "utf8",
-);
+const scheduleSource = readTranslatedSource("app/(dashboard)/schedule/page.tsx");
+const whiteboardSource = readTranslatedSource("app/(dashboard)/whiteboard/page.tsx");
 
 const overlaySources = [
   ["schedule", scheduleSource],

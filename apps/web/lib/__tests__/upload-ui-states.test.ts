@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import { UPLOAD_FILE_MAX_BYTES } from "../upload-limits";
 import {
@@ -7,18 +7,9 @@ import {
 } from "../upload-policy";
 
 describe("upload UI states", () => {
-  const onboardingBranding = readFileSync(
-    "components/onboarding/steps/branding.tsx",
-    "utf8"
-  );
-  const settingsPage = readFileSync(
-    "app/(dashboard)/settings/page.tsx",
-    "utf8"
-  );
-  const patientDetail = readFileSync(
-    "app/(dashboard)/patients/[id]/page.tsx",
-    "utf8"
-  );
+  const onboardingBranding = readTranslatedSource("components/onboarding/steps/branding.tsx");
+  const settingsPage = readTranslatedSource("app/(dashboard)/settings/page.tsx");
+  const patientDetail = readTranslatedSource("app/(dashboard)/patients/[id]/page.tsx");
   const imageUploadSources = [onboardingBranding, settingsPage, patientDetail];
 
   it("guards browser image uploads before calling the upload API", () => {

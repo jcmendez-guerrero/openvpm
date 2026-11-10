@@ -1,17 +1,11 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
-const component = readFileSync(
-  "components/patients/patient-history-search.tsx",
-  "utf8",
-);
-const patientPage = readFileSync(
-  "app/(dashboard)/patients/[id]/page.tsx",
-  "utf8",
-);
-const recordsRouter = readFileSync("server/routers/records.ts", "utf8");
-const providers = readFileSync("lib/providers.tsx", "utf8");
-const trpcRoute = readFileSync("app/api/trpc/[trpc]/route.ts", "utf8");
+const component = readTranslatedSource("components/patients/patient-history-search.tsx");
+const patientPage = readTranslatedSource("app/(dashboard)/patients/[id]/page.tsx");
+const recordsRouter = readTranslatedSource("server/routers/records.ts");
+const providers = readTranslatedSource("lib/providers.tsx");
+const trpcRoute = readTranslatedSource("app/api/trpc/[trpc]/route.ts");
 
 describe("patient history search UI", () => {
   it("keeps the existing SOAP timeline until read-only filters are applied", () => {
@@ -28,7 +22,7 @@ describe("patient history search UI", () => {
     expect(component).toContain("onSearchModeChange(true)");
     expect(component).toContain("onSearchModeChange(false)");
     expect(component).toContain(
-      "The complete SOAP\n          timeline remains below.",
+      "The complete SOAP timeline remains below.",
     );
   });
 
@@ -97,6 +91,6 @@ describe("patient history search UI", () => {
       expect(component).toContain(label);
     }
     expect(component).toContain("item.authorLabel");
-    expect(component).toContain("Finalized by ${item.finalizerName}");
+    expect(component).toContain("Finalized by {name}");
   });
 });

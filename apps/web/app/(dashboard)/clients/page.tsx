@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Search, Plus, Users } from "lucide-react";
+import { useLocale, useTranslations } from "use-intl";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,8 @@ function canManageClientsRole(role?: string | null): boolean {
 
 export default function ClientsPage() {
   const router = useRouter();
+  const t = useTranslations("clients");
+  const locale = useLocale();
   const { data: session } = useSession();
   const [search, setSearch] = useState("");
   const trimmedSearch = search.trim();
@@ -44,9 +47,9 @@ export default function ClientsPage() {
     <div>
       <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-heading text-xl font-semibold">Clients</h2>
+          <h2 className="font-heading text-xl font-semibold">{t("list.title")}</h2>
           <p className="text-sm text-muted-foreground">
-            Manage client information
+            {t("list.subtitle")}
           </p>
         </div>
         {canManageClients && (
@@ -55,7 +58,7 @@ export default function ClientsPage() {
             className="h-11 w-full sm:h-10 sm:w-auto"
           >
             <Plus className="mr-2 h-4 w-4" />
-            New Client
+            {t("list.new")}
           </Button>
         )}
       </div>
@@ -64,7 +67,7 @@ export default function ClientsPage() {
         <div className="relative w-full min-w-0 sm:max-w-sm sm:flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search clients..."
+            placeholder={t("list.searchPlaceholder")}
             value={search}
             maxLength={CLIENT_SEARCH_MAX_LENGTH}
             onChange={(e) => setSearch(e.target.value)}
@@ -73,15 +76,14 @@ export default function ClientsPage() {
         </div>
         {verifiedClientList && (
           <p className="text-sm text-muted-foreground sm:shrink-0">
-            {verifiedClientList.total} client
-            {verifiedClientList.total !== 1 ? "s" : ""}
+            {t("list.count", { count: verifiedClientList.total })}
           </p>
         )}
       </div>
 
       {error || clientsMissing ? (
         <div className="mt-6 rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
-          {error?.message ?? "Unable to load clients. Please retry."}
+          {error?.message ?? t("list.loadFailed")}
         </div>
       ) : isLoading ? (
         <TableSkeleton rows={8} cols={5} />
@@ -96,7 +98,7 @@ export default function ClientsPage() {
                   key={client.id}
                   type="button"
                   onClick={() => router.push(`/clients/${client.id}`)}
-                  aria-label={`Open client ${fullName}`}
+                  aria-label={t("list.open", { name: fullName })}
                   className="min-h-11 w-full min-w-0 overflow-hidden rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/30 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 >
                   <span className="block truncate text-sm font-semibold text-foreground">
@@ -104,22 +106,24 @@ export default function ClientsPage() {
                   </span>
                   <span className="mt-2 block min-w-0 space-y-1 text-sm text-muted-foreground">
                     <span className="block truncate">
-                      {client.phone || "No phone on file"}
+                      {client.phone || t("noPhone")}
                     </span>
                     <span className="block truncate">
-                      {client.email || "No email on file"}
+                      {client.email || t("noEmail")}
                     </span>
                     <span className="flex min-w-0 items-center justify-between gap-3 text-xs">
                       <span className="truncate">
-                        {client.city || "City not listed"}
+                        {client.city || t("list.noCity")}
                       </span>
                       <span className="shrink-0">
-                        Added{" "}
-                        {formatClinicalDate(
-                          client.createdAt,
-                          clientListTimeZone,
-                          "—"
-                        )}
+                        {t("list.added", {
+                          date: formatClinicalDate(
+                            client.createdAt,
+                            clientListTimeZone,
+                            "—",
+                            locale
+                          ),
+                        })}
                       </span>
                     </span>
                   </span>
@@ -133,19 +137,19 @@ export default function ClientsPage() {
             <thead>
               <tr className="border-b border-border bg-muted/50">
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                  Name
+                  {t("list.columns.name")}
                 </th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                  Email
+                  {t("list.columns.email")}
                 </th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                  Phone
+                  {t("list.columns.phone")}
                 </th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                  City
+                  {t("list.columns.city")}
                 </th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                  Created
+                  {t("list.columns.created")}
                 </th>
               </tr>
             </thead>
@@ -172,7 +176,8 @@ export default function ClientsPage() {
                     {formatClinicalDate(
                       client.createdAt,
                       clientListTimeZone,
-                      "\u2014"
+                      "\u2014",
+                      locale
                     )}
                   </td>
                 </tr>
@@ -185,16 +190,16 @@ export default function ClientsPage() {
         <EmptyState
           className="mt-6"
           icon={Users}
-          title={hasSearch ? "No clients match your search" : "No clients yet"}
+          title={hasSearch ? t("list.noMatches") : t("list.emptyTitle")}
           description={
             hasSearch
-              ? "Try a different name, phone number, or email address."
-              : "Create a client record before adding patients, appointments, or invoices."
+              ? t("list.noMatchesHelp")
+              : t("list.emptyHelp")
           }
           action={
             !hasSearch && canManageClients
               ? {
-                  label: "Add your first client",
+                  label: t("list.addFirst"),
                   onClick: () => router.push("/clients/new"),
                   icon: Plus,
                 }

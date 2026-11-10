@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "use-intl";
 import { Button } from "@/components/ui/button";
 import type { useOfflineNoteDraft } from "@/lib/records/use-offline-note-draft";
 
@@ -11,6 +12,7 @@ export function OfflineNoteDraftControls({
   recovery: ReturnType<typeof useOfflineNoteDraft>;
   disabled?: boolean;
 }) {
+  const t = useTranslations("patients.draft");
   const [passphrase, setPassphrase] = useState("");
   const [confirmPassphrase, setConfirmPassphrase] = useState("");
   const [expanded, setExpanded] = useState(false);
@@ -22,20 +24,18 @@ export function OfflineNoteDraftControls({
       {ready ? (
         <p role="status">
           {recovery.localStatus === "saved"
-            ? "Encrypted draft saved on this device. Not yet saved to the chart."
+            ? t("saved")
             : recovery.localStatus === "saving"
-              ? "Saving encrypted device draft..."
+              ? t("saving")
               : recovery.localStatus === "error"
-                ? "Device draft needs attention."
-                : "Device draft recovery is on for this chart."}
+                ? t("error")
+                : t("on")}
         </p>
       ) : recovery.mode === "loading" ? (
-        <p role="status">Checking for a device draft...</p>
+        <p role="status">{t("checking")}</p>
       ) : recovery.mode === "bypassed" ? (
         <p role="status">
-          Your saved device draft is still locked. This new note stays in this
-          tab until saved to the chart. Reopen the chart to recover the earlier
-          draft.
+          {t("bypassed")}
         </p>
       ) : recovery.mode !== "unavailable" ? (
         <>
@@ -47,8 +47,8 @@ export function OfflineNoteDraftControls({
             aria-expanded={expanded}
           >
             {locked
-              ? "Unlock saved device draft"
-              : "Keep a draft on this device"}
+              ? t("unlock")
+              : t("keep")}
           </Button>
           {locked ? (
             <Button
@@ -57,27 +57,22 @@ export function OfflineNoteDraftControls({
               disabled={disabled || recovery.busy}
               onClick={recovery.startSeparateNote}
             >
-              Start a separate note
+              {t("separate")}
             </Button>
           ) : null}
           {expanded ? (
             <div className="space-y-3">
               <p className="text-muted-foreground">
-                Keep writing in this open chart if the connection drops. Your
-                draft is encrypted with a passphrase you choose. Reopen this
-                chart and enter it to recover your draft. A connection is needed
-                to open the chart and save to the practice record.
+                {t("explainOffline")}
               </p>
               <p className="text-muted-foreground">
-                Use a trusted device and keep your passphrase safe. It cannot be
-                reset. Clearing browser data removes the device copy.
+                {t("explainSafety")}
               </p>
               <p id="draft-passphrase-help" className="text-muted-foreground">
-                Use at least 12 characters and a different passphrase from your
-                OpenVPM password.
+                {t("passphraseHelp")}
               </p>
               <label className="block font-medium">
-                Draft passphrase
+                {t("passphrase")}
                 <input
                   type="password"
                   autoComplete="off"
@@ -91,7 +86,7 @@ export function OfflineNoteDraftControls({
               </label>
               {!locked ? (
                 <label className="block font-medium">
-                  Confirm draft passphrase
+                  {t("confirmPassphrase")}
                   <input
                     type="password"
                     autoComplete="off"
@@ -120,10 +115,10 @@ export function OfflineNoteDraftControls({
                 }}
               >
                 {recovery.busy
-                  ? "Opening device draft..."
+                  ? t("opening")
                   : locked
-                    ? "Recover draft"
-                    : "Enable draft recovery"}
+                    ? t("recover")
+                    : t("enable")}
               </Button>
             </div>
           ) : null}

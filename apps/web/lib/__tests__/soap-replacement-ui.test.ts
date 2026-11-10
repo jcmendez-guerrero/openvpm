@@ -1,19 +1,10 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
-const replacementPage = readFileSync(
-  "app/(dashboard)/records/replace-soap/[patientId]/page.tsx",
-  "utf8",
-);
-const patientPage = readFileSync(
-  "app/(dashboard)/patients/[id]/page.tsx",
-  "utf8",
-);
-const recordsPage = readFileSync("app/(dashboard)/records/page.tsx", "utf8");
-const encounterPage = readFileSync(
-  "app/(dashboard)/encounters/[appointmentId]/page.tsx",
-  "utf8",
-);
+const replacementPage = readTranslatedSource("app/(dashboard)/records/replace-soap/[patientId]/page.tsx");
+const patientPage = readTranslatedSource("app/(dashboard)/patients/[id]/page.tsx");
+const recordsPage = readTranslatedSource("app/(dashboard)/records/page.tsx");
+const encounterPage = readTranslatedSource("app/(dashboard)/encounters/[appointmentId]/page.tsx");
 
 describe("SOAP replacement workflow UI", () => {
   it("limits access, prefills the retained source, and uses an idempotent finalization", () => {

@@ -4,7 +4,9 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
+import { useTranslations } from "use-intl";
 import { trpc } from "@/lib/trpc";
+import { useSpeciesLabel } from "@/lib/patients/use-species-label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/common/empty-state";
@@ -17,42 +19,33 @@ import {
   isOptionalPatientTextValid,
   isRequiredPatientTextValid,
 } from "@/lib/patients/policy";
-import { PATIENT_SPECIES_OPTIONS } from "@/lib/patients/species";
+import { PATIENT_SPECIES } from "@/lib/patients/species";
 
 function EditPatientLoadingPanel() {
+  const t = useTranslations("patients.form");
   return (
     <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card p-8 text-sm text-muted-foreground">
       <Loader2 className="h-4 w-4 animate-spin" />
-      Loading patient...
+      {t("loadingPatient")}
     </div>
   );
 }
 
-const speciesOptions = PATIENT_SPECIES_OPTIONS;
+const sexOptions = ["male", "female", "male_neutered", "female_spayed"] as const;
 
-const sexOptions = [
-  { value: "male", label: "Male (Intact)" },
-  { value: "female", label: "Female (Intact)" },
-  { value: "male_neutered", label: "Male (Neutered)" },
-  { value: "female_spayed", label: "Female (Spayed)" },
-] as const;
-
-const statusOptions = [
-  { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" },
-  { value: "deceased", label: "Deceased" },
-] as const;
+const statusOptions = ["active", "inactive", "deceased"] as const;
 
 export default function EditPatientPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const t = useTranslations("patients.form");
   const { data: session, status } = useSession();
 
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card p-8 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Checking patient access...
+        {t("checkingAccess")}
       </div>
     );
   }
@@ -67,14 +60,14 @@ export default function EditPatientPage() {
           className="mb-4"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Patient
+          {t("backToPatient")}
         </Button>
         <EmptyState
           icon={AlertCircle}
-          title="Patient actions are read-only"
-          description="Only staff roles with patient write access can edit patients."
+          title={t("readOnlyTitle")}
+          description={t("readOnlyEdit")}
           action={{
-            label: "Back to Patient",
+            label: t("backToPatient"),
             onClick: () => router.push(`/patients/${params.id}`),
           }}
         />
@@ -97,6 +90,8 @@ function canManagePatientFormRole(role?: string | null): boolean {
 function EditPatientForm() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const t = useTranslations("patients");
+  const speciesLabel = useSpeciesLabel();
   const utils = trpc.useUtils();
   const [form, setForm] = useState({
     name: "",
@@ -141,7 +136,7 @@ function EditPatientForm() {
           ? { ...currentPatient, ...updatedPatient }
           : currentPatient,
       );
-      toast.success("Patient updated");
+      toast.success(t("form.updated"));
       router.push(`/patients/${params.id}`);
     },
     onError: (err) => {
@@ -168,15 +163,15 @@ function EditPatientForm() {
         ?.value ?? form.dob;
 
     if (!patient) {
-      setError("Load the patient before saving changes.");
+      setError(t("form.loadBeforeSave"));
       return;
     }
     if (!form.name.trim()) {
-      setError("Patient name is required.");
+      setError(t("form.nameRequired"));
       return;
     }
     if (!canSubmit) {
-      setError("Check required fields and field lengths.");
+      setError(t("form.checkFields"));
       return;
     }
 
@@ -205,13 +200,13 @@ function EditPatientForm() {
     return (
       <EmptyState
         icon={AlertCircle}
-        title="Unable to load patient"
+        title={t("form.loadFailedTitle")}
         description={
           loadError?.message ??
-          "Choose a patient from the Patients list before editing."
+          t("form.loadFailedHelp")
         }
         action={{
-          label: "Back to Patients",
+          label: t("form.back"),
           onClick: () => router.push("/patients"),
           icon: ArrowLeft,
         }}
@@ -228,12 +223,12 @@ function EditPatientForm() {
         className="mb-4"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Patient
+        {t("form.backToPatient")}
       </Button>
 
-      <h2 className="font-heading text-xl font-semibold">Edit Patient</h2>
+      <h2 className="font-heading text-xl font-semibold">{t("form.editTitle")}</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Update patient information
+        {t("form.editIntro")}
       </p>
 
       {error && (
@@ -245,13 +240,13 @@ function EditPatientForm() {
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
           <label className="text-sm font-medium" htmlFor="name">
-            Patient Name *
+            {t("form.name")}
           </label>
           <Input
             id="name"
             value={form.name}
             onChange={(e) => updateField("name", e.target.value)}
-            placeholder="Patient name"
+            placeholder={t("form.namePlaceholder")}
             className="mt-1"
             maxLength={PATIENT_NAME_MAX_LENGTH}
             required
@@ -261,7 +256,7 @@ function EditPatientForm() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="text-sm font-medium" htmlFor="species">
-              Species *
+              {t("form.species")}
             </label>
             <select
               id="species"
@@ -269,22 +264,22 @@ function EditPatientForm() {
               onChange={(e) => updateField("species", e.target.value)}
               className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              {speciesOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
+              {PATIENT_SPECIES.map((value) => (
+                <option key={value} value={value}>
+                  {speciesLabel(value)}
                 </option>
               ))}
             </select>
           </div>
           <div>
             <label className="text-sm font-medium" htmlFor="breed">
-              Breed
+              {t("form.breed")}
             </label>
             <Input
               id="breed"
               value={form.breed}
               onChange={(e) => updateField("breed", e.target.value)}
-              placeholder="Breed"
+              placeholder={t("form.breed")}
               className="mt-1"
               maxLength={PATIENT_BREED_MAX_LENGTH}
             />
@@ -294,7 +289,7 @@ function EditPatientForm() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="text-sm font-medium" htmlFor="sex">
-              Sex
+              {t("form.sex")}
             </label>
             <select
               id="sex"
@@ -302,17 +297,17 @@ function EditPatientForm() {
               onChange={(e) => updateField("sex", e.target.value)}
               className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <option value="">Select sex...</option>
-              {sexOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
+              <option value="">{t("form.selectSex")}</option>
+              {sexOptions.map((value) => (
+                <option key={value} value={value}>
+                  {t(`sex.${value}`)}
                 </option>
               ))}
             </select>
           </div>
           <div>
             <label className="text-sm font-medium" htmlFor="dob">
-              Date of Birth
+              {t("form.dob")}
             </label>
             <Input
               id="dob"
@@ -328,26 +323,26 @@ function EditPatientForm() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="text-sm font-medium" htmlFor="color">
-              Color/Markings
+              {t("form.color")}
             </label>
             <Input
               id="color"
               value={form.color}
               onChange={(e) => updateField("color", e.target.value)}
-              placeholder="e.g., Black and white"
+              placeholder={t("form.colorPlaceholder")}
               className="mt-1"
               maxLength={PATIENT_COLOR_MAX_LENGTH}
             />
           </div>
           <div>
             <label className="text-sm font-medium" htmlFor="microchipNumber">
-              Microchip Number
+              {t("form.microchip")}
             </label>
             <Input
               id="microchipNumber"
               value={form.microchipNumber}
               onChange={(e) => updateField("microchipNumber", e.target.value)}
-              placeholder="Microchip ID"
+              placeholder={t("form.microchipPlaceholder")}
               className="mt-1"
               maxLength={PATIENT_MICROCHIP_NUMBER_MAX_LENGTH}
             />
@@ -356,7 +351,7 @@ function EditPatientForm() {
 
         <div>
           <label className="text-sm font-medium" htmlFor="status">
-            Status
+            {t("form.status")}
           </label>
           <select
             id="status"
@@ -364,9 +359,9 @@ function EditPatientForm() {
             onChange={(e) => updateField("status", e.target.value)}
             className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {statusOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
+            {statusOptions.map((value) => (
+              <option key={value} value={value}>
+                {t(`statusOption.${value}`)}
               </option>
             ))}
           </select>
@@ -377,14 +372,14 @@ function EditPatientForm() {
             type="submit"
             disabled={!canSubmit || updatePatient.isPending}
           >
-            {updatePatient.isPending ? "Saving..." : "Save Changes"}
+            {updatePatient.isPending ? t("form.saving") : t("form.saveChanges")}
           </Button>
           <Button
             type="button"
             variant="outline"
             onClick={() => router.push(`/patients/${params.id}`)}
           >
-            Cancel
+            {t("form.cancel")}
           </Button>
         </div>
       </form>

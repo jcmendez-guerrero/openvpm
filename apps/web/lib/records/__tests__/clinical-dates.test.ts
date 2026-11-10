@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   clinicalDateKey,
+  clinicalDateLabel,
   formatClinicalDate,
   formatClinicalDateTime,
 } from "../clinical-dates";
@@ -39,5 +40,10 @@ describe("clinical date helpers", () => {
       "2026-07-01"
     );
     expect(formatClinicalDate("not-a-date", "America/Los_Angeles")).toBe("--");
+  });
+
+  it("formats in the requested language", () => {
+    expect(formatClinicalDate("2026-07-01", null, "--", "es")).toBe("1 jul 2026");
+    expect(clinicalDateLabel("2026-07-01", null, "es")).toBe("1 jul");
   });
 });

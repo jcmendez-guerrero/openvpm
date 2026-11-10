@@ -1,21 +1,21 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 const readDashboardPage = (name: string) =>
-  readFileSync(`app/(dashboard)/${name}/page.tsx`, "utf8");
+  readTranslatedSource(`app/(dashboard)/${name}/page.tsx`);
 
 describe("mobile clinic-day UI", () => {
   it("uses a touch-friendly phone agenda while preserving the full schedule at larger viewports", () => {
     const source = readDashboardPage("schedule");
 
     expect(source).toContain("function PhoneAgenda({");
-    expect(source).toContain("aria-label={`${rangeLabel} appointment agenda`}");
+    expect(source).toContain('aria-label="{range} appointment agenda"');
     expect(source).toContain(
       'className="mt-4 max-w-full space-y-4 overflow-hidden sm:hidden"'
     );
     expect(source).toContain('className="hidden sm:block"');
     expect(source).toContain(
-      "aria-label={`Open ${patientName} appointment at ${formatTime(start, timeZone)}`}"
+      'aria-label="Open {patient} appointment at {time}"'
     );
     expect(source).toContain(
       'className="min-h-11 w-full overflow-hidden rounded-lg border border-border bg-card p-3'
@@ -30,7 +30,7 @@ describe("mobile clinic-day UI", () => {
     const source = readDashboardPage("clients");
 
     expect(source).toContain('className="mt-6 space-y-3 sm:hidden"');
-    expect(source).toContain("aria-label={`Open client ${fullName}`}");
+    expect(source).toContain('aria-label="Open client {name}"');
     expect(source).toContain(
       'className="min-h-11 w-full min-w-0 overflow-hidden rounded-lg border'
     );
@@ -44,8 +44,8 @@ describe("mobile clinic-day UI", () => {
     const source = readDashboardPage("patients");
 
     expect(source).toContain('className="mt-6 space-y-3 sm:hidden"');
-    expect(source).toContain("aria-label={`Open patient ${patient.name}`}");
-    expect(source).toContain("Owner: {ownerName}");
+    expect(source).toContain('aria-label="Open patient {name}"');
+    expect(source).toContain("Owner: {name}");
     expect(source).toContain(
       'className="mt-6 hidden overflow-x-auto rounded-lg border border-border sm:block"'
     );

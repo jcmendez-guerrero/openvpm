@@ -1,8 +1,8 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 function source(path: string): string {
-  return readFileSync(path, "utf8");
+  return readTranslatedSource(path);
 }
 
 describe("dashboard list empty/error states", () => {

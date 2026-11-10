@@ -16,7 +16,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { AppRouter } from "@/server/routers/_app";
+import { useTranslations } from "use-intl";
 import { trpc } from "@/lib/trpc";
+import { useSpeciesLabel } from "@/lib/patients/use-species-label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,11 +49,15 @@ function readableCountLabel(value: string) {
     .replace(/^./, (letter) => letter.toUpperCase());
 }
 
-function formatPatientIdentity(patient: DuplicatePatient) {
+function formatPatientIdentity(
+  patient: DuplicatePatient,
+  t: ReturnType<typeof useTranslations>,
+  speciesLabel: (species: string | null) => string,
+) {
   return [
-    patient.species,
+    speciesLabel(patient.species),
     patient.breed,
-    patient.dob ? `DOB ${patient.dob}` : null,
+    patient.dob ? t("dob", { date: patient.dob }) : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -64,6 +70,8 @@ function DuplicateGroupCard({
   group: DuplicateGroup;
   onReview: (selection: MergeSelection) => void;
 }) {
+  const t = useTranslations("patients.duplicates");
+  const speciesLabel = useSpeciesLabel();
   const [keepId, setKeepId] = useState("");
   const [mergeId, setMergeId] = useState("");
   const keepPatient = group.patients.find((patient) => patient.id === keepId);
@@ -80,10 +88,10 @@ function DuplicateGroupCard({
             {group.clientFirstName} {group.clientLastName}
           </h3>
           <p className="text-sm text-muted-foreground">
-            {group.patients.length} same-owner charts need review
+            {t("groupCount", { count: group.patients.length })}
           </p>
         </div>
-        <Badge variant="outline">Possible duplicate</Badge>
+        <Badge variant="outline">{t("possibleDuplicate")}</Badge>
       </div>
 
       <div className="mt-4 grid gap-3 lg:grid-cols-2">
@@ -98,7 +106,7 @@ function DuplicateGroupCard({
                   {patient.name}
                 </Link>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {formatPatientIdentity(patient)}
+                  {formatPatientIdentity(patient, t, speciesLabel)}
                 </p>
               </div>
               <span className="font-mono text-xs text-muted-foreground">
@@ -106,9 +114,9 @@ function DuplicateGroupCard({
               </span>
             </div>
             <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-              <dt className="text-muted-foreground">Microchip</dt>
+              <dt className="text-muted-foreground">{t("microchip")}</dt>
               <dd>{patient.microchipNumber || "—"}</dd>
-              <dt className="text-muted-foreground">External ID</dt>
+              <dt className="text-muted-foreground">{t("externalId")}</dt>
               <dd>
                 {patient.externalSource && patient.externalId
                   ? `${patient.externalSource}: ${patient.externalId}`
@@ -121,7 +129,7 @@ function DuplicateGroupCard({
 
       <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto_1fr_auto] sm:items-end">
         <label className="text-sm font-medium">
-          Keep this chart
+          {t("keep")}
           <select
             className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
             value={keepId}
@@ -130,7 +138,7 @@ function DuplicateGroupCard({
               if (event.target.value === mergeId) setMergeId("");
             }}
           >
-            <option value="">Choose the canonical chart</option>
+            <option value="">{t("chooseKeep")}</option>
             {group.patients.map((patient) => (
               <option key={patient.id} value={patient.id}>
                 {patient.name} · {patient.id.slice(0, 8)}
@@ -140,13 +148,13 @@ function DuplicateGroupCard({
         </label>
         <ArrowRight className="mb-3 hidden h-4 w-4 text-muted-foreground sm:block" />
         <label className="text-sm font-medium">
-          Retire this duplicate
+          {t("retire")}
           <select
             className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
             value={mergeId}
             onChange={(event) => setMergeId(event.target.value)}
           >
-            <option value="">Choose the duplicate chart</option>
+            <option value="">{t("chooseRetire")}</option>
             {group.patients
               .filter((patient) => patient.id !== keepId)
               .map((patient) => (
@@ -169,7 +177,7 @@ function DuplicateGroupCard({
             });
           }}
         >
-          Review merge
+          {t("review")}
         </Button>
       </div>
     </article>
@@ -192,6 +200,8 @@ function IdentitySummary({
     externalId: string | null;
   };
 }) {
+  const t = useTranslations("patients.duplicates");
+  const speciesLabel = useSpeciesLabel();
   return (
     <div className="rounded-md border border-border bg-background p-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -199,20 +209,20 @@ function IdentitySummary({
       </p>
       <p className="mt-2 font-medium">{patient.name}</p>
       <p className="text-sm text-muted-foreground">
-        {patient.species} · {patient.breed || "Unknown breed"}
+        {speciesLabel(patient.species)} · {patient.breed || t("unknownBreed")}
       </p>
       <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
-        <dt className="text-muted-foreground">DOB</dt>
+        <dt className="text-muted-foreground">{t("dobLabel")}</dt>
         <dd>{patient.dob || "—"}</dd>
-        <dt className="text-muted-foreground">Microchip</dt>
+        <dt className="text-muted-foreground">{t("microchip")}</dt>
         <dd>{patient.microchipNumber || "—"}</dd>
-        <dt className="text-muted-foreground">External ID</dt>
+        <dt className="text-muted-foreground">{t("externalId")}</dt>
         <dd>
           {patient.externalSource && patient.externalId
             ? `${patient.externalSource}: ${patient.externalId}`
             : "—"}
         </dd>
-        <dt className="text-muted-foreground">Chart ID</dt>
+        <dt className="text-muted-foreground">{t("chartId")}</dt>
         <dd className="font-mono">{patient.id}</dd>
       </dl>
     </div>
@@ -221,6 +231,7 @@ function IdentitySummary({
 
 export default function PatientDuplicatesPage() {
   const router = useRouter();
+  const t = useTranslations("patients.duplicates");
   const { data: session, status: sessionStatus } = useSession();
   const isAdmin = session?.user?.role === "admin";
   const [selection, setSelection] = useState<MergeSelection | null>(null);
@@ -245,7 +256,7 @@ export default function PatientDuplicatesPage() {
   );
   const mergePatient = trpc.patients.merge.useMutation({
     onSuccess: async () => {
-      toast.success("Duplicate chart retired with an immutable merge record");
+      toast.success(t("merged"));
       const keepId = selection?.keepId;
       operationId.current = null;
       setSelection(null);
@@ -294,11 +305,10 @@ export default function PatientDuplicatesPage() {
       <div>
         <Button variant="ghost" onClick={() => router.push("/patients")}>
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to patients
+          {t("back")}
         </Button>
         <div className="mt-6 rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
-          Only practice administrators can review or merge duplicate patient
-          identities.
+          {t("adminOnlyHelp")}
         </div>
       </div>
     );
@@ -314,20 +324,18 @@ export default function PatientDuplicatesPage() {
             onClick={() => router.push("/patients")}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to patients
+            {t("back")}
           </Button>
           <h2 className="font-heading text-xl font-semibold">
-            Review duplicate patient identities
+            {t("title")}
           </h2>
           <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-            OpenVPM only suggests same-owner matches. A merge is permitted when
-            the retiring chart has no clinical, medication, controlled,
-            financial, or other retained history.
+            {t("intro")}
           </p>
         </div>
         <Badge variant="outline" className="gap-1.5">
           <ShieldCheck className="h-3.5 w-3.5" />
-          Admin-only
+          {t("adminOnly")}
         </Badge>
       </div>
 
@@ -335,16 +343,14 @@ export default function PatientDuplicatesPage() {
         <div className="flex items-start gap-3">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            Never merge charts merely because pet names match. Confirm the
-            owner, species, DOB, microchip, external identity, and both charts'
-            contents. Historical records are never silently reassigned.
+            {t("warning")}
           </p>
         </div>
       </div>
 
       {duplicates.isError ? (
         <div className="mt-6 rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
-          Unable to load duplicate candidates. {duplicates.error.message}
+          {t("loadFailed", { message: duplicates.error.message })}
         </div>
       ) : duplicates.isLoading ? (
         <TableSkeleton rows={5} cols={2} />
@@ -362,8 +368,8 @@ export default function PatientDuplicatesPage() {
         <EmptyState
           className="mt-6"
           icon={CheckCircle}
-          title="No duplicate patient identities found"
-          description="No same-owner charts currently match the duplicate review rules."
+          title={t("emptyTitle")}
+          description={t("emptyHelp")}
         />
       )}
 
@@ -372,10 +378,10 @@ export default function PatientDuplicatesPage() {
           <div className="flex items-start justify-between gap-3">
             <div>
               <h3 className="font-heading text-lg font-semibold">
-                Merge safety preview
+                {t("previewTitle")}
               </h3>
               <p className="text-sm text-muted-foreground">
-                Preview is recalculated on the server before the merge commits.
+                {t("previewHelp")}
               </p>
             </div>
             <Button
@@ -384,29 +390,29 @@ export default function PatientDuplicatesPage() {
               disabled={mergePatient.isPending}
               onClick={() => setSelection(null)}
             >
-              Close
+              {t("close")}
             </Button>
           </div>
 
           {preview.isError ? (
             <div className="mt-4 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-              Unable to preview this merge. {preview.error.message}
+              {t("previewFailed", { message: preview.error.message })}
             </div>
           ) : preview.isLoading || !preview.data ? (
             <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Checking both charts and their retained history...
+              {t("checking")}
             </div>
           ) : (
             <>
               <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
                 <IdentitySummary
-                  label="Keep as canonical"
+                  label={t("keepLabel")}
                   patient={preview.data.keepPatient}
                 />
                 <ArrowRight className="mx-auto h-5 w-5 text-muted-foreground" />
                 <IdentitySummary
-                  label="Retire as duplicate"
+                  label={t("retireLabel")}
                   patient={preview.data.mergePatient}
                 />
               </div>
@@ -414,7 +420,7 @@ export default function PatientDuplicatesPage() {
               <div className="mt-4 grid gap-4 lg:grid-cols-2">
                 <div className="rounded-md border border-border p-3">
                   <h4 className="text-sm font-semibold">
-                    Retained-history checks
+                    {t("retainedChecks")}
                   </h4>
                   <dl className="mt-2 space-y-1 text-sm">
                     {Object.entries(preview.data.blockerCounts).map(
@@ -430,7 +436,7 @@ export default function PatientDuplicatesPage() {
                   </dl>
                 </div>
                 <div className="rounded-md border border-border p-3">
-                  <h4 className="text-sm font-semibold">Prospective work</h4>
+                  <h4 className="text-sm font-semibold">{t("prospectiveWork")}</h4>
                   <dl className="mt-2 space-y-1 text-sm">
                     {Object.entries(preview.data.movableCounts).map(
                       ([label, count]) => (
@@ -449,7 +455,7 @@ export default function PatientDuplicatesPage() {
               {!preview.data.allowed ? (
                 <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
                   <p className="font-semibold">
-                    Keep both chart identities—this merge is blocked.
+                    {t("blocked")}
                   </p>
                   <ul className="mt-2 list-disc space-y-1 pl-5">
                     {preview.data.reasons.map((blockReason) => (
@@ -462,9 +468,7 @@ export default function PatientDuplicatesPage() {
                   <div className="flex items-start gap-2">
                     <CheckCircle className="mt-0.5 h-4 w-4 shrink-0" />
                     <p>
-                      The retiring chart has no retained history. Any explicitly
-                      listed prospective work will move atomically; an immutable
-                      identity event will preserve who merged it, when, and why.
+                      {t("allowed")}
                     </p>
                   </div>
                 </div>
@@ -473,22 +477,25 @@ export default function PatientDuplicatesPage() {
               {preview.data.allowed ? (
                 <div className="mt-4 space-y-4 border-t border-border pt-4">
                   <label className="block text-sm font-medium">
-                    Reason for merging
+                    {t("reason")}
                     <Textarea
                       className="mt-1"
                       value={reason}
                       minLength={MERGE_REASON_MIN_LENGTH}
                       maxLength={MERGE_REASON_MAX_LENGTH}
-                      placeholder="Explain how the duplicate was verified"
+                      placeholder={t("reasonPlaceholder")}
                       onChange={(event) => setReason(event.target.value)}
                     />
                     <span className="mt-1 block text-xs text-muted-foreground">
-                      {MERGE_REASON_MIN_LENGTH} characters minimum.{" "}
-                      {reason.length}/{MERGE_REASON_MAX_LENGTH}
+                      {t("reasonCount", {
+                        min: MERGE_REASON_MIN_LENGTH,
+                        length: reason.length,
+                        max: MERGE_REASON_MAX_LENGTH,
+                      })}
                     </span>
                   </label>
                   <label className="block text-sm font-medium">
-                    Type {MERGE_CONFIRMATION} to confirm
+                    {t("typeToConfirm", { word: MERGE_CONFIRMATION })}
                     <Input
                       className="mt-1 max-w-sm font-mono"
                       value={confirmation}
@@ -499,8 +506,10 @@ export default function PatientDuplicatesPage() {
                   </label>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-xs text-muted-foreground">
-                      {selection.mergeName} will redirect permanently to the
-                      canonical {selection.keepName} chart.
+                      {t("redirectNote", {
+                        mergeName: selection.mergeName,
+                        keepName: selection.keepName,
+                      })}
                     </p>
                     <Button
                       variant="destructive"
@@ -512,7 +521,7 @@ export default function PatientDuplicatesPage() {
                       ) : (
                         <GitMerge className="mr-2 h-4 w-4" />
                       )}
-                      Merge duplicate chart
+                      {t("submit")}
                     </Button>
                   </div>
                 </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { AlertCircle, ArrowLeft, Ban, Loader2 } from "lucide-react";
+import { useLocale, useTranslations } from "use-intl";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,10 +30,11 @@ import {
 } from "@/lib/messaging/consent";
 
 function EditClientLoadingPanel() {
+  const t = useTranslations("clients.form");
   return (
     <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card p-8 text-sm text-muted-foreground">
       <Loader2 className="h-4 w-4 animate-spin" />
-      Loading client...
+      {t("loadingClient")}
     </div>
   );
 }
@@ -40,13 +42,14 @@ function EditClientLoadingPanel() {
 export default function EditClientPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const t = useTranslations("clients.form");
   const { data: session, status } = useSession();
 
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card p-8 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Checking client access...
+        {t("checkingAccess")}
       </div>
     );
   }
@@ -61,14 +64,14 @@ export default function EditClientPage() {
           className="mb-4"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Client
+          {t("backToClient")}
         </Button>
         <EmptyState
           icon={AlertCircle}
-          title="Client actions are read-only"
-          description="Only staff roles with client write access can edit clients."
+          title={t("readOnlyTitle")}
+          description={t("readOnlyEdit")}
           action={{
-            label: "Back to Client",
+            label: t("backToClient"),
             onClick: () => router.push(`/clients/${params.id}`),
           }}
         />
@@ -91,6 +94,8 @@ function canManageClientFormRole(role?: string | null): boolean {
 function EditClientForm() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const t = useTranslations("clients.form");
+  const locale = useLocale();
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
@@ -139,7 +144,7 @@ function EditClientForm() {
 
   const updateClient = trpc.clients.update.useMutation({
     onSuccess: () => {
-      toast.success("Client updated");
+      toast.success(t("updated"));
       router.push(`/clients/${params.id}`);
     },
     onError: (err) => {
@@ -149,9 +154,7 @@ function EditClientForm() {
   });
   const revokeSms = trpc.clients.revokeSms.useMutation({
     onSuccess: async ({ clientsRevoked }) => {
-      toast.success(
-        `Texting revoked for this number${clientsRevoked > 1 ? ` across ${clientsRevoked} matching client records` : ""}.`,
-      );
+      toast.success(t("smsRevoked", { count: clientsRevoked }));
       setSmsConsent(false);
       setSmsConsentTouched(false);
       await refetch();
@@ -198,23 +201,23 @@ function EditClientForm() {
     setError(null);
 
     if (!client) {
-      setError("Load the client before saving changes.");
+      setError(t("loadBeforeSave"));
       return;
     }
     if (smsConsentTouched && smsConsent && !smsPhoneValid) {
       setError(
-        "Enter a valid mobile phone number before recording SMS consent.",
+        t("smsPhoneInvalid"),
       );
       return;
     }
     if (smsPreferenceNeedsValidation && !smsPreferenceReady) {
       setError(
-        "Confirm current SMS consent before using text messages for reminders.",
+        t("smsCurrentConsentNeeded"),
       );
       return;
     }
     if (!canSubmit) {
-      setError("Check required fields and field lengths.");
+      setError(t("checkFields"));
       return;
     }
 
@@ -261,13 +264,13 @@ function EditClientForm() {
     return (
       <EmptyState
         icon={AlertCircle}
-        title="Unable to load client"
+        title={t("loadFailedTitle")}
         description={
           loadError?.message ??
-          "Choose a client from the Clients list before editing."
+          t("loadFailedHelp")
         }
         action={{
-          label: "Back to Clients",
+          label: t("back"),
           onClick: () => router.push("/clients"),
           icon: ArrowLeft,
         }}
@@ -284,12 +287,12 @@ function EditClientForm() {
         className="mb-4"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Client
+        {t("backToClient")}
       </Button>
 
-      <h2 className="font-heading text-xl font-semibold">Edit Client</h2>
+      <h2 className="font-heading text-xl font-semibold">{t("editTitle")}</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Update client information
+        {t("editIntro")}
       </p>
 
       {error && (
@@ -302,13 +305,13 @@ function EditClientForm() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="text-sm font-medium" htmlFor="firstName">
-              First Name *
+              {t("firstName")}
             </label>
             <Input
               id="firstName"
               value={form.firstName}
               onChange={(e) => updateField("firstName", e.target.value)}
-              placeholder="First name"
+              placeholder={t("firstNamePlaceholder")}
               className="mt-1"
               maxLength={CLIENT_NAME_MAX_LENGTH}
               required
@@ -316,13 +319,13 @@ function EditClientForm() {
           </div>
           <div>
             <label className="text-sm font-medium" htmlFor="lastName">
-              Last Name *
+              {t("lastName")}
             </label>
             <Input
               id="lastName"
               value={form.lastName}
               onChange={(e) => updateField("lastName", e.target.value)}
-              placeholder="Last name"
+              placeholder={t("lastNamePlaceholder")}
               className="mt-1"
               maxLength={CLIENT_NAME_MAX_LENGTH}
               required
@@ -333,7 +336,7 @@ function EditClientForm() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="text-sm font-medium" htmlFor="email">
-              Email
+              {t("email")}
             </label>
             <Input
               id="email"
@@ -347,7 +350,7 @@ function EditClientForm() {
           </div>
           <div>
             <label className="text-sm font-medium" htmlFor="phone">
-              Phone
+              {t("phone")}
             </label>
             <Input
               id="phone"
@@ -365,7 +368,7 @@ function EditClientForm() {
             className="text-sm font-medium"
             htmlFor="preferredContactMethod"
           >
-            Preferred contact for reminders
+            {t("preferredContact")}
           </label>
           <select
             id="preferredContactMethod"
@@ -378,21 +381,19 @@ function EditClientForm() {
             }}
             className="mt-2 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
-            <option value="phone">Phone call</option>
-            <option value="email">Email</option>
-            <option value="sms">Text message</option>
-            <option value="portal">Client portal</option>
+            <option value="phone">{t("contact.phone")}</option>
+            <option value="email">{t("contact.email")}</option>
+            <option value="sms">{t("contact.sms")}</option>
+            <option value="portal">{t("contact.portal")}</option>
           </select>
           <p className="mt-2 text-xs text-muted-foreground">
-            Text message uses SMS for appointment and vaccination reminders when
-            clinic texting is active. Current permission and a valid mobile
-            number are required.
+            {t("smsHelpEdit")}
           </p>
           {preferredContactMethod === "sms" && !smsPreferenceReady ? (
             <p className="mt-2 text-xs font-medium text-amber-700">
               {smsPreferenceNeedsValidation
-                ? "Reconfirm the disclosure below before saving text reminders as the preference."
-                : "Text reminders are paused until the client has current SMS consent."}
+                ? t("smsReconfirm")
+                : t("smsPaused")}
             </p>
           ) : null}
         </div>
@@ -413,33 +414,27 @@ function EditClientForm() {
           />
           <span>
             <span className="font-medium">
-              I confirm the client explicitly consented to SMS
+              {t("smsConfirm")}
             </span>
             <span className="block text-xs text-muted-foreground">
               {SMS_CONSENT_DISCLOSURE.snapshot}
             </span>
             <span className="mt-1 block text-xs text-muted-foreground">
-              Saving other details does not renew consent. Only check this after
-              the client has read this disclosure or you have read it to them.
+              {t("smsConfirmHelpEdit")}
               {phoneChanged
-                ? " The phone number changed, so prior SMS consent will be removed unless the client explicitly re-consents."
+                ? ` ${t("smsPhoneChanged")}`
                 : !smsPhoneValid && !smsConsent
-                  ? " Enter a valid mobile phone number to record consent."
+                  ? ` ${t("smsEnterPhone")}`
                   : ""}
             </span>
           </span>
         </label>
 
         <div className="rounded-md border border-border p-3">
-          <p className="text-sm font-medium">Practice-wide do-not-text</p>
+          <p className="text-sm font-medium">{t("doNotText.title")}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Use this when the client asks staff to stop texts. It immediately
-            suppresses this phone number and clears SMS consent on every active
-            client record that shares it. Saving the client or checking consent
-            later will not silently remove the manual suppression.
-            {phoneChanged
-              ? " Save or discard the unsaved phone change before using this action."
-              : ""}
+            {t("doNotText.help")}
+            {phoneChanged ? ` ${t("doNotText.saveFirst")}` : ""}
           </p>
           <Button
             type="button"
@@ -451,7 +446,7 @@ function EditClientForm() {
               setError(null);
               if (
                 window.confirm(
-                  "Stop all SMS to this phone number across the practice?",
+                  t("doNotText.confirm"),
                 )
               ) {
                 revokeSms.mutate({
@@ -466,19 +461,18 @@ function EditClientForm() {
             ) : (
               <Ban className="mr-2 h-4 w-4" />
             )}
-            Do not text this number
+            {t("doNotText.button")}
           </Button>
         </div>
 
         <div className="rounded-md border border-border p-3">
-          <p className="text-sm font-medium">SMS consent history</p>
+          <p className="text-sm font-medium">{t("consentHistory.title")}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Append-only evidence for this client. Destination-wide events may
-            affect other client records that share the same phone number.
+            {t("consentHistory.help")}
           </p>
           {client.smsConsentHistory.length === 0 ? (
             <p className="mt-3 text-xs text-muted-foreground">
-              No consent events have been recorded yet.
+              {t("consentHistory.empty")}
             </p>
           ) : (
             <ol className="mt-3 space-y-2">
@@ -489,18 +483,18 @@ function EditClientForm() {
                 >
                   <p className="font-medium">
                     {event.action === "granted"
-                      ? "Consent granted"
-                      : "Consent revoked"}
+                      ? t("consentHistory.granted")
+                      : t("consentHistory.revoked")}
                     {` · ${event.destinationE164}`}
                   </p>
                   <p className="mt-0.5 text-muted-foreground">
-                    {new Date(event.occurredAt).toLocaleString()} ·{" "}
+                    {new Date(event.occurredAt).toLocaleString(locale)} ·{" "}
                     {event.source}
                     {event.actorName
                       ? ` · ${event.actorName}`
                       : event.provider
                         ? ` · ${event.provider}`
-                        : " · system"}
+                        : ` · ${t("consentHistory.system")}`}
                   </p>
                   {event.detail ? (
                     <p className="mt-1 text-muted-foreground">{event.detail}</p>
@@ -513,13 +507,13 @@ function EditClientForm() {
 
         <div>
           <label className="text-sm font-medium" htmlFor="address">
-            Address
+            {t("address")}
           </label>
           <Input
             id="address"
             value={form.address}
             onChange={(e) => updateField("address", e.target.value)}
-            placeholder="Street address"
+            placeholder={t("addressPlaceholder")}
             className="mt-1"
             maxLength={CLIENT_ADDRESS_MAX_LENGTH}
           />
@@ -528,39 +522,39 @@ function EditClientForm() {
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
             <label className="text-sm font-medium" htmlFor="city">
-              City
+              {t("city")}
             </label>
             <Input
               id="city"
               value={form.city}
               onChange={(e) => updateField("city", e.target.value)}
-              placeholder="City"
+              placeholder={t("city")}
               className="mt-1"
               maxLength={CLIENT_CITY_MAX_LENGTH}
             />
           </div>
           <div>
             <label className="text-sm font-medium" htmlFor="state">
-              State
+              {t("state")}
             </label>
             <Input
               id="state"
               value={form.state}
               onChange={(e) => updateField("state", e.target.value)}
-              placeholder="State"
+              placeholder={t("state")}
               className="mt-1"
               maxLength={CLIENT_STATE_MAX_LENGTH}
             />
           </div>
           <div>
             <label className="text-sm font-medium" htmlFor="zip">
-              Zip
+              {t("zip")}
             </label>
             <Input
               id="zip"
               value={form.zip}
               onChange={(e) => updateField("zip", e.target.value)}
-              placeholder="Zip code"
+              placeholder={t("zipPlaceholder")}
               className="mt-1"
               maxLength={CLIENT_ZIP_MAX_LENGTH}
             />
@@ -569,14 +563,14 @@ function EditClientForm() {
 
         <div className="flex gap-3 pt-4">
           <Button type="submit" disabled={!canSubmit || updateClient.isPending}>
-            {updateClient.isPending ? "Saving..." : "Save Changes"}
+            {updateClient.isPending ? t("saving") : t("saveChanges")}
           </Button>
           <Button
             type="button"
             variant="outline"
             onClick={() => router.push(`/clients/${params.id}`)}
           >
-            Cancel
+            {t("cancel")}
           </Button>
         </div>
       </form>

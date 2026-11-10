@@ -10,29 +10,40 @@ import en from "@/messages/en.json";
  *   {t("key")}            → English
  *   t("key", { … })       → "English"   (raw ICU message)
  *
- * Keys built at runtime (t(`nav.${key}`)) are left as written.
+ * Each call uses the namespace of the nearest `const t = useTranslations(…)`
+ * above it, so one file can reuse `t` per component. Keys built at runtime
+ * (t(`nav.${key}`)) are left as written.
  */
 export function inlineEnglish(source: string): string {
-  const namespaces = new Map<string, string>();
-  for (const m of source.matchAll(/const (\w+) = useTranslations\((?:"([^"]*)")?\)/g)) {
-    namespaces.set(m[1]!, m[2] ?? "");
-  }
-  let out = source;
-  for (const [fn, namespace] of namespaces) {
-    const call = `${fn}\\("([^"]+)"(?:,[^()]*(?:\\([^()]*\\)[^()]*)*)?\\)`;
-    const english = (key: string) => lookup(namespace ? `${namespace}.${key}` : key);
-    out = out
-      .replace(new RegExp(`=\\{${call}\\}`, "g"), (whole, key: string) => {
-        const text = english(key);
-        return text === undefined ? whole : `="${text}"`;
-      })
-      .replace(new RegExp(`\\{${call}\\}`, "g"), (whole, key: string) => english(key) ?? whole)
-      .replace(new RegExp(`\\b${call}`, "g"), (whole, key: string) => {
-        const text = english(key);
-        return text === undefined ? whole : JSON.stringify(text);
-      });
-  }
-  return out;
+  const declarations = [
+    ...source.matchAll(/const (\w+) = useTranslations\((?:"([^"]*)")?\)/g),
+  ].map((m) => ({ name: m[1]!, namespace: m[2] ?? "", index: m.index! }));
+  if (declarations.length === 0) return source;
+
+  const names = [...new Set(declarations.map((d) => d.name))].join("|");
+  const call = `\\b(${names})\\("([^"]+)"(?:,[^()]*(?:\\([^()]*\\)[^()]*)*)?\\)`;
+  // One pass, so every offset refers to the original source.
+  const pattern = new RegExp(`(=\\{)?(\\{)?${call}(\\})?`, "g");
+
+  return source.replace(
+    pattern,
+    (
+      whole: string,
+      eq: string | undefined,
+      brace: string | undefined,
+      fn: string,
+      key: string,
+      close: string | undefined,
+      offset: number,
+    ) => {
+      const scope = declarations.filter((d) => d.name === fn && d.index < offset).at(-1);
+      const text = scope && lookup(scope.namespace ? `${scope.namespace}.${key}` : key);
+      if (text === undefined) return whole;
+      if (eq && close) return `="${text}"`;
+      if (brace && close) return text;
+      return `${eq ?? ""}${brace ?? ""}${JSON.stringify(text)}${close ?? ""}`;
+    },
+  );
 }
 
 export function readTranslatedSource(path: string | URL): string {
