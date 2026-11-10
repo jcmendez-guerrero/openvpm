@@ -240,7 +240,7 @@ describe("lab result clinical safety contract", () => {
     expect(records).toContain("formatClinicalDateTime(");
     expect(records).toContain('"Time unavailable"');
     expect(records).toContain("Show evidence history");
-    expect(records).toContain("event.eventType.replaceAll");
+    expect(records).toContain("t(`events.${event.eventType}`)");
   });
 
   it("supports deliberate cross-patient repair and exact bidirectional navigation", () => {

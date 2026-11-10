@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "use-intl";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -39,16 +41,20 @@ import {
   soapEditorNeedsLeaveGuard,
 } from "@/lib/records/soap-navigation";
 import { useOnlineStatus } from "@/lib/use-online-status";
+import { useSpeciesLabel } from "@/lib/patients/use-species-label";
 
 const SoapNoteEditor = dynamic(
   () => import("@/components/SoapNoteEditor").then((mod) => mod.SoapNoteEditor),
   {
     ssr: false,
-    loading: () => (
-      <div className="min-h-32 rounded-lg border border-border bg-muted/20 p-3 text-sm text-muted-foreground">
-        Loading editor...
-      </div>
-    ),
+    loading: function EditorLoading() {
+      const t = useTranslations("records.newSoap");
+      return (
+        <div className="min-h-32 rounded-lg border border-border bg-muted/20 p-3 text-sm text-muted-foreground">
+          {t("loadingEditor")}
+        </div>
+      );
+    },
   },
 );
 
@@ -95,12 +101,15 @@ function soapDraftFingerprint(sections: SoapEditorSections): string {
   });
 }
 
-function localSoapTextForClipboard(sections: SoapEditorSections): string {
+function localSoapTextForClipboard(
+  sections: SoapEditorSections,
+  label: (section: keyof SoapEditorSections) => string,
+): string {
   return [
-    ["Subjective", soapSectionText(sections.subjective)],
-    ["Objective", soapSectionText(sections.objective)],
-    ["Assessment", soapSectionText(sections.assessment)],
-    ["Plan", soapSectionText(sections.plan)],
+    [label("subjective"), soapSectionText(sections.subjective)],
+    [label("objective"), soapSectionText(sections.objective)],
+    [label("assessment"), soapSectionText(sections.assessment)],
+    [label("plan"), soapSectionText(sections.plan)],
   ]
     .filter((entry) => Boolean(entry[1]))
     .map(([label, content]) => `${label}\n${content}`)
@@ -130,6 +139,10 @@ async function copyTextToClipboard(text: string): Promise<void> {
 export default function NewSoapNotePage() {
   const params = useParams<{ patientId: string }>();
   const router = useRouter();
+  const t = useTranslations("records.newSoap");
+  const ts = useTranslations("records.soap");
+  const locale = useLocale();
+  const speciesLabel = useSpeciesLabel();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const userRole = session?.user?.role;
@@ -214,7 +227,7 @@ export default function NewSoapNotePage() {
         draftInitialized: draftInitializedRef.current,
         finalizedElsewhere: finalizedElsewhereRef.current,
         localTextCopied: localTextCopiedRef.current,
-        hasLocalText: Boolean(localSoapTextForClipboard(sectionsRef.current)),
+        hasLocalText: Boolean(localSoapTextForClipboard(sectionsRef.current, (section) => ts(section))),
         conflict: conflictRef.current,
         savePending: savePromiseRef.current !== null,
         dirty:
@@ -316,7 +329,7 @@ export default function NewSoapNotePage() {
           toast.error(
             error instanceof Error
               ? error.message
-              : "SOAP draft could not be saved",
+              : t("saveFailed"),
           );
         }
         return null;
@@ -324,7 +337,7 @@ export default function NewSoapNotePage() {
         if (savePromiseRef.current === request) savePromiseRef.current = null;
       }
     }
-  }, [appointmentId, draftInitialized, params.patientId]);
+  }, [appointmentId, draftInitialized, params.patientId, t]);
 
   useEffect(() => {
     const wasOnline = wasOnlineRef.current;
@@ -401,7 +414,7 @@ export default function NewSoapNotePage() {
       setObjective(draftTextToHtml(draft.objective));
       setAssessment(draftTextToHtml(draft.assessment));
       setPlan(draftTextToHtml(draft.plan));
-      toast.success("Draft ready. Please review and edit before you save.");
+      toast.success(t("aiReady"));
     },
     onError: (err) => toast.error(err.message),
   });
@@ -415,7 +428,7 @@ export default function NewSoapNotePage() {
       return;
     if (
       canSave &&
-      !window.confirm("Replace what you typed with the AI draft?")
+      !window.confirm(t("replaceWithAi"))
     ) {
       return;
     }
@@ -425,26 +438,26 @@ export default function NewSoapNotePage() {
   async function handleFinalize() {
     if (finalizedElsewhereRef.current) return;
     if (!appointmentId) {
-      toast.error("Open an active visit before finalizing a SOAP note");
+      toast.error(t("needVisit"));
       return;
     }
     if (!params.patientId || !patient) {
-      toast.error("Load the patient before finalizing a SOAP note");
+      toast.error(t("needPatient"));
       return;
     }
     if (!canSave) {
-      toast.error("Add at least one SOAP section before finalizing");
+      toast.error(t("needSection"));
       return;
     }
     if (hasTemplatePrompts) {
-      toast.error("Replace or delete every draft prompt before finalizing");
+      toast.error(t("needPrompts"));
       return;
     }
     const saved = await persistDraft();
     if (!saved) return;
     if (
       !window.confirm(
-        "Finalize this SOAP note? The signed note cannot be edited; later clarification must be an attributed addendum.",
+        t("confirmFinalize"),
       )
     ) {
       return;
@@ -469,13 +482,13 @@ export default function NewSoapNotePage() {
         setSaveState("conflict");
         return;
       }
-      toast.success("SOAP note finalized");
+      toast.success(t("finalized"));
       router.push(returnPath);
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "SOAP note could not be finalized",
+          : t("finalizeFailed"),
       );
     }
   }
@@ -506,7 +519,7 @@ export default function NewSoapNotePage() {
     if (finalizedElsewhereRef.current || !conflictDraft) return;
     if (
       !window.confirm(
-        "Replace the newer server draft with the version in this editor?",
+        t("confirmOverwrite"),
       )
     )
       return;
@@ -529,7 +542,7 @@ export default function NewSoapNotePage() {
       return;
     if (
       !window.confirm(
-        "Discard this unfinished SOAP draft? This cannot be undone.",
+        t("confirmDiscard"),
       )
     )
       return;
@@ -553,13 +566,13 @@ export default function NewSoapNotePage() {
         setSaveState("conflict");
         return;
       }
-      toast.success("SOAP draft discarded");
+      toast.success(t("discarded"));
       router.push(returnPath);
     } catch (error) {
       toast.error(
         error instanceof Error
           ? error.message
-          : "SOAP draft could not be discarded",
+          : t("discardFailed"),
       );
     }
   }
@@ -577,8 +590,8 @@ export default function NewSoapNotePage() {
     setPlan(next.plan);
     toast.info(
       replaceTemplateContent || !canSave
-        ? `${selectedTemplate.name} draft prompts applied`
-        : `${selectedTemplate.name} draft prompts filled blank sections`,
+        ? t("templateApplied", { name: selectedTemplate.name })
+        : t("templateFilled", { name: selectedTemplate.name }),
     );
   }
 
@@ -593,16 +606,16 @@ export default function NewSoapNotePage() {
           finalizedElsewhere: finalizedElsewhereRef.current,
           needsGuard: editorNeedsLeaveGuard(),
           localTextCopied: localTextCopiedRef.current,
-          hasLocalText: Boolean(localSoapTextForClipboard(sectionsRef.current)),
+          hasLocalText: Boolean(localSoapTextForClipboard(sectionsRef.current, (section) => ts(section))),
         }),
         persistDraft,
         confirmFinalizedLocalTextLeave: () =>
           window.confirm(
-            "Your local SOAP text was not included in the finalized note and has not been copied. Leave anyway?",
+            t("leaveLocalText"),
           ),
         confirmUnsavedLeave: () =>
           window.confirm(
-            "The latest draft changes could not be saved. Leave the editor anyway?",
+            t("leaveUnsaved"),
           ),
         navigate: () => router.push(destination),
       });
@@ -615,28 +628,24 @@ export default function NewSoapNotePage() {
       });
       return attempt;
     },
-    [editorNeedsLeaveGuard, persistDraft, router],
+    [editorNeedsLeaveGuard, persistDraft, router, t, ts],
   );
 
   const copyLocalSoapText = useCallback(async () => {
-    const text = localSoapTextForClipboard(sectionsRef.current);
+    const text = localSoapTextForClipboard(sectionsRef.current, (section) => ts(section));
     if (!text) {
-      toast.error("There is no local SOAP text to copy");
+      toast.error(t("nothingToCopy"));
       return;
     }
     try {
       await copyTextToClipboard(text);
       localTextCopiedRef.current = true;
       setLocalTextCopied(true);
-      toast.success("Local SOAP text copied");
+      toast.success(t("copied"));
     } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Local SOAP text could not be copied",
-      );
+      toast.error(t("copyFailed"));
     }
-  }, []);
+  }, [t, ts]);
 
   useEffect(() => {
     const handleDocumentClick = (event: MouseEvent) => {
@@ -675,16 +684,16 @@ export default function NewSoapNotePage() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <ShieldAlert className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="font-heading text-xl font-semibold">Access Denied</h2>
+        <h2 className="font-heading text-xl font-semibold">{t("denied")}</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Only veterinarians and administrators can create SOAP notes.
+          {t("deniedHelp")}
         </p>
         <Button
           variant="outline"
           className="mt-4"
           onClick={() => router.push(returnPath)}
         >
-          {appointmentId ? "Back to visit" : "Back to Records"}
+          {appointmentId ? t("backVisit") : t("backRecords")}
         </Button>
       </div>
     );
@@ -694,7 +703,7 @@ export default function NewSoapNotePage() {
     return (
       <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card p-8 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Checking SOAP note access...
+        {t("checking")}
       </div>
     );
   }
@@ -703,10 +712,10 @@ export default function NewSoapNotePage() {
     return (
       <EmptyState
         icon={ClipboardList}
-        title="Open an active visit first"
-        description="SOAP notes must be attached to a visit that is currently in exam. Open the appointment from the schedule, start the exam, and write the note from the encounter workspace."
+        title={t("needVisitTitle")}
+        description={t("needVisitHelp")}
         action={{
-          label: "Back to Records",
+          label: t("backRecords"),
           onClick: () => router.push("/records"),
           icon: ArrowLeft,
         }}
@@ -718,7 +727,7 @@ export default function NewSoapNotePage() {
     return (
       <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card p-8 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Loading patient...
+        {t("loadingPatient")}
       </div>
     );
   }
@@ -727,13 +736,13 @@ export default function NewSoapNotePage() {
     return (
       <EmptyState
         icon={AlertCircle}
-        title="Unable to load patient"
+        title={t("patientFailed")}
         description={
           patientError?.message ??
-          "Choose a patient from Records before creating a SOAP note."
+          t("patientFailedHelp")
         }
         action={{
-          label: "Back to Records",
+          label: t("backRecords"),
           onClick: () => router.push("/records"),
           icon: ArrowLeft,
         }}
@@ -745,7 +754,7 @@ export default function NewSoapNotePage() {
     return (
       <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card p-8 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Loading saved SOAP draft...
+        {t("loadingDraft")}
       </div>
     );
   }
@@ -754,10 +763,10 @@ export default function NewSoapNotePage() {
     return (
       <EmptyState
         icon={AlertCircle}
-        title="Unable to load the saved draft"
-        description={`${draftQuery.error.message} Editing is paused to prevent a duplicate clinical record.`}
+        title={t("draftFailed")}
+        description={t("draftFailedHelp", { message: draftQuery.error.message })}
         action={{
-          label: "Back to visit",
+          label: t("backVisit"),
           onClick: () => router.push(returnPath),
           icon: ArrowLeft,
         }}
@@ -767,10 +776,10 @@ export default function NewSoapNotePage() {
 
   if (finalizedElsewhere) {
     const localSections = [
-      ["Subjective", soapSectionText(subjective)],
-      ["Objective", soapSectionText(objective)],
-      ["Assessment", soapSectionText(assessment)],
-      ["Plan", soapSectionText(plan)],
+      [ts("subjective"), soapSectionText(subjective)],
+      [ts("objective"), soapSectionText(objective)],
+      [ts("assessment"), soapSectionText(assessment)],
+      [ts("plan"), soapSectionText(plan)],
     ].filter((entry) => Boolean(entry[1]));
     return (
       <div className="space-y-5">
@@ -782,24 +791,20 @@ export default function NewSoapNotePage() {
             <AlertCircle className="mt-0.5 h-6 w-6 shrink-0 text-destructive" />
             <div>
               <h2 className="font-heading text-xl font-semibold text-destructive">
-                SOAP note finalized in another session
+                {t("elsewhereTitle")}
               </h2>
               <p className="mt-2 font-medium">
-                Important: the local SOAP text below was NOT included in the
-                finalized note.
+                {t("elsewhereImportant")}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Copy it before leaving, compare it with the signed chart, and
-                add any clinically relevant clarification as an attributed
-                addendum. Editing, autosave, AI drafting, templates,
-                finalization, and discard are now disabled.
+                {t("elsewhereHelp")}
               </p>
             </div>
           </div>
         </div>
 
         <div className="rounded-lg border border-border bg-card p-5">
-          <h3 className="font-semibold">Preserved local SOAP text</h3>
+          <h3 className="font-semibold">{t("preserved")}</h3>
           <div className="mt-4 space-y-4">
             {localSections.length > 0 ? (
               localSections.map(([label, content]) => (
@@ -812,7 +817,7 @@ export default function NewSoapNotePage() {
               ))
             ) : (
               <p className="text-sm text-muted-foreground">
-                No local SOAP text was present.
+                {t("noLocalText")}
               </p>
             )}
           </div>
@@ -830,8 +835,8 @@ export default function NewSoapNotePage() {
               <Copy className="mr-2 h-4 w-4" />
             )}
             {localTextCopied
-              ? "Local SOAP text copied"
-              : "Copy local SOAP text"}
+              ? t("copied")
+              : t("copy")}
           </Button>
           <Button
             type="button"
@@ -839,7 +844,7 @@ export default function NewSoapNotePage() {
             onClick={() => void leaveEditorSafely(returnPath)}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to visit
+            {t("backVisit")}
           </Button>
           <Button
             type="button"
@@ -850,7 +855,7 @@ export default function NewSoapNotePage() {
               )
             }
           >
-            View signed patient chart
+            {t("viewSigned")}
           </Button>
         </div>
       </div>
@@ -866,26 +871,23 @@ export default function NewSoapNotePage() {
         className="mb-4"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to visit
+        {t("backVisit")}
       </Button>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="font-heading text-xl font-semibold">
-            SOAP Documentation
+            {t("title")}
           </h2>
           {patient && (
             <p className="text-sm text-muted-foreground">
-              Patient: {patient.name}
-              {patient.species
-                ? ` - ${patient.species.charAt(0).toUpperCase() + patient.species.slice(1)}`
-                : ""}
+              {t("patient", { name: patient.name })}
+              {patient.species ? ` - ${speciesLabel(patient.species)}` : ""}
               {patient.breed ? ` (${patient.breed})` : ""}
             </p>
           )}
           <p className="text-xs text-muted-foreground">
-            Draft changes save automatically. Finalization creates the signed
-            clinical record.
+            {t("autosaveNote")}
           </p>
         </div>
         <div className="flex flex-col items-end gap-1">
@@ -893,7 +895,7 @@ export default function NewSoapNotePage() {
             {process.env.NEXT_PUBLIC_OFFLINE_WORKSPACE_ENABLED === "true" && appointmentId ? (
               <Button variant="outline" size="sm" asChild>
                 <a href={`/offline/index.html#patientId=${params.patientId}&appointmentId=${appointmentId}`}>
-                  Make available offline
+                  {t("offline")}
                 </a>
               </Button>
             ) : null}
@@ -911,32 +913,32 @@ export default function NewSoapNotePage() {
               ) : (
                 <Sparkles className="mr-2 h-4 w-4" />
               )}
-              {draftWithAi.isPending ? "Drafting..." : "Draft with AI"}
+              {draftWithAi.isPending ? t("drafting") : t("draftAi")}
             </Button>
           </div>
           {needsAiBillingSetup && !agentStatus.isLoading ? (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>Add a card to your trial to try AI.</span>
+              <span>{t("addCardTrial")}</span>
               {userRole === "admin" ? (
                 <button
                   type="button"
                   className="font-medium text-primary underline-offset-4 hover:underline"
                   onClick={() => router.push("/settings?tab=billing")}
                 >
-                  Add a card
+                  {t("addCard")}
                 </button>
               ) : (
-                <span>Ask a practice administrator.</span>
+                <span>{t("askAdmin")}</span>
               )}
             </div>
           ) : !canUseAi && !agentStatus.isLoading ? (
             <p className="text-xs text-muted-foreground">
               {agentStatus.data?.accessMessage ??
-                "AI is not available for this workspace."}
+                t("aiNotAvailable")}
             </p>
           ) : !aiConfigured && !agentStatus.isLoading ? (
             <p className="text-xs text-muted-foreground">
-              AI is not available right now. Please try again later.
+              {t("aiDown")}
             </p>
           ) : null}
         </div>
@@ -961,18 +963,20 @@ export default function NewSoapNotePage() {
             )}
             <span>
               {saveState === "saving"
-                ? "Saving draft..."
+                ? t("saving")
                 : saveState === "offline"
-                  ? "Offline — autosave is paused"
+                  ? t("offlinePaused")
                   : saveState === "saved"
-                    ? `Draft saved${lastSavedAt ? ` at ${lastSavedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` : ""}`
+                    ? lastSavedAt
+                      ? t("savedAt", { time: lastSavedAt.toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" }) })
+                      : t("saved")
                     : saveState === "error"
-                      ? "Draft could not be saved"
+                      ? t("notSaved")
                       : saveState === "conflict"
-                        ? "A newer draft exists in another session"
+                        ? t("newerDraft")
                         : saveState === "unsaved"
-                          ? "Changes not saved yet"
-                          : "Draft will save after you begin typing"}
+                          ? t("unsaved")
+                          : t("idle")}
             </span>
           </div>
           <div className="flex gap-2">
@@ -983,7 +987,7 @@ export default function NewSoapNotePage() {
                 size="sm"
                 onClick={() => void persistDraft()}
               >
-                Retry save
+                {t("retrySave")}
               </Button>
             ) : null}
             {draftIdRef.current ? (
@@ -999,7 +1003,7 @@ export default function NewSoapNotePage() {
                 }
                 onClick={() => void handleDiscardDraft()}
               >
-                {discardMutation.isPending ? "Discarding..." : "Discard draft"}
+                {discardMutation.isPending ? t("discarding") : t("discard")}
               </Button>
             ) : null}
           </div>
@@ -1010,9 +1014,7 @@ export default function NewSoapNotePage() {
             role="status"
             className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100"
           >
-            Keep this tab open. New SOAP changes remain only in this tab, and
-            OpenVPM will retry the same revision-checked draft automatically
-            when the connection returns.
+            {t("offlineHelp")}
           </div>
         ) : null}
 
@@ -1022,16 +1024,14 @@ export default function NewSoapNotePage() {
             className="rounded-lg border border-destructive/40 bg-destructive/5 p-4"
           >
             <h3 className="font-medium">
-              This draft changed in another session
+              {t("conflictTitle")}
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              The saved draft was updated in another session at{" "}
-              {conflictDraft.updatedAt.toLocaleString()}. Your editor content
-              has been kept unchanged.
+              {t("conflictHelp", { date: conflictDraft.updatedAt.toLocaleString(locale) })}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Button type="button" size="sm" onClick={useServerDraft}>
-                Use server version
+                {t("useServer")}
               </Button>
               <Button
                 type="button"
@@ -1039,7 +1039,7 @@ export default function NewSoapNotePage() {
                 variant="outline"
                 onClick={() => void overwriteServerDraft()}
               >
-                Overwrite with my version
+                {t("overwrite")}
               </Button>
             </div>
           </div>
@@ -1048,7 +1048,7 @@ export default function NewSoapNotePage() {
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
             <div className="w-full lg:max-w-sm">
               <label className="mb-1 block text-sm font-medium">
-                SOAP Template
+                {t("template")}
               </label>
               <select
                 value={selectedTemplateId}
@@ -1070,7 +1070,7 @@ export default function NewSoapNotePage() {
                     setReplaceTemplateContent(event.target.checked)
                   }
                 />
-                Replace existing content
+                {t("replaceContent")}
               </label>
             )}
             <Button
@@ -1080,12 +1080,11 @@ export default function NewSoapNotePage() {
               disabled={!selectedTemplate}
             >
               <ClipboardList className="mr-2 h-4 w-4" />
-              Apply template
+              {t("applyTemplate")}
             </Button>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Templates add drafting prompts, not assumed findings. Replace or
-            delete every prompt before finalizing the clinical record.
+            {t("templateHelp")}
           </p>
         </div>
 
@@ -1094,9 +1093,7 @@ export default function NewSoapNotePage() {
             role="alert"
             className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100"
           >
-            This draft still contains template prompts. Replace each prompt with
-            findings verified during this visit, or delete it if it does not
-            apply.
+            {t("promptsLeft")}
           </div>
         ) : null}
 
@@ -1104,58 +1101,58 @@ export default function NewSoapNotePage() {
           {/* Subjective */}
           <div>
             <label className="block text-sm font-medium mb-1.5">
-              Subjective
+              {ts("subjective")}
             </label>
             <p className="text-xs text-muted-foreground mb-2">
-              Owner&apos;s complaint, history, and symptoms reported
+              {t("hints.subjective")}
             </p>
             <SoapNoteEditor
               value={subjective}
               onChange={setSubjective}
-              placeholder="What the owner reports..."
+              placeholder={t("placeholders.subjective")}
             />
           </div>
 
           {/* Objective */}
           <div>
             <label className="block text-sm font-medium mb-1.5">
-              Objective
+              {ts("objective")}
             </label>
             <p className="text-xs text-muted-foreground mb-2">
-              Physical examination findings, vitals, and test results
+              {t("hints.objective")}
             </p>
             <SoapNoteEditor
               value={objective}
               onChange={setObjective}
-              placeholder="Physical exam findings, vitals, lab results..."
+              placeholder={t("placeholders.objective")}
             />
           </div>
 
           {/* Assessment */}
           <div>
             <label className="block text-sm font-medium mb-1.5">
-              Assessment
+              {ts("assessment")}
             </label>
             <p className="text-xs text-muted-foreground mb-2">
-              Diagnosis or differential diagnoses
+              {t("hints.assessment")}
             </p>
             <SoapNoteEditor
               value={assessment}
               onChange={setAssessment}
-              placeholder="Diagnosis, differential diagnoses..."
+              placeholder={t("placeholders.assessment")}
             />
           </div>
 
           {/* Plan */}
           <div>
-            <label className="block text-sm font-medium mb-1.5">Plan</label>
+            <label className="block text-sm font-medium mb-1.5">{ts("plan")}</label>
             <p className="text-xs text-muted-foreground mb-2">
-              Treatment plan, medications, follow-up instructions
+              {t("hints.plan")}
             </p>
             <SoapNoteEditor
               value={plan}
               onChange={setPlan}
-              placeholder="Treatment plan, medications, follow-up..."
+              placeholder={t("placeholders.plan")}
             />
           </div>
         </div>
@@ -1175,23 +1172,23 @@ export default function NewSoapNotePage() {
           >
             <Save className="mr-2 h-4 w-4" />
             {finalizeMutation.isPending
-              ? "Finalizing..."
-              : "Finalize SOAP note"}
+              ? t("finalizing")
+              : t("finalize")}
           </Button>
           {!canSave ? (
             <p className="text-sm text-muted-foreground">
-              Add at least one section before finalizing.
+              {t("addSection")}
             </p>
           ) : hasTemplatePrompts ? (
             <p className="text-sm text-amber-700 dark:text-amber-300">
-              Replace or delete every draft prompt before finalizing.
+              {t("replacePrompts")}
             </p>
           ) : null}
           <Button
             variant="outline"
             onClick={() => void leaveEditorSafely(returnPath)}
           >
-            Cancel
+            {t("cancel")}
           </Button>
         </div>
       </div>

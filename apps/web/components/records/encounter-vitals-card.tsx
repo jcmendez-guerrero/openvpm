@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "use-intl";
+
 import { useState } from "react";
 import { Activity, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -113,9 +115,10 @@ function weightInputMinimum(measurementSystem: MeasurementSystem): number {
 function formatRecordedAt(
   value: Date | string,
   timeZone?: string | null,
+  locale = "en-US",
 ): string {
   try {
-    return new Date(value).toLocaleString("en-US", {
+    return new Date(value).toLocaleString(locale, {
       month: "short",
       day: "numeric",
       hour: "numeric",
@@ -123,7 +126,7 @@ function formatRecordedAt(
       timeZone: timeZone ?? undefined,
     });
   } catch {
-    return new Date(value).toLocaleString("en-US", {
+    return new Date(value).toLocaleString(locale, {
       month: "short",
       day: "numeric",
       hour: "numeric",
@@ -221,6 +224,9 @@ export function EncounterVitalsCard({
   measurementSystem?: MeasurementSystem;
   bodyConditionScale?: BodyConditionScale;
 }) {
+  const t = useTranslations("records.visitVitals");
+  const tv = useTranslations("patients.vitals");
+  const locale = useLocale();
   const utils = trpc.useUtils();
   const isOnline = useOnlineStatus();
   const [form, setForm] = useState<VitalsFormState>(() => ({
@@ -232,7 +238,7 @@ export function EncounterVitalsCard({
   const recordVitals = trpc.vitals.record.useMutation({
     onSuccess: async () => {
       setForm({ ...EMPTY_VITALS_FORM });
-      toast.success("Visit vitals recorded");
+      toast.success(t("recorded"));
       await Promise.all([
         utils.patients.getById.invalidate(),
         utils.vitals.listByAppointment.invalidate({ appointmentId }),
@@ -243,7 +249,7 @@ export function EncounterVitalsCard({
   });
   const correctVital = trpc.vitals.markEnteredInError.useMutation({
     onSuccess: async () => {
-      toast.success("Vital signs retained and marked entered in error");
+      toast.success(t("corrected"));
       await Promise.all([
         utils.patients.getById.invalidate(),
         utils.vitals.listByAppointment.invalidate({ appointmentId }),
@@ -266,7 +272,7 @@ export function EncounterVitalsCard({
   );
   useUnsavedChangesGuard(
     hasContent,
-    "Vitals have not been recorded on the server. Leave and lose these values?",
+    t("leaveWarning"),
   );
   const vitalsReady = Boolean(vitalsQuery.data) && !vitalsQuery.error;
   const canonicalTemperature = canonicalMeasurementInput(
@@ -330,9 +336,9 @@ export function EncounterVitalsCard({
         <div className="flex items-start gap-3">
           <Activity className="mt-0.5 h-5 w-5 text-primary" />
           <div>
-            <CardTitle>Visit vitals</CardTitle>
+            <CardTitle>{t("title")}</CardTitle>
             <CardDescription>
-              Measurements recorded here stay attached to this appointment.
+              {t("intro")}
             </CardDescription>
           </div>
         </div>
@@ -351,7 +357,7 @@ export function EncounterVitalsCard({
             ) : null}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <VitalNumberInput
-                label={`Temp (${measurementSystem === "us_customary" ? "F" : "C"})`}
+                label={tv("temp", { unit: measurementSystem === "us_customary" ? "F" : "C" })}
                 name="temperatureC"
                 min={
                   measurementSystem === "us_customary"
@@ -375,7 +381,7 @@ export function EncounterVitalsCard({
                 onChange={updateField}
               />
               <VitalNumberInput
-                label="HR (bpm)"
+                label={tv("hr")}
                 name="heartRateBpm"
                 min={VITALS_HEART_RATE_MIN_BPM}
                 max={VITALS_HEART_RATE_MAX_BPM}
@@ -385,7 +391,7 @@ export function EncounterVitalsCard({
                 onChange={updateField}
               />
               <VitalNumberInput
-                label="RR (bpm)"
+                label={tv("rr")}
                 name="respiratoryRateBpm"
                 min={VITALS_RESPIRATORY_RATE_MIN_BPM}
                 max={VITALS_RESPIRATORY_RATE_MAX_BPM}
@@ -397,7 +403,7 @@ export function EncounterVitalsCard({
                 onChange={updateField}
               />
               <VitalNumberInput
-                label={`Weight (${measurementSystem === "us_customary" ? "lb" : "kg"})`}
+                label={tv("weight", { unit: measurementSystem === "us_customary" ? "lb" : "kg" })}
                 name="weightKg"
                 min={weightInputMinimum(measurementSystem)}
                 max={
@@ -411,7 +417,7 @@ export function EncounterVitalsCard({
                 onChange={updateField}
               />
               <VitalNumberInput
-                label={`BCS (1-${bodyConditionScale})`}
+                label={tv("bcs", { scale: bodyConditionScale })}
                 name="bodyConditionScore"
                 min={VITALS_BODY_CONDITION_MIN}
                 max={bodyConditionScale}
@@ -424,7 +430,7 @@ export function EncounterVitalsCard({
                 onChange={updateField}
               />
               <VitalNumberInput
-                label="Pain (0-10)"
+                label={tv("pain")}
                 name="painScore"
                 min={VITALS_PAIN_SCORE_MIN}
                 max={VITALS_PAIN_SCORE_MAX}
@@ -434,7 +440,7 @@ export function EncounterVitalsCard({
                 onChange={updateField}
               />
               <VitalNumberInput
-                label="CRT (sec)"
+                label={tv("crt")}
                 name="capillaryRefillSec"
                 min={VITALS_CAPILLARY_REFILL_MIN_SEC}
                 max={VITALS_CAPILLARY_REFILL_MAX_SEC}
@@ -446,24 +452,24 @@ export function EncounterVitalsCard({
                 onChange={updateField}
               />
               <label className="col-span-2 space-y-1 text-xs font-medium text-muted-foreground">
-                Mucous membrane
+                {t("mucous")}
                 <Input
                   name="mucousMembrane"
                   value={form.mucousMembrane}
                   maxLength={VITALS_MUCOUS_MEMBRANE_MAX_LENGTH}
-                  placeholder="e.g. Pink and moist"
+                  placeholder={tv("mucousPlaceholder")}
                   onChange={updateField}
                 />
               </label>
             </div>
             <label className="block space-y-1 text-xs font-medium text-muted-foreground">
-              Notes
+              {t("notes")}
               <Textarea
                 name="notes"
                 value={form.notes}
                 maxLength={VITALS_NOTES_MAX_LENGTH}
                 rows={2}
-                placeholder="Optional visit-vitals context"
+                placeholder={t("notesPlaceholder")}
                 onChange={updateField}
               />
             </label>
@@ -473,34 +479,34 @@ export function EncounterVitalsCard({
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
                 {recordVitals.isPending
-                  ? "Recording..."
-                  : "Record visit vitals"}
+                  ? t("recording")
+                  : t("record")}
               </Button>
             </div>
           </form>
         ) : (
           <div className="rounded-md border border-border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
             {!visitStateReady
-              ? "Checking whether this visit accepts new vitals..."
+              ? t("checking")
               : visitOpen
-                ? "Only an administrator, veterinarian, or technician can record visit vitals."
-                : "This visit is closed to new vitals. Recorded values remain read-only."}
+                ? t("roleOnly")
+                : t("closed")}
           </div>
         )}
 
         <div className="border-t border-border pt-4">
           {vitalsQuery.error || vitalsMissing ? (
             <div className="rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-              Unable to load visit vitals. Refresh before relying on this chart.
+              {t("loadFailed")}
             </div>
           ) : vitalsQuery.isLoading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Loading visit vitals...
+              {t("loading")}
             </div>
           ) : vitals.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No vitals recorded for this visit.
+              {t("empty")}
             </p>
           ) : (
             <div className="space-y-3">
@@ -514,11 +520,11 @@ export function EncounterVitalsCard({
                   )}
                 >
                   <p className="mb-2 text-xs font-medium text-muted-foreground">
-                    {formatRecordedAt(vital.recordedAt, timeZone)}
+                    {formatRecordedAt(vital.recordedAt, timeZone, locale)}
                   </p>
                   <dl className="grid grid-cols-3 gap-x-3 gap-y-2 text-sm sm:grid-cols-6">
                     <div>
-                      <dt className="text-xs text-muted-foreground">Temp</dt>
+                      <dt className="text-xs text-muted-foreground">{tv("columns.temp")}</dt>
                       <dd>
                         {displayClinicalTemperature(
                           vital.temperatureC,
@@ -527,17 +533,17 @@ export function EncounterVitalsCard({
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-xs text-muted-foreground">HR</dt>
+                      <dt className="text-xs text-muted-foreground">{tv("columns.hr")}</dt>
                       <dd>{displayMeasurement(vital.heartRateBpm, " bpm")}</dd>
                     </div>
                     <div>
-                      <dt className="text-xs text-muted-foreground">RR</dt>
+                      <dt className="text-xs text-muted-foreground">{tv("columns.rr")}</dt>
                       <dd>
                         {displayMeasurement(vital.respiratoryRateBpm, " bpm")}
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-xs text-muted-foreground">Weight</dt>
+                      <dt className="text-xs text-muted-foreground">{tv("columns.weight")}</dt>
                       <dd>
                         {displayClinicalWeight(
                           vital.weightKg,
@@ -546,7 +552,7 @@ export function EncounterVitalsCard({
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-xs text-muted-foreground">BCS</dt>
+                      <dt className="text-xs text-muted-foreground">{tv("columns.bcs")}</dt>
                       <dd>
                         {displayMeasurement(vital.bodyConditionScore)}
                         {vital.bodyConditionScore
@@ -555,14 +561,16 @@ export function EncounterVitalsCard({
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-xs text-muted-foreground">Pain</dt>
+                      <dt className="text-xs text-muted-foreground">{tv("columns.pain")}</dt>
                       <dd>{displayMeasurement(vital.painScore)}</dd>
                     </div>
                   </dl>
                   {vital.mucousMembrane || vital.capillaryRefillSec ? (
                     <p className="mt-2 text-xs text-muted-foreground">
-                      MM {vital.mucousMembrane ?? "—"} · CRT{" "}
-                      {displayMeasurement(vital.capillaryRefillSec, " sec")}
+                      {t("mmCrt", {
+                        mm: vital.mucousMembrane ?? "—",
+                        crt: displayMeasurement(vital.capillaryRefillSec, locale.startsWith("en") ? " sec" : " s"),
+                      })}
                     </p>
                   ) : null}
                   {vital.notes ? (

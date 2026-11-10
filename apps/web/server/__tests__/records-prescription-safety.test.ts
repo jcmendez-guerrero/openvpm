@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 
 const mocks = vi.hoisted(() => ({
   recordAuditLog: vi.fn(async () => undefined),
@@ -762,9 +763,8 @@ describe("records list query scoping", () => {
 });
 
 describe("records prescription retry UX", () => {
-  const source = readFileSync(
+  const source = readTranslatedSource(
     new URL("../../app/(dashboard)/records/page.tsx", import.meta.url),
-    "utf8",
   );
 
   it("keeps one operation ID until prescription creation succeeds or is cancelled", () => {

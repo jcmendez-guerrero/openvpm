@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
@@ -101,6 +103,7 @@ export function AmbulatoryVisitRecordsCard({
   timeZone?: string | null;
 }) {
   const { data: session } = useSession();
+  const t = useTranslations("records.visitRecords");
   const utils = trpc.useUtils();
   const isOnline = useOnlineStatus();
   const [openForm, setOpenForm] = useState<OpenForm>(null);
@@ -139,7 +142,7 @@ export function AmbulatoryVisitRecordsCard({
     prescription.instructions.trim().length > 0;
   useUnsavedChangesGuard(
     anyUnsaved,
-    "Visit records have not been saved on the server. Leave and lose these values?",
+    t("leaveWarning"),
   );
 
   async function refreshVisitRecords() {
@@ -157,7 +160,7 @@ export function AmbulatoryVisitRecordsCard({
       setProblemDescription("");
       setOpenForm(null);
       await refreshVisitRecords();
-      toast.success("Problem added");
+      toast.success(t("problemAdded"));
     },
     onError: (error) => toast.error(error.message),
   });
@@ -166,7 +169,7 @@ export function AmbulatoryVisitRecordsCard({
       setVaccination(initialVaccinationForm());
       setOpenForm(null);
       await refreshVisitRecords();
-      toast.success("Vaccination recorded");
+      toast.success(t("vaccinationRecorded"));
     },
     onError: (error) => toast.error(error.message),
   });
@@ -176,7 +179,7 @@ export function AmbulatoryVisitRecordsCard({
       prescriptionOperationId.current = null;
       setOpenForm(null);
       await refreshVisitRecords();
-      toast.success("Prescription created");
+      toast.success(t("prescriptionCreated"));
     },
     onError: (error) => toast.error(error.message),
   });
@@ -238,17 +241,15 @@ export function AmbulatoryVisitRecordsCard({
   return (
     <Card id="ambulatory-visit-records" className="scroll-mt-4">
       <CardHeader>
-        <CardTitle>Problems, vaccines, and prescriptions</CardTitle>
+        <CardTitle>{t("title")}</CardTitle>
         <CardDescription>
-          Add common visit records in place. Problems remain on the permanent
-          chart; vaccines and prescriptions also reconcile to this visit.
+          {t("intro")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {!isOnline ? (
           <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm">
-            Offline — keep this page open. New records require server
-            confirmation before they become part of the chart.
+            {t("offline")}
           </div>
         ) : null}
 
@@ -256,7 +257,7 @@ export function AmbulatoryVisitRecordsCard({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <ClipboardList className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-semibold">Active problems</h3>
+              <h3 className="text-sm font-semibold">{t("activeProblems")}</h3>
               <Badge variant="secondary">{activeProblems.length}</Badge>
             </div>
             {canRecord && visitOpen ? (
@@ -269,12 +270,12 @@ export function AmbulatoryVisitRecordsCard({
                 }
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Add problem
+                {t("addProblem")}
               </Button>
             ) : null}
           </div>
           {problems.error ? (
-            <p className="text-sm text-destructive">Problems unavailable.</p>
+            <p className="text-sm text-destructive">{t("problemsUnavailable")}</p>
           ) : activeProblems.length ? (
             <div className="flex flex-wrap gap-2">
               {activeProblems.map((problem) => (
@@ -285,7 +286,7 @@ export function AmbulatoryVisitRecordsCard({
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              No active problems recorded.
+              {t("noProblems")}
             </p>
           )}
           {openForm === "problem" ? (
@@ -313,7 +314,7 @@ export function AmbulatoryVisitRecordsCard({
               <Input
                 value={problemDescription}
                 maxLength={PROBLEM_DESCRIPTION_MAX_LENGTH}
-                placeholder="Problem or diagnosis"
+                placeholder={t("problemPlaceholder")}
                 onChange={(event) => setProblemDescription(event.target.value)}
               />
               <Button
@@ -331,7 +332,7 @@ export function AmbulatoryVisitRecordsCard({
                 {createProblem.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                Save
+                {t("save")}
               </Button>
             </form>
           ) : null}
@@ -341,7 +342,7 @@ export function AmbulatoryVisitRecordsCard({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Syringe className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-semibold">Vaccinations</h3>
+              <h3 className="text-sm font-semibold">{t("vaccinations")}</h3>
             </div>
             {canRecord && visitOpen ? (
               <Button
@@ -353,7 +354,7 @@ export function AmbulatoryVisitRecordsCard({
                 }
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Record vaccine
+                {t("recordVaccine")}
               </Button>
             ) : null}
           </div>
@@ -364,15 +365,15 @@ export function AmbulatoryVisitRecordsCard({
                   <p className="font-medium">{record.vaccineName}</p>
                   <p className="text-xs text-muted-foreground">
                     {record.nextDueDate
-                      ? `Due ${record.nextDueDate}`
-                      : "No due date"}
+                      ? t("due", { date: record.nextDueDate })
+                      : t("noDue")}
                   </p>
                 </div>
               ))}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              No vaccination history recorded.
+              {t("noVaccines")}
             </p>
           )}
           {openForm === "vaccination" ? (
@@ -428,7 +429,7 @@ export function AmbulatoryVisitRecordsCard({
                   {createVaccination.isPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : null}
-                  Save vaccination
+                  {t("saveVaccination")}
                 </Button>
               </div>
             </form>
@@ -439,7 +440,7 @@ export function AmbulatoryVisitRecordsCard({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Pill className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-semibold">Active prescriptions</h3>
+              <h3 className="text-sm font-semibold">{t("activePrescriptions")}</h3>
             </div>
             {canPrescribe && visitOpen ? (
               <Button
@@ -453,7 +454,7 @@ export function AmbulatoryVisitRecordsCard({
                 }
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Prescribe
+                {t("prescribe")}
               </Button>
             ) : null}
           </div>
@@ -472,7 +473,7 @@ export function AmbulatoryVisitRecordsCard({
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              No active prescriptions recorded.
+              {t("noPrescriptions")}
             </p>
           )}
           {openForm === "prescription" ? (
@@ -503,7 +504,7 @@ export function AmbulatoryVisitRecordsCard({
             >
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <FieldInput
-                  label="Medication *"
+                  label={t("medication")}
                   value={prescription.medicationName}
                   maxLength={PRESCRIPTION_MEDICATION_NAME_MAX_LENGTH}
                   onChange={(value) => {
@@ -512,19 +513,19 @@ export function AmbulatoryVisitRecordsCard({
                   }}
                 />
                 <FieldInput
-                  label="Dosage *"
+                  label={t("dosage")}
                   value={prescription.dosage}
                   maxLength={PRESCRIPTION_DOSAGE_MAX_LENGTH}
                   onChange={(value) => updatePrescription("dosage", value)}
                 />
                 <FieldInput
-                  label="Frequency *"
+                  label={t("frequency")}
                   value={prescription.frequency}
                   maxLength={PRESCRIPTION_FREQUENCY_MAX_LENGTH}
                   onChange={(value) => updatePrescription("frequency", value)}
                 />
                 <FieldInput
-                  label="Quantity"
+                  label={t("quantity")}
                   value={prescription.quantity}
                   type="number"
                   step="0.001"
@@ -533,7 +534,7 @@ export function AmbulatoryVisitRecordsCard({
                   onChange={(value) => updatePrescription("quantity", value)}
                 />
                 <FieldInput
-                  label="Refills"
+                  label={t("refills")}
                   value={prescription.refillsRemaining}
                   type="number"
                   min={PRESCRIPTION_REFILLS_MIN}
@@ -543,13 +544,13 @@ export function AmbulatoryVisitRecordsCard({
                   }
                 />
                 <FieldInput
-                  label="Start date *"
+                  label={t("startDate")}
                   value={prescription.startDate}
                   type="date"
                   onChange={(value) => updatePrescription("startDate", value)}
                 />
                 <FieldInput
-                  label="End date"
+                  label={t("endDate")}
                   value={prescription.endDate}
                   type="date"
                   min={prescription.startDate}
@@ -557,7 +558,7 @@ export function AmbulatoryVisitRecordsCard({
                 />
                 <label className="space-y-1 sm:col-span-2">
                   <span className="text-xs font-medium text-muted-foreground">
-                    Instructions
+                    {t("instructions")}
                   </span>
                   <Textarea
                     rows={2}
@@ -574,17 +575,17 @@ export function AmbulatoryVisitRecordsCard({
                 safety.isFetching ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Checking prescription safety...
+                    {t("checkingSafety")}
                   </div>
                 ) : safety.error || !safety.data ? (
                   <div className="rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
-                    Prescription safety could not be verified. Saving is locked.
+                    {t("safetyLocked")}
                   </div>
                 ) : safety.data.warnings.length ? (
                   <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950">
                     <div className="flex items-center gap-2 font-medium">
                       <AlertTriangle className="h-4 w-4" />
-                      Prescription safety warnings
+                      {t("safetyWarnings")}
                     </div>
                     {safety.data.warnings.map((warning, index) => (
                       <p key={`${warning.type}-${index}`}>{warning.message}</p>
@@ -601,7 +602,7 @@ export function AmbulatoryVisitRecordsCard({
                           }
                         />
                         <span>
-                          Clinician reviewed and accepts these warnings.
+                          {t("acceptWarnings")}
                         </span>
                       </label>
                     ) : null}
@@ -609,14 +610,13 @@ export function AmbulatoryVisitRecordsCard({
                 ) : (
                   <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
                     <CheckCircle2 className="h-4 w-4" />
-                    No allergy or active-medication warnings found.
+                    {t("noWarnings")}
                   </div>
                 )
               ) : null}
 
               <p className="text-xs text-muted-foreground">
-                Controlled-substance recordkeeping is not automated. Complete
-                the clinic’s required controlled drug log when applicable.
+                {t("controlledNote")}
               </p>
               <div className="flex justify-end">
                 <Button
@@ -627,7 +627,7 @@ export function AmbulatoryVisitRecordsCard({
                   {createPrescription.isPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : null}
-                  Save prescription
+                  {t("savePrescription")}
                 </Button>
               </div>
             </form>

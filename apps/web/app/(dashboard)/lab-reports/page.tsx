@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "use-intl";
+
 import Link from "next/link";
 import { Suspense, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -9,6 +11,7 @@ import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@/server/routers/_app";
 import { LAB_REPORT_MAX_BYTES } from "@/lib/upload-limits";
 import { trpc } from "@/lib/trpc";
+import { useSpeciesLabel } from "@/lib/patients/use-species-label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,13 +28,6 @@ import {
 type Report =
   inferRouterOutputs<AppRouter>["labReports"]["list"]["items"][number];
 
-const REPORT_STATES = {
-  unmatched: "Needs patient match",
-  matched: "Needs review",
-  reviewed: "Reviewed",
-  dismissed: "Dismissed",
-};
-
 function UploadReport({
   previous,
   onDone,
@@ -41,6 +37,7 @@ function UploadReport({
   onDone: (reportId: string) => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("labs.reports");
   const [attempt, setAttempt] = useState<ManagedUploadAttempt | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -50,7 +47,7 @@ function UploadReport({
     if (!attempt || inFlight.current) return;
     if (attempt.file.size > LAB_REPORT_MAX_BYTES) {
       setError(
-        "Lab reports must be 4 MB or smaller. Download a smaller report from your lab portal.",
+        t("tooLargeHelp"),
       );
       return;
     }
@@ -72,17 +69,17 @@ function UploadReport({
         throw new Error(
           data?.error ||
             (response.status === 413
-              ? "Lab reports must be 4 MB or smaller."
-              : "Import failed. Try again."),
+              ? t("tooLarge")
+              : t("importFailed")),
         );
       if (!data?.reportId)
         throw new Error(
-          "Import outcome is unclear. Retry this upload to verify it.",
+          t("unclear"),
         );
       toast.success(
         data.duplicate
-          ? "This PDF is already in the inbox. No duplicate report was added."
-          : "PDF uploaded. Confirm the patient next.",
+          ? t("duplicate")
+          : t("uploaded"),
       );
       setAttempt(null);
       if (fileInput.current) fileInput.current.value = "";
@@ -91,7 +88,7 @@ function UploadReport({
       setError(
         error instanceof Error
           ? error.message
-          : "Connection interrupted. Retry this upload.",
+          : t("interrupted"),
       );
     } finally {
       inFlight.current = false;
@@ -102,23 +99,20 @@ function UploadReport({
     <Card id="import-report">
       <CardHeader>
         <CardTitle className="text-lg">
-          {previous ? "Upload revised PDF" : "Upload a lab PDF"}
+          {previous ? t("uploadRevised") : t("uploadLab")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          Choose the original report from your lab portal. You’ll confirm the
-          patient before review.
+          {t("uploadIntro")}
         </p>
         {previous ? (
           <p className="break-words text-sm">
-            Revises: <strong>{previous.fileName}</strong>. Both versions will
-            remain available; the new version needs its own patient match and
-            review.
+            {t("revises", { fileName: previous.fileName })}
           </p>
         ) : null}
         <label className="block text-sm font-medium">
-          Report PDF (up to 4 MB)
+          {t("fileLabel")}
           <Input
             ref={fileInput}
             autoFocus
@@ -135,10 +129,10 @@ function UploadReport({
         </label>
         <div className="flex flex-wrap gap-2">
           <Button onClick={upload} disabled={!attempt || busy}>
-            {busy ? "Uploading…" : error ? "Retry upload" : "Upload PDF"}
+            {busy ? t("uploading") : error ? t("retryUpload") : t("uploadPdf")}
           </Button>
           <Button variant="ghost" onClick={onCancel} disabled={busy}>
-            Cancel
+            {t("cancel")}
           </Button>
         </div>
         {error ? (
@@ -166,6 +160,9 @@ function ReportCard({
   detailHref: (id: string) => string;
   expanded: boolean;
 }) {
+  const t = useTranslations("labs.reports");
+  const locale = useLocale();
+  const speciesLabel = useSpeciesLabel();
   const utils = trpc.useUtils();
   const [search, setSearch] = useState("");
   const [chosen, setChosen] = useState<{ id: string; label: string } | null>(
@@ -206,7 +203,7 @@ function ReportCard({
         utils.labReports.list.invalidate(),
         utils.labReports.history.invalidate(),
       ]);
-      toast.success("Report updated");
+      toast.success(t("updated"));
     },
   });
   function save(
@@ -237,29 +234,29 @@ function ReportCard({
           <Badge
             variant={report.state === "reviewed" ? "secondary" : "outline"}
           >
-            {REPORT_STATES[report.state]}
+            {t(`states.${report.state}`)}
           </Badge>
         </div>
         <p className="text-sm text-muted-foreground">
-          Imported {new Date(report.receivedAt).toLocaleString()}
+          {t("imported", { date: new Date(report.receivedAt).toLocaleString(locale) })}
           {report.patientName
             ? ` · ${report.patientName} · ${report.ownerFirstName ?? ""} ${report.ownerLastName ?? ""}`
             : ""}
         </p>
         {report.supersedesId ? (
           <p className="text-sm">
-            Revised report ·{" "}
+            {t("revised")} ·{" "}
             <Link className="underline" href={detailHref(report.supersedesId)}>
-              Previous version
+              {t("previousVersion")}
             </Link>
           </p>
         ) : null}
         {report.revisionIds.length ? (
           <p className="text-sm font-medium">
-            A newer report was imported.{" "}
+            {t("newerImported")}{" "}
             {report.revisionIds.map((id) => (
               <Link key={id} className="mr-2 underline" href={detailHref(id)}>
-                Open revision
+                {t("openRevision")}
               </Link>
             ))}
           </p>
@@ -271,39 +268,38 @@ function ReportCard({
             <Button asChild size="sm">
               <Link href={detailHref(report.id)}>
                 {canManage && report.state === "unmatched"
-                  ? "Match patient"
+                  ? t("matchPatient")
                   : canReview && report.state === "matched"
-                    ? "Review report"
-                    : "View report"}
+                    ? t("reviewReport")
+                    : t("viewReport")}
               </Link>
             </Button>
           ) : null}
           <Button asChild variant="outline" size="sm">
             <a href={report.fileUrl} target="_blank" rel="noopener noreferrer">
-              Open original PDF
+              {t("openPdf")}
             </a>
           </Button>
           {expanded && report.patientId ? (
             <Button asChild variant="ghost" size="sm">
               <Link href={`/patients/${report.patientId}?tab=records`}>
-                Patient chart
+                {t("patientChart")}
               </Link>
             </Button>
           ) : null}
         </div>
         {unavailable ? (
           <p role="alert" className="text-sm text-destructive">
-            File storage needs attention. Matching and review are paused until
-            the original is available.
+            {t("storage")}
           </p>
         ) : null}
         {expanded && canManage && report.state === "unmatched" ? (
           <div className="space-y-3 rounded-md border p-3">
             <p className="text-sm">
-              Open the PDF, then check the patient and owner.
+              {t("checkPatient")}
             </p>
             <FormField
-              label="Find patient or owner"
+              label={t("find")}
               htmlFor={`patient-search-${report.id}`}
             >
               <Input
@@ -311,7 +307,7 @@ function ReportCard({
                 className="mt-1"
                 value={search}
                 maxLength={100}
-                placeholder="Type at least 2 characters"
+                placeholder={t("findPlaceholder")}
                 onChange={(e) => {
                   setSearch(e.target.value);
                   setChosen(null);
@@ -321,19 +317,19 @@ function ReportCard({
             </FormField>
             {people.isError ? (
               <p role="alert" className="text-sm text-destructive">
-                Patient search failed. Change the search to retry.
+                {t("searchFailed")}
               </p>
             ) : null}
-            {people.isFetching ? <p className="text-sm">Searching…</p> : null}
+            {people.isFetching ? <p className="text-sm">{t("searching")}</p> : null}
             {!people.isFetching &&
             search.trim().length >= 2 &&
             people.data?.length === 0 ? (
-              <p className="text-sm">No matching patients.</p>
+              <p className="text-sm">{t("noPatients")}</p>
             ) : null}
             {people.data && search.trim().length >= 2 ? (
               <div className="flex flex-col gap-1">
                 {people.data.map((patient) => {
-                  const label = `${patient.name} · ${patient.species} · ${patient.clientFirstName ?? ""} ${patient.clientLastName ?? ""}`;
+                  const label = `${patient.name} · ${speciesLabel(patient.species)} · ${patient.clientFirstName ?? ""} ${patient.clientLastName ?? ""}`;
                   return (
                     <Button
                       key={patient.id}
@@ -355,14 +351,14 @@ function ReportCard({
             ) : null}
             {chosen ? (
               <>
-                <p className="text-sm font-medium">Selected: {chosen.label}</p>
+                <p className="text-sm font-medium">{t("selected", { label: chosen.label })}</p>
                 <label className="flex items-start gap-2 text-sm">
                   <Checkbox
                     className="mt-0.5 shrink-0"
                     checked={checked}
                     onChange={(e) => setChecked(e.target.checked)}
                   />
-                  I checked the patient and owner against the original report.
+                  {t("checked")}
                 </label>
               </>
             ) : null}
@@ -374,7 +370,7 @@ function ReportCard({
                 }
                 onClick={() => save("matched", chosen!.id)}
               >
-                Confirm patient match
+                {t("confirmMatch")}
               </Button>
             </div>
           </div>
@@ -382,8 +378,8 @@ function ReportCard({
         {expanded && report.state === "matched" ? (
           <p className="text-sm text-muted-foreground">
             {canReview
-              ? "Ready for clinical review."
-              : "A veterinarian or administrator needs to review this report."}
+              ? t("readyReview")
+              : t("needsReviewer")}
           </p>
         ) : null}
         <div className="flex flex-wrap gap-2">
@@ -396,37 +392,35 @@ function ReportCard({
               disabled={unavailable || decide.isPending}
               onClick={() => setReviewOpen(true)}
             >
-              Review report
+              {t("reviewReport")}
             </Button>
           ) : null}
         </div>
         {reviewOpen ? (
           <div className="space-y-2 rounded-md border p-3">
             <p className="text-sm">
-              Confirm that you reviewed the original PDF for this patient.
-              Record any needed values and follow-up in the patient’s clinical
-              record.
+              {t("confirmReviewHelp")}
             </p>
             <Button
               size="sm"
               disabled={decide.isPending || unavailable}
               onClick={() => save("reviewed", report.patientId)}
             >
-              Confirm clinical review
+              {t("confirmReview")}
             </Button>
             <Button
               size="sm"
               variant="ghost"
               onClick={() => setReviewOpen(false)}
             >
-              Cancel
+              {t("cancel")}
             </Button>
           </div>
         ) : null}
         {expanded ? (
           <details className="border-t pt-3">
             <summary className="cursor-pointer text-sm font-medium">
-              More actions &amp; history
+              {t("more")}
             </summary>
             <div className="mt-3 flex flex-wrap gap-2">
               <Button
@@ -435,7 +429,7 @@ function ReportCard({
                 aria-expanded={historyOpen}
                 onClick={() => setHistoryOpen(!historyOpen)}
               >
-                {historyOpen ? "Hide history" : "Decision history"}
+                {historyOpen ? t("hideHistory") : t("history")}
               </Button>
               {canManage ? (
                 <>
@@ -444,7 +438,7 @@ function ReportCard({
                     size="sm"
                     onClick={() => revise(report)}
                   >
-                    Import revision
+                    {t("importRevision")}
                   </Button>
                   <Button
                     variant="ghost"
@@ -461,10 +455,10 @@ function ReportCard({
                     }}
                   >
                     {report.state === "unmatched"
-                      ? "Dismiss report"
+                      ? t("dismiss")
                       : report.state === "dismissed"
-                        ? "Reopen report"
-                        : "Correct patient match"}
+                        ? t("reopen")
+                        : t("correctMatch")}
                   </Button>
                 </>
               ) : null}
@@ -475,10 +469,10 @@ function ReportCard({
           <div className="space-y-2 rounded-md border p-3">
             <label className="block text-sm font-medium">
               {correction === "dismissed"
-                ? "Reason for dismissal"
+                ? t("reasonDismiss")
                 : report.state === "dismissed"
-                  ? "Reason for reopening"
-                  : "Reason for correction"}
+                  ? t("reasonReopen")
+                  : t("reasonCorrect")}
               <Input
                 maxLength={500}
                 value={reason}
@@ -486,10 +480,9 @@ function ReportCard({
               />
             </label>
             <p className="text-sm text-muted-foreground">
-              The original document and all previous decisions remain in
-              history.
+              {t("historyKept")}
               {correction === "unmatched" && report.state !== "dismissed"
-                ? " This removes the current match and clears its review status."
+                ? ` ${t("clearsMatch")}`
                 : ""}
             </p>
             <Button
@@ -498,17 +491,17 @@ function ReportCard({
               onClick={() => save(correction, null, reason.trim())}
             >
               {correction === "dismissed"
-                ? "Dismiss report"
+                ? t("dismiss")
                 : report.state === "dismissed"
-                  ? "Reopen report"
-                  : "Clear patient match"}
+                  ? t("reopen")
+                  : t("clearMatch")}
             </Button>
             <Button
               size="sm"
               variant="ghost"
               onClick={() => setCorrection(null)}
             >
-              Cancel
+              {t("cancel")}
             </Button>
           </div>
         ) : null}
@@ -519,29 +512,29 @@ function ReportCard({
               className="underline"
               onClick={() => utils.labReports.list.invalidate()}
             >
-              Refresh reports
+              {t("refreshReports")}
             </button>
           </p>
         ) : null}
         {historyOpen ? (
           <div className="space-y-2 border-t pt-3">
-            <h3 className="text-sm font-medium">Decision history</h3>
+            <h3 className="text-sm font-medium">{t("history")}</h3>
             {history.isLoading ? (
-              <p className="text-sm">Loading…</p>
+              <p className="text-sm">{t("loading")}</p>
             ) : history.error ? (
-              <p role="alert">History could not be loaded.</p>
+              <p role="alert">{t("historyFailed")}</p>
             ) : history.data?.length ? (
               history.data.map((event) => (
                 <p key={event.id} className="break-words text-sm">
-                  {REPORT_STATES[event.state]} · {event.actorName}
+                  {t(`states.${event.state}`)} · {event.actorName}
                   {event.patientName ? ` · ${event.patientName}` : ""} ·{" "}
-                  {new Date(event.createdAt).toLocaleString()}
+                  {new Date(event.createdAt).toLocaleString(locale)}
                   {event.reason ? ` — ${event.reason}` : ""}
                 </p>
               ))
             ) : (
               <p className="text-sm text-muted-foreground">
-                No decisions yet. The original upload is preserved.
+                {t("noDecisions")}
               </p>
             )}
           </div>
@@ -554,6 +547,7 @@ function ReportCard({
 function ReportInbox() {
   const params = useSearchParams();
   const router = useRouter();
+  const t = useTranslations("labs.reports");
   const { data: session, status: sessionStatus } = useSession();
   const patientId = params.get("patientId") ?? undefined;
   const reportId = params.get("reportId") ?? undefined;
@@ -609,18 +603,18 @@ function ReportInbox() {
     setPrevious(null);
   }
   if (!enabled)
-    return <p>Lab report import is not enabled for this installation.</p>;
+    return <p>{t("disabled")}</p>;
   if (sessionStatus === "loading")
-    return <p role="status">Loading lab reports…</p>;
+    return <p role="status">{t("loadingReports")}</p>;
   if (!canRead)
-    return <p>Clinical report access is unavailable for this account.</p>;
+    return <p>{t("noAccess")}</p>;
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-heading text-2xl font-semibold">Lab Inbox</h1>
+          <h1 className="font-heading text-2xl font-semibold">{t("title")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Upload a PDF, confirm the patient, and review the report.
+            {t("intro")}
           </p>
         </div>
         {canManage && !uploadOpen ? (
@@ -635,7 +629,7 @@ function ReportInbox() {
               className="mr-2 size-4"
               aria-hidden="true"
             />
-            Upload PDF
+            {t("uploadPdf")}
           </Button>
         ) : null}
       </div>
@@ -648,11 +642,11 @@ function ReportInbox() {
           >
             <ArrowLeft className="size-4" aria-hidden="true" />
             {patient.data
-              ? `${patient.data.name}’s documents`
-              : "Patient documents"}
+              ? t("patientDocuments", { name: patient.data.name })
+              : t("patientDocumentsGeneric")}
           </Link>
           <Link className="underline" href="/lab-reports">
-            All clinic reports
+            {t("allReports")}
           </Link>
         </div>
       ) : null}
@@ -661,7 +655,7 @@ function ReportInbox() {
           className="inline-flex items-center gap-2 text-sm underline"
           href={inboxHref({ offset })}
         >
-          <ArrowLeft className="size-4" aria-hidden="true" /> Back to reports
+          <ArrowLeft className="size-4" aria-hidden="true" /> {t("back")}
         </Link>
       ) : null}
       {uploadOpen && canManage ? (
@@ -678,19 +672,12 @@ function ReportInbox() {
       ) : null}
       {!reportId ? (
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <nav className="flex flex-wrap gap-2" aria-label="Report filters">
+          <nav className="flex flex-wrap gap-2" aria-label={t("filters")}>
             {(
               (patientId
-                ? [
-                    ["all", "All reports"],
-                    ["unreviewed", "Needs review"],
-                  ]
-                : [
-                    ["unmatched", "Needs match"],
-                    ["unreviewed", "Needs review"],
-                    ["all", "All reports"],
-                  ]) as Array<[string, string]>
-            ).map(([value, label]) => (
+                ? ["all", "unreviewed"]
+                : ["unmatched", "unreviewed", "all"]) as string[]
+            ).map((value) => (
               <Button
                 key={value}
                 asChild
@@ -701,7 +688,7 @@ function ReportInbox() {
                   href={inboxHref({ filter: value })}
                   aria-current={filter === value ? "page" : undefined}
                 >
-                  {label}
+                  {t(`filter.${value}`)}
                 </Link>
               </Button>
             ))}
@@ -712,17 +699,17 @@ function ReportInbox() {
             disabled={reports.isFetching}
             onClick={() => reports.refetch()}
           >
-            {reports.isFetching ? "Refreshing…" : "Refresh"}
+            {reports.isFetching ? t("refreshing") : t("refresh")}
           </Button>
         </div>
       ) : null}
       {reports.isLoading ? (
-        <p role="status">Loading reports…</p>
+        <p role="status">{t("loadingList")}</p>
       ) : reports.error ? (
         <div role="alert" className="flex flex-wrap items-center gap-3 text-sm">
-          <p>Reports could not be loaded.</p>
+          <p>{t("loadFailed")}</p>
           <Button variant="outline" size="sm" onClick={() => reports.refetch()}>
-            Try again
+            {t("tryAgain")}
           </Button>
         </div>
       ) : !reports.data?.items.length ? (
@@ -734,25 +721,25 @@ function ReportInbox() {
             />
             <CardTitle>
               {reportId
-                ? "Report unavailable"
+                ? t("empty.unavailable")
                 : patientId
-                  ? "No reports in this view"
+                  ? t("empty.view")
                   : filter === "unmatched"
-                    ? "No PDFs waiting for a match"
+                    ? t("empty.unmatched")
                     : filter === "unreviewed"
-                      ? "No reports waiting for review"
-                      : "No lab PDFs yet"}
+                      ? t("empty.unreviewed")
+                      : t("empty.none")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
               {reportId
-                ? "Return to the reports list or refresh to try again."
+                ? t("emptyHelp.unavailable")
                 : patientId
-                  ? "Reports appear here after the patient match is confirmed."
+                  ? t("emptyHelp.view")
                   : filter === "unreviewed"
-                    ? "Matched reports appear here for a veterinarian or administrator to review."
-                    : "Upload a report from your lab portal, or choose another view to find existing reports."}
+                    ? t("emptyHelp.unreviewed")
+                    : t("emptyHelp.none")}
             </p>
           </CardContent>
         </Card>
@@ -773,7 +760,7 @@ function ReportInbox() {
         ))
       )}
       {!reportId && (offset > 0 || reports.data?.hasMore) ? (
-        <nav className="flex gap-2" aria-label="Report pages">
+        <nav className="flex gap-2" aria-label={t("pages")}>
           <Button
             variant="outline"
             size="sm"
@@ -782,7 +769,7 @@ function ReportInbox() {
               router.push(inboxHref({ offset: Math.max(0, offset - 25) }))
             }
           >
-            Previous
+            {t("previous")}
           </Button>
           <Button
             variant="outline"
@@ -790,13 +777,12 @@ function ReportInbox() {
             disabled={!reports.data?.hasMore}
             onClick={() => router.push(inboxHref({ offset: offset + 25 }))}
           >
-            Next
+            {t("next")}
           </Button>
         </nav>
       ) : null}
       <p className="text-xs text-muted-foreground">
-        Original PDFs stay intact. Record lab values and follow-up separately in
-        the patient chart.
+        {t("footer")}
       </p>
     </div>
   );
@@ -807,8 +793,9 @@ function LabReportsRoute() {
 }
 
 export default function LabReportsPage() {
+  const t = useTranslations("labs.reports");
   return (
-    <Suspense fallback={<p>Loading lab reports…</p>}>
+    <Suspense fallback={<p>{t("loadingReports")}</p>}>
       <LabReportsRoute />
     </Suspense>
   );

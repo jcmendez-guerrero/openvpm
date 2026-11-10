@@ -571,7 +571,7 @@ describe("records page state handling", () => {
     expect(source).toContain("const recordsSettingsMissing =");
     expect(source).toContain("{recordsSettingsError || recordsSettingsMissing ? (");
     expect(source).toContain(
-      "Unable to load records settings. ${recordsSettingsError.message}"
+      "Unable to load records settings. {message}"
     );
     expect(source).toContain("Unable to load records settings. Please retry.");
     expect(source).toContain(") : recordsSettingsLoading ? (");
@@ -644,7 +644,7 @@ describe("records page state handling", () => {
 
     expect(source).toContain("errorMessage?: string");
     expect(source).toContain("if (errorMessage)");
-    expect(source).toContain("Unable to check prescription safety. {errorMessage}");
+    expect(source).toContain("Unable to check prescription safety. {message}");
     expect(source).toContain("const prescriptionSafetyEnabled =");
     expect(source).toContain("const prescriptionSafetyMissing =");
     expect(source).toContain("const verifiedPrescriptionSafety =");

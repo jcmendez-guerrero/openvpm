@@ -1,23 +1,11 @@
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
 
-const migration = readFileSync(
-  "../../packages/db/drizzle/0102_curved_guardian.sql",
-  "utf8",
-);
-const finalizer = readFileSync(
-  "lib/treatment-plan-presentations/finalize.ts",
-  "utf8",
-);
-const signer = readFileSync("app/api/sign/[token]/route.ts", "utf8");
-const composer = readFileSync(
-  "components/encounters/treatment-plan-composer.tsx",
-  "utf8",
-);
-const databaseContract = readFileSync(
-  "../../packages/db/test-treatment-plan-evidence.sql",
-  "utf8",
-);
+const migration = readTranslatedSource("../../packages/db/drizzle/0102_curved_guardian.sql");
+const finalizer = readTranslatedSource("lib/treatment-plan-presentations/finalize.ts");
+const signer = readTranslatedSource("app/api/sign/[token]/route.ts");
+const composer = readTranslatedSource("components/encounters/treatment-plan-composer.tsx");
+const databaseContract = readTranslatedSource("../../packages/db/test-treatment-plan-evidence.sql");
 
 describe("treatment-plan client flow safety", () => {
   it("persists only a presentation token digest and freezes concurrent revisions/closure", () => {
@@ -54,10 +42,7 @@ describe("treatment-plan client flow safety", () => {
 
   it("uses digest-only downstream signing credentials with form provenance", () => {
     expect(signer).toContain("eq(consentRequests.tokenHash");
-    const treatmentRoute = readFileSync(
-      "app/api/treatment-plan/[token]/route.ts",
-      "utf8",
-    );
+    const treatmentRoute = readTranslatedSource("app/api/treatment-plan/[token]/route.ts");
     expect(treatmentRoute).toContain("deriveTreatmentPlanConsentToken(token)");
     expect(treatmentRoute).toContain("token: null");
     expect(treatmentRoute).toContain("tokenHash: consentTokenHash");

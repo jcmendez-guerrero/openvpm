@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "use-intl";
+
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
@@ -23,6 +25,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useSpeciesLabel } from "@/lib/patients/use-species-label";
 import { formatDateInputForTimeZone } from "@/lib/date-input";
 import { useOnlineStatus } from "@/lib/use-online-status";
 import { useUnsavedChangesGuard } from "@/lib/use-unsaved-changes-guard";
@@ -99,13 +102,13 @@ import {
 
 type Tab = "soap" | "vaccinations" | "prescriptions" | "problems" | "labResults" | "procedures";
 
-const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: "soap", label: "SOAP Notes", icon: FileText },
-  { id: "vaccinations", label: "Vaccinations", icon: Syringe },
-  { id: "prescriptions", label: "Prescriptions", icon: Pill },
-  { id: "problems", label: "Problems", icon: ClipboardList },
-  { id: "labResults", label: "Lab Results", icon: FlaskConical },
-  { id: "procedures", label: "Procedures", icon: Scissors },
+const tabs: { id: Tab; icon: React.ElementType }[] = [
+  { id: "soap", icon: FileText },
+  { id: "vaccinations", icon: Syringe },
+  { id: "prescriptions", icon: Pill },
+  { id: "problems", icon: ClipboardList },
+  { id: "labResults", icon: FlaskConical },
+  { id: "procedures", icon: Scissors },
 ];
 
 function isTab(value: string | null): value is Tab {
@@ -169,14 +172,15 @@ function dateInputDayNumber(value: string): number | null {
 function formatClinicalDate(
   value: Date | string | null | undefined,
   timeZone?: string | null,
-  fallback = "--"
+  fallback = "--",
+  locale = "en-US"
 ): string {
   if (!value) return fallback;
 
   if (typeof value === "string") {
     const dateOnly = clinicalDateInputToUtcDate(value);
     if (dateOnly) {
-      return dateOnly.toLocaleDateString("en-US", {
+      return dateOnly.toLocaleDateString(locale, {
         ...CLINICAL_DATE_FORMAT,
         timeZone: "UTC",
       });
@@ -190,9 +194,9 @@ function formatClinicalDate(
   };
 
   try {
-    return date.toLocaleDateString("en-US", options);
+    return date.toLocaleDateString(locale, options);
   } catch {
-    return date.toLocaleDateString("en-US", {
+    return date.toLocaleDateString(locale, {
       ...options,
       timeZone: undefined,
     });
@@ -203,32 +207,32 @@ function getVaccineDueStatus(
   nextDueDate: string | null,
   timeZone?: string | null
 ): {
-  label: string;
+  label: "na" | "overdue" | "dueSoon" | "current";
   className: string;
 } {
-  if (!nextDueDate) return { label: "N/A", className: "text-muted-foreground" };
+  if (!nextDueDate) return { label: "na", className: "text-muted-foreground" };
   const today = formatDateInputForTimeZone(new Date(), timeZone);
   const todayDay = dateInputDayNumber(today);
   const dueDay = dateInputDayNumber(nextDueDate);
   if (todayDay === null || dueDay === null) {
-    return { label: "N/A", className: "text-muted-foreground" };
+    return { label: "na", className: "text-muted-foreground" };
   }
   const daysUntilDue = dueDay - todayDay;
 
   if (daysUntilDue < 0)
     return {
-      label: "Overdue",
+      label: "overdue",
       className:
         "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
     };
   if (daysUntilDue <= 30)
     return {
-      label: "Due Soon",
+      label: "dueSoon",
       className:
         "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
     };
   return {
-    label: "Current",
+    label: "current",
     className:
       "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
   };
@@ -401,13 +405,14 @@ function PrescriptionSafetyPanel({
   errorMessage?: string;
   warnings: PrescriptionSafetyWarning[];
 }) {
+  const t = useTranslations("records.page.safety");
   if (medicationName.trim().length < 2) return null;
 
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        Checking prescription safety
+        {t("checking")}
       </div>
     );
   }
@@ -416,7 +421,7 @@ function PrescriptionSafetyPanel({
     return (
       <div className="flex items-start gap-2 rounded-md border border-destructive bg-destructive/10 px-3 py-2 text-sm text-destructive">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-        <span>Unable to check prescription safety. {errorMessage}</span>
+        <span>{t("failed", { message: errorMessage })}</span>
       </div>
     );
   }
@@ -425,7 +430,7 @@ function PrescriptionSafetyPanel({
     return (
       <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
         <CheckCircle2 className="h-4 w-4" />
-        No allergy or active-medication warnings found.
+        {t("none")}
       </div>
     );
   }
@@ -448,7 +453,7 @@ function PrescriptionSafetyPanel({
             hasBlockingWarning ? "text-amber-700" : "text-muted-foreground"
           )}
         />
-        Prescription safety warnings
+        {t("title")}
       </div>
       <div className="space-y-2">
         {warnings.map((warning, index) => (
@@ -462,7 +467,7 @@ function PrescriptionSafetyPanel({
                 {warning.severity}
               </Badge>
               {warning.requiresOverride && (
-                <Badge variant="outline">Override required</Badge>
+                <Badge variant="outline">{t("override")}</Badge>
               )}
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -510,6 +515,9 @@ function CorrectedLabResultHistory({
   resultId: string;
   timeZone?: string | null;
 }) {
+  const t = useTranslations("labs.results");
+  const tp = useTranslations("records.page");
+  const locale = useLocale();
   const [expanded, setExpanded] = useState(false);
   const history = trpc.records.listLabResultHistory.useQuery(
     { id: resultId },
@@ -527,15 +535,15 @@ function CorrectedLabResultHistory({
         onClick={() => setExpanded((value) => !value)}
       >
         <History className="mr-1.5 h-4 w-4" aria-hidden="true" />
-        {expanded ? "Hide evidence history" : "Show evidence history"}
+        {expanded ? t("hideHistory") : t("showHistory")}
       </Button>
       {expanded ? (
         <div className="mt-2 space-y-2" aria-live="polite">
           {history.isLoading ? (
-            <p className="text-xs text-muted-foreground">Loading evidence…</p>
+            <p className="text-xs text-muted-foreground">{t("loadingEvidence")}</p>
           ) : history.error ? (
             <p role="alert" className="text-xs text-destructive">
-              Evidence history could not be loaded. {history.error.message}
+              {t("historyFailed", { message: history.error.message })}
             </p>
           ) : history.data?.length ? (
             <ol className="space-y-2">
@@ -546,26 +554,27 @@ function CorrectedLabResultHistory({
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-medium capitalize">
-                      {event.eventType.replaceAll("_", " ")}
+                      {t(`events.${event.eventType}`)}
                     </span>
                     <span className="text-muted-foreground">
                       {formatClinicalDateTime(
                         event.createdAt,
                         timeZone,
-                        "Time unavailable"
+                        tp("timeUnavailable"),
+                        locale
                       )}{" "}
                       · {event.actorName}
                     </span>
                   </div>
                   <p className="mt-1 text-muted-foreground">
                     {event.resultValue
-                      ? `Snapshot: ${event.resultValue}${event.unit ? ` ${event.unit}` : ""}${
+                      ? `${t("snapshot", { value: event.resultValue })}${event.unit ? ` ${event.unit}` : ""}${
                           event.referenceRangeLow != null &&
                           event.referenceRangeHigh != null
-                            ? ` · reference ${event.referenceRangeLow}–${event.referenceRangeHigh}`
+                            ? ` · ${t("referenceLower", { low: event.referenceRangeLow, high: event.referenceRangeHigh })}`
                             : ""
-                        } · ${event.resultFlag}`
-                      : "Values pending at this event"}
+                        } · ${t(`flags.${event.resultFlag}`)}`
+                      : t("valuesPendingEvent")}
                   </p>
                   {event.note ? <p className="mt-1">{event.note}</p> : null}
                 </li>
@@ -573,7 +582,7 @@ function CorrectedLabResultHistory({
             </ol>
           ) : (
             <p className="text-xs text-muted-foreground">
-              No immutable event history is available for this legacy result.
+              {t("noHistory")}
             </p>
           )}
         </div>
@@ -584,6 +593,13 @@ function CorrectedLabResultHistory({
 
 function RecordsPageContent() {
   const router = useRouter();
+  const t = useTranslations("records.page");
+  const ts = useTranslations("patients.soap");
+  const ta = useTranslations("patients.addendum");
+  const tl = useTranslations("labs.results");
+  const tsec = useTranslations("records.soap");
+  const locale = useLocale();
+  const speciesLabel = useSpeciesLabel();
   const utils = trpc.useUtils();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
@@ -765,7 +781,7 @@ function RecordsPageContent() {
         JSON.stringify(initialPrescriptionForm(recordsTimeZone)));
   useUnsavedChangesGuard(
     hasUnsavedRecordForm,
-    "This clinical record has not been saved on the server. Leave and lose these values?"
+    t("leaveWarning")
   );
 
   const {
@@ -800,7 +816,7 @@ function RecordsPageContent() {
   }, [soapNotes]);
   const correctSoap = trpc.records.markSoapNoteEnteredInError.useMutation({
     onSuccess: async () => {
-      toast.success("SOAP note retained and marked entered in error");
+      toast.success(t("toasts.soapCorrected"));
       await utils.records.listSoapNotes.invalidate({ patientId });
     },
     onError: (error) => toast.error(error.message),
@@ -815,7 +831,7 @@ function RecordsPageContent() {
       setAddendumNoteId(null);
       setAddendumContent("");
       setAddendumOperationId(null);
-      toast.success("Addendum added to the finalized record");
+      toast.success(t("toasts.addendum"));
       await utils.records.listSoapNotes.invalidate({ patientId });
     },
     onError: (error) => toast.error(error.message),
@@ -837,7 +853,7 @@ function RecordsPageContent() {
   const correctVaccination =
     trpc.records.markVaccinationEnteredInError.useMutation({
       onSuccess: async () => {
-        toast.success("Vaccination retained and marked entered in error");
+        toast.success(t("toasts.vaccineCorrected"));
         await utils.records.listVaccinations.invalidate({ patientId });
       },
       onError: (error) => toast.error(error.message),
@@ -1030,7 +1046,7 @@ function RecordsPageContent() {
 
   const createVaccination = trpc.records.createVaccination.useMutation({
     onSuccess: async () => {
-      toast.success("Vaccination recorded");
+      toast.success(t("toasts.vaccineRecorded"));
       await Promise.all([refetchVaccinations(), refreshLinkedVisit()]);
       setShowVaccinationForm(false);
       setVaccinationForm(initialVaccinationForm());
@@ -1041,7 +1057,7 @@ function RecordsPageContent() {
   });
   const createProblem = trpc.records.createProblem.useMutation({
     onSuccess: () => {
-      toast.success("Problem added");
+      toast.success(t("toasts.problemAdded"));
       refetchProblems();
       setShowProblemForm(false);
       setProblemForm(initialProblemForm());
@@ -1052,7 +1068,7 @@ function RecordsPageContent() {
   });
   const updateProblemStatus = trpc.records.updateProblemStatus.useMutation({
     onSuccess: () => {
-      toast.success("Problem status updated");
+      toast.success(t("toasts.problemStatus"));
       refetchProblems();
     },
     onError: (err) => {
@@ -1063,8 +1079,8 @@ function RecordsPageContent() {
     onSuccess: async (result) => {
       toast.success(
         replacesLabResultId
-          ? "Replacement lab result created"
-          : "Lab result created"
+          ? t("toasts.labReplacement")
+          : t("toasts.labCreated")
       );
       await Promise.all([
         refetchLabResults(),
@@ -1092,7 +1108,7 @@ function RecordsPageContent() {
   const correctLabResult = trpc.records.markLabResultEnteredInError.useMutation(
     {
       onSuccess: async (correction) => {
-        toast.success("Lab result retained and marked entered in error");
+        toast.success(t("toasts.labCorrected"));
         if (correction.labResultId) {
           labCorrectionOperationIds.current.delete(correction.labResultId);
         }
@@ -1106,7 +1122,7 @@ function RecordsPageContent() {
   );
   const updateLabResultStatus = trpc.records.updateLabResultStatus.useMutation({
     onSuccess: (result) => {
-      toast.success("Lab result status updated");
+      toast.success(t("toasts.labStatus"));
       labReviewOperationIds.current.delete(result.id);
       refetchLabResults();
       utils.records.listLabReviewInbox.invalidate();
@@ -1117,7 +1133,7 @@ function RecordsPageContent() {
   });
   const createProcedure = trpc.records.createProcedure.useMutation({
     onSuccess: async () => {
-      toast.success("Procedure recorded");
+      toast.success(t("toasts.procedure"));
       await Promise.all([refetchProcedures(), refreshLinkedVisit()]);
       setShowProcedureForm(false);
       setProcedureForm(initialProcedureForm());
@@ -1128,7 +1144,7 @@ function RecordsPageContent() {
   });
   const createPrescription = trpc.records.createPrescription.useMutation({
     onSuccess: async () => {
-      toast.success("Prescription created");
+      toast.success(t("toasts.prescription"));
       await Promise.all([refetchPrescriptions(), refreshLinkedVisit()]);
       setShowPrescriptionForm(false);
       setPrescriptionForm(initialPrescriptionForm(recordsTimeZone));
@@ -1236,10 +1252,10 @@ function RecordsPageContent() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-heading text-xl font-semibold">
-            Medical Records
+            {t("title")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            Clinical documentation and patient history
+            {t("subtitle")}
           </p>
         </div>
       </div>
@@ -1249,7 +1265,7 @@ function RecordsPageContent() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search patients by patient or owner name..."
+            placeholder={t("search")}
             value={searchQuery}
             maxLength={PATIENT_SEARCH_MAX_LENGTH}
             onChange={(e) => {
@@ -1271,16 +1287,16 @@ function RecordsPageContent() {
             {patientSearchError || patientSearchMissing ? (
               <div className="px-4 py-3 text-sm text-destructive">
                 {patientSearchError?.message ??
-                  "Unable to search patients. Please retry."}
+                  t("searchFailed")}
               </div>
             ) : isSearchingPatients ? (
               <div className="flex items-center gap-2 px-4 py-3 text-sm text-muted-foreground">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Searching patients...
+                {t("searching")}
               </div>
             ) : searchResults && searchResults.length === 0 ? (
               <div className="px-4 py-3 text-sm text-muted-foreground">
-                No patients found
+                {t("noPatients")}
               </div>
             ) : (
               searchResults?.map((patient) => (
@@ -1305,17 +1321,13 @@ function RecordsPageContent() {
                   <div>
                     <span className="font-medium">{patient.name}</span>
                     <span className="ml-2 text-muted-foreground">
-                      {patient.species
-                        ? patient.species.charAt(0).toUpperCase() +
-                          patient.species.slice(1)
-                        : ""}
+                      {speciesLabel(patient.species)}
                       {patient.breed ? ` - ${patient.breed}` : ""}
                     </span>
                   </div>
                   {patient.clientFirstName && (
                     <span className="text-xs text-muted-foreground">
-                      Owner: {patient.clientFirstName}{" "}
-                      {patient.clientLastName}
+                      {t("owner", { name: `${patient.clientFirstName} ${patient.clientLastName ?? ""}`.trim() })}
                     </span>
                   )}
                 </button>
@@ -1333,16 +1345,12 @@ function RecordsPageContent() {
               {selectedPatient.name}
             </span>
             <span className="block truncate text-muted-foreground sm:ml-2 sm:inline">
-              {selectedPatient.species
-                ? selectedPatient.species.charAt(0).toUpperCase() +
-                  selectedPatient.species.slice(1)
-                : ""}
+              {speciesLabel(selectedPatient.species)}
               {selectedPatient.breed ? ` - ${selectedPatient.breed}` : ""}
             </span>
             {selectedPatient.clientFirstName && (
               <span className="block truncate text-muted-foreground sm:ml-3 sm:inline">
-                Owner: {selectedPatient.clientFirstName}{" "}
-                {selectedPatient.clientLastName}
+                {t("owner", { name: `${selectedPatient.clientFirstName} ${selectedPatient.clientLastName ?? ""}`.trim() })}
               </span>
             )}
           </div>
@@ -1366,7 +1374,7 @@ function RecordsPageContent() {
                 setPrescriptionForm(initialPrescriptionForm());
               }}
             >
-              Change Patient
+              {t("changePatient")}
             </Button>
           ) : null}
         </div>
@@ -1377,10 +1385,9 @@ function RecordsPageContent() {
       linkedPatientId === selectedPatient.id ? (
         <div className="mt-3 flex flex-col gap-2 rounded-lg border border-teal-300 bg-teal-50 px-4 py-3 text-sm text-teal-950 dark:border-teal-900 dark:bg-teal-950/30 dark:text-teal-100 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-medium">Recording for this visit</p>
+            <p className="font-medium">{t("visit.title")}</p>
             <p className="mt-0.5 text-xs">
-              New clinical work created here will stay attached to the active
-              appointment and appear in checkout reconciliation.
+              {t("visit.help")}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -1391,7 +1398,7 @@ function RecordsPageContent() {
               asChild
             >
               <Link href={`/encounters/${linkedAppointmentId}`}>
-                Back to visit
+                {t("visit.back")}
               </Link>
             </Button>
             <Button
@@ -1403,7 +1410,7 @@ function RecordsPageContent() {
               <Link
                 href={`/records?patientId=${encodeURIComponent(linkedPatientId)}&tab=${encodeURIComponent(requestedTab ?? "soap")}`}
               >
-                Leave visit context
+                {t("visit.leave")}
               </Link>
             </Button>
           </div>
@@ -1440,7 +1447,7 @@ function RecordsPageContent() {
                     )}
                   >
                     <Icon className="h-4 w-4" />
-                    {tab.label}
+                    {t(`tabs.${tab.id}`)}
                     {currentTab === tab.id && (
                       <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
                     )}
@@ -1456,12 +1463,12 @@ function RecordsPageContent() {
               <RecordsErrorPanel
                 message={
                   recordsSettingsError
-                    ? `Unable to load records settings. ${recordsSettingsError.message}`
-                    : "Unable to load records settings. Please retry."
+                    ? t("settingsFailedMessage", { message: recordsSettingsError.message })
+                    : t("settingsFailed")
                 }
               />
             ) : recordsSettingsLoading ? (
-              <RecordsLoadingPanel label="Loading records settings..." />
+              <RecordsLoadingPanel label={t("loadingSettings")} />
             ) : (
               <>
             {/* SOAP Notes Tab */}
@@ -1471,12 +1478,12 @@ function RecordsPageContent() {
                   <RecordsErrorPanel
                     message={
                       soapNotesError
-                        ? `Unable to load SOAP notes. ${soapNotesError.message}`
-                        : "Unable to load SOAP notes. Please retry."
+                        ? t("soapFailedMessage", { message: soapNotesError.message })
+                        : t("soapFailed")
                     }
                   />
                 ) : isLoadingSoapNotes ? (
-                  <RecordsLoadingPanel label="Loading SOAP notes..." />
+                  <RecordsLoadingPanel label={t("loadingSoap")} />
                 ) : soapNotes && soapNotes.length > 0 ? (
                   <div className="space-y-3">
                         {soapNotes.map((note) => {
@@ -1526,13 +1533,13 @@ function RecordsPageContent() {
                                         {note.createdAt
                                           ? formatClinicalDate(
                                               note.createdAt,
-                                              recordsTimeZone,
+                                              recordsTimeZone, undefined, locale,
                                             )
-                                          : "No date"}
+                                          : t("noDate")}
                                       </p>
                                       {note.imported ? (
                                         <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                                          Imported
+                                          {ts("imported")}
                                         </span>
                                       ) : null}
                                       <span
@@ -1544,21 +1551,21 @@ function RecordsPageContent() {
                                         )}
                                       >
                                         {note.status === "draft"
-                                          ? "Draft"
-                                          : "Finalized"}
+                                          ? ts("draft")
+                                          : ts("finalized")}
                                       </span>
                                       {note.correctionId ? (
                                         <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive">
-                                          Entered in error
+                                          {t("enteredInError")}
                                         </span>
                                       ) : null}
                                     </div>
                                     <p className="text-xs text-muted-foreground">
                                       {note.imported
                                         ? note.authorName
-                                          ? `Imported by ${note.authorName}`
-                                          : "Imported record"
-                                        : (note.authorName ?? "Unknown author")}
+                                          ? ts("importedBy", { name: note.authorName })
+                                          : ts("importedRecord")
+                                        : (note.authorName ?? ts("unknownAuthor"))}
                                     </p>
                                   </div>
                                   <p className="text-sm text-muted-foreground line-clamp-1 max-w-md">
@@ -1567,7 +1574,7 @@ function RecordsPageContent() {
                                         note.subjective ||
                                         note.objective ||
                                         note.plan,
-                                    ) || "No note recorded"}
+                                    ) || t("noNote")}
                                   </p>
                                 </div>
                                 {isExpanded ? (
@@ -1580,11 +1587,9 @@ function RecordsPageContent() {
                                 <div className="border-t border-border px-4 py-4 space-y-4">
                                   {note.status === "finalized" ? (
                                     <p className="text-xs text-muted-foreground">
-                                      Finalized by{" "}
-                                      {note.finalizerName ??
-                                        "Unknown clinician"}
+                                      {ts("finalizedBy", { name: note.finalizerName ?? ts("unknownClinician") })}
                                       {note.finalizedAt
-                                        ? ` on ${formatClinicalDateTime(note.finalizedAt, recordsTimeZone)}`
+                                        ? ` ${ts("finalizedOn", { date: formatClinicalDateTime(note.finalizedAt, recordsTimeZone, undefined, locale) })}`
                                         : ""}
                                     </p>
                                   ) : note.appointmentId &&
@@ -1593,25 +1598,25 @@ function RecordsPageContent() {
                                       href={`/records/new-soap/${encodeURIComponent(patientId)}?appointmentId=${encodeURIComponent(note.appointmentId)}`}
                                       className="inline-flex text-sm font-medium text-primary hover:underline"
                                     >
-                                      Resume draft
+                                      {ts("resume")}
                                     </a>
                                   ) : null}
                                   {note.replacesSoapNoteId ? (
                                     <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
                                       <p className="font-medium text-primary">
-                                        Current replacement SOAP
+                                        {ts("currentReplacement")}
                                       </p>
                                       <a
                                         href={`#soap-note-${note.replacesSoapNoteId}`}
                                         className="mt-1 inline-flex text-xs font-medium text-primary hover:underline"
                                       >
-                                        View retained original
+                                        {ts("viewOriginal")}
                                       </a>
                                     </div>
                                   ) : null}
                                   <div>
                                     <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                                      Subjective
+                                      {tsec("subjective")}
                                     </h4>
                                     <p className="text-sm">
                                       {soapSectionText(note.subjective) || "--"}
@@ -1619,7 +1624,7 @@ function RecordsPageContent() {
                                   </div>
                                   <div>
                                     <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                                      Objective
+                                      {tsec("objective")}
                                     </h4>
                                     <p className="text-sm">
                                       {soapSectionText(note.objective) || "--"}
@@ -1627,7 +1632,7 @@ function RecordsPageContent() {
                                   </div>
                                   <div>
                                     <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                                      Assessment
+                                      {tsec("assessment")}
                                     </h4>
                                     <p className="text-sm">
                                       {soapSectionText(note.assessment) || "--"}
@@ -1635,7 +1640,7 @@ function RecordsPageContent() {
                                   </div>
                                   <div>
                                     <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                                      Plan
+                                      {tsec("plan")}
                                     </h4>
                                     <p className="text-sm">
                                       {soapSectionText(note.plan) || "--"}
@@ -1644,7 +1649,7 @@ function RecordsPageContent() {
                                   {note.addenda.length > 0 ? (
                                     <div className="space-y-2 border-t border-border pt-3">
                                       <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                        Addenda
+                                        {ts("addenda")}
                                       </h4>
                                       {note.addenda.map((addendum) => (
                                         <div
@@ -1656,6 +1661,8 @@ function RecordsPageContent() {
                                             {formatClinicalDateTime(
                                               addendum.createdAt,
                                               recordsTimeZone,
+                                              undefined,
+                                              locale,
                                             )}
                                           </p>
                                           <p className="mt-1 whitespace-pre-wrap text-sm">
@@ -1674,11 +1681,10 @@ function RecordsPageContent() {
                                           className="text-sm font-medium"
                                           htmlFor={`records-addendum-${note.id}`}
                                         >
-                                          Add attributed addendum
+                                          {ta("title")}
                                         </label>
                                         <p className="mt-1 text-xs text-muted-foreground">
-                                          Addenda cannot be edited or deleted
-                                          after saving.
+                                          {ta("help")}
                                         </p>
                                         <textarea
                                           id={`records-addendum-${note.id}`}
@@ -1710,8 +1716,8 @@ function RecordsPageContent() {
                                             }
                                           >
                                             {addSoapAddendum.isPending
-                                              ? "Saving..."
-                                              : "Save addendum"}
+                                              ? ta("saving")
+                                              : ta("save")}
                                           </Button>
                                           <Button
                                             size="sm"
@@ -1723,7 +1729,7 @@ function RecordsPageContent() {
                                               setAddendumOperationId(null);
                                             }}
                                           >
-                                            Cancel
+                                            {ta("cancel")}
                                           </Button>
                                         </div>
                                       </div>
@@ -1740,7 +1746,7 @@ function RecordsPageContent() {
                                         }}
                                       >
                                         <Plus className="mr-2 h-4 w-4" />
-                                        Add addendum
+                                        {ta("add")}
                                       </Button>
                                     )
                                   ) : null}
@@ -1761,8 +1767,8 @@ function RecordsPageContent() {
                                               }
                                             : null
                                         }
-                                        triggerLabel="Void without replacement"
-                                        description="The original stays in permanent chart history but leaves current clinical summaries immediately. If its content needs correction, cancel and use Replace finalized SOAP. Use void alone only when no replacement belongs on this encounter; closeout will require a documented reason."
+                                        triggerLabel={ts("void")}
+                                        description={ts("voidHelp")}
                                         canCorrect={canCorrectClinicalRecords}
                                         isPending={
                                           correctSoap.isPending &&
@@ -1783,7 +1789,7 @@ function RecordsPageContent() {
                                             href={`#soap-note-${note.replacementSoapNoteId}`}
                                             className="text-sm font-medium text-primary hover:underline"
                                           >
-                                            View signed replacement
+                                            {ts("viewReplacement")}
                                           </a>
                                         </div>
                                       ) : canCorrectClinicalRecords &&
@@ -1796,8 +1802,8 @@ function RecordsPageContent() {
                                               href={`/records/replace-soap/${encodeURIComponent(patientId)}?sourceNoteId=${encodeURIComponent(note.id)}&return=records`}
                                             >
                                               {note.correctionId
-                                                ? "Create missing replacement"
-                                                : "Replace finalized SOAP"}
+                                                ? ts("createMissing")
+                                                : ts("replace")}
                                             </Link>
                                           </Button>
                                         </div>
@@ -1808,15 +1814,14 @@ function RecordsPageContent() {
                                             <a
                                               href={`/records/new-soap/${encodeURIComponent(patientId)}?appointmentId=${encodeURIComponent(note.appointmentId)}`}
                                             >
-                                              Review encounter SOAP draft
+                                              {ts("reviewDraft")}
                                             </a>
                                           </Button>
                                         </div>
                                       ) : note.correctionId &&
                                         hasOtherCurrentAppointmentSoap ? (
                                         <p className="mt-3 text-right text-xs text-muted-foreground">
-                                          This encounter already has a current
-                                          finalized SOAP.
+                                          {ts("alreadyCurrent")}
                                         </p>
                                       ) : null}
                                     </>
@@ -1830,8 +1835,8 @@ function RecordsPageContent() {
                 ) : (
                   <EmptyState
                     icon={FileText}
-                    title="No SOAP notes yet"
-                    description="SOAP notes are created from an active visit so documentation stays attached to the correct encounter."
+                    title={t("noSoapTitle")}
+                    description={t("noSoapHelp")}
                   />
                 )}
               </div>
@@ -1854,7 +1859,7 @@ function RecordsPageContent() {
                       }}
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      Add Vaccination
+                      {t("vacc.add")}
                     </Button>
                   </div>
                 )}
@@ -1905,7 +1910,7 @@ function RecordsPageContent() {
                         className="h-11 sm:h-9"
                         disabled={!canSubmitVaccination}
                       >
-                        {createVaccination.isPending ? "Saving..." : "Save"}
+                        {createVaccination.isPending ? t("saving") : t("save")}
                       </Button>
                       <Button
                         type="button"
@@ -1917,7 +1922,7 @@ function RecordsPageContent() {
                           setVaccinationForm(initialVaccinationForm());
                         }}
                       >
-                        Cancel
+                        {t("cancel")}
                       </Button>
                     </div>
                   </form>
@@ -1927,31 +1932,31 @@ function RecordsPageContent() {
                   <RecordsErrorPanel
                     message={
                       vaccinationsError
-                        ? `Unable to load vaccination records. ${vaccinationsError.message}`
-                        : "Unable to load vaccination records. Please retry."
+                        ? t("vacc.failedMessage", { message: vaccinationsError.message })
+                        : t("vacc.failed")
                     }
                   />
                 ) : isLoadingVaccinations ? (
-                  <RecordsLoadingPanel label="Loading vaccinations..." />
+                  <RecordsLoadingPanel label={t("vacc.loading")} />
                 ) : vaccinations && vaccinations.length > 0 ? (
                   <div className="overflow-x-auto rounded-lg border border-border">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border bg-muted/50">
                           <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                            Vaccine
+                            {t("vacc.columns.vaccine")}
                           </th>
                           <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                            Date Administered
+                            {t("vacc.columns.given")}
                           </th>
                           <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                            Next Due
+                            {t("vacc.columns.nextDue")}
                           </th>
                           <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                            Administered By
+                            {t("vacc.columns.by")}
                           </th>
                           <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                            Status
+                            {t("columns.status")}
                           </th>
                         </tr>
                       </thead>
@@ -1977,7 +1982,7 @@ function RecordsPageContent() {
                                     {vax.administeredAt
                                       ? formatClinicalDate(
                                           vax.administeredAt,
-                                          recordsTimeZone,
+                                          recordsTimeZone, undefined, locale,
                                         )
                                       : "--"}
                                   </td>
@@ -1985,7 +1990,7 @@ function RecordsPageContent() {
                                     {vax.nextDueDate
                                       ? formatClinicalDate(
                                           vax.nextDueDate,
-                                          recordsTimeZone,
+                                          recordsTimeZone, undefined, locale,
                                         )
                                       : "--"}
                                   </td>
@@ -1995,7 +2000,7 @@ function RecordsPageContent() {
                                   <td className="px-4 py-3">
                                     {vax.correctionId ? (
                                       <span className="inline-flex items-center rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-medium text-destructive">
-                                        Entered in error
+                                        {t("enteredInError")}
                                       </span>
                                     ) : (
                                       <span
@@ -2004,7 +2009,7 @@ function RecordsPageContent() {
                                           dueStatus.className,
                                         )}
                                       >
-                                        {dueStatus.label}
+                                        {t(`vaccineDue.${dueStatus.label}`)}
                                       </span>
                                     )}
                                     <ClinicalCorrectionControl
@@ -2046,7 +2051,7 @@ function RecordsPageContent() {
                 ) : (
                   <EmptyState
                     icon={Syringe}
-                    title="No vaccination records yet"
+                    title={t("vacc.empty")}
                   />
                 )}
               </div>
@@ -2079,7 +2084,7 @@ function RecordsPageContent() {
                       }}
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      New Prescription
+                      {t("rx.new")}
                     </Button>
                   </div>
                 )}
@@ -2098,7 +2103,7 @@ function RecordsPageContent() {
                         !prescriptionForm.acknowledgeSafetyWarnings
                       ) {
                         toast.error(
-                          "Acknowledge prescription safety warnings before saving."
+                          t("rx.ackRequired")
                         );
                         return;
                       }
@@ -2133,7 +2138,7 @@ function RecordsPageContent() {
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Medication *
+                          {t("rx.medicationRequired")}
                         </label>
                         <Input
                           required
@@ -2146,12 +2151,12 @@ function RecordsPageContent() {
                               acknowledgeSafetyWarnings: false,
                             }))
                           }
-                          placeholder="e.g. Carprofen"
+                          placeholder={t("rx.placeholders.medication")}
                         />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Inventory Item
+                          {t("rx.inventoryItem")}
                         </label>
                         <PrescriptionInventoryProductPicker
                           value={prescriptionForm.productId}
@@ -2173,16 +2178,13 @@ function RecordsPageContent() {
                         {prescriptionForm.productId &&
                         linkedPrescriptionProduct ? (
                           <p className="mt-1 text-xs text-muted-foreground">
-                            Stock and billing both use individual units at{" "}
-                            {linkedPrescriptionProduct.unitPrice} per unit.
-                            The prescription quantity will be deducted and
-                            charged in that same unit.
+                            {t("rx.unitsNote", { price: linkedPrescriptionProduct.unitPrice })}
                           </p>
                         ) : null}
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Dosage *
+                          {t("rx.dosageRequired")}
                         </label>
                         <Input
                           required
@@ -2194,12 +2196,12 @@ function RecordsPageContent() {
                               dosage: e.target.value,
                             }))
                           }
-                          placeholder="e.g. 75 mg"
+                          placeholder={t("rx.placeholders.dosage")}
                         />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Frequency *
+                          {t("rx.frequencyRequired")}
                         </label>
                         <Input
                           required
@@ -2211,21 +2213,21 @@ function RecordsPageContent() {
                               frequency: e.target.value,
                             }))
                           }
-                          placeholder="e.g. Every 12 hours"
+                          placeholder={t("rx.placeholders.frequency")}
                         />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
                           {linkedPrescriptionProduct
-                            ? "Quantity (inventory units)"
-                            : "Quantity"}
+                            ? t("rx.quantityUnits")
+                            : t("rx.quantity")}
                         </label>
                         <Input
                           type="number"
                           min={PRESCRIPTION_QUANTITY_MIN}
                           max={PRESCRIPTION_COUNT_MAX}
                           step="0.001"
-                          aria-label="Prescription quantity"
+                          aria-label={t("rx.quantityLabel")}
                           aria-describedby={linkedPrescriptionProduct ? "prescription-stock-feedback" : undefined}
                           aria-invalid={Boolean(prescriptionForm.productId) && !hasValidPrescriptionQuantityForInventory}
                           value={prescriptionForm.quantity}
@@ -2235,28 +2237,28 @@ function RecordsPageContent() {
                               quantity: e.target.value,
                             }))
                           }
-                          placeholder="e.g. 30"
+                          placeholder={t("rx.placeholders.quantity")}
                         />
                         {linkedPrescriptionProduct ? (
                           <div id="prescription-stock-feedback" className="mt-2 text-xs" role="status">
                             <p>{linkedPrescriptionProduct.inventoryTracked
-                              ? `${linkedPrescriptionProduct.stockQuantity} inventory units available. Quantity is the total amount dispensed, in the same units as stock and price.`
-                              : "Stock tracking has not been set up for this item. Enter a reviewed opening quantity before dispensing."}</p>
+                              ? t("rx.available", { count: linkedPrescriptionProduct.stockQuantity })
+                              : t("rx.untracked")}</p>
                             {!hasValidPrescriptionQuantityForInventory && !linkedProductQuery.isFetching && linkedPrescriptionProduct.inventoryTracked ? (
                               <p className="mt-1 text-destructive">{linkedProductQuery.isError
-                                ? "Unable to verify stock. Refresh stock before saving."
-                                : "Cannot save this quantity against the recorded stock. Review the stock balance and dispensing units before continuing."}</p>
+                                ? t("rx.verifyFailed")
+                                : t("rx.insufficient")}</p>
                             ) : null}
-                            <a className="mt-1 inline-block underline" href="/inventory" target="_blank" rel="noopener noreferrer">Review inventory in a new tab</a>
+                            <a className="mt-1 inline-block underline" href="/inventory" target="_blank" rel="noopener noreferrer">{t("rx.reviewInventory")}</a>
                             <button type="button" className="ml-3 underline" disabled={linkedProductQuery.isFetching} onClick={() => void linkedProductQuery.refetch()}>
-                              {linkedProductQuery.isFetching ? "Checking stock…" : "Refresh stock"}
+                              {linkedProductQuery.isFetching ? t("rx.checkingStock") : t("rx.refreshStock")}
                             </button>
                           </div>
                         ) : null}
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Refills
+                          {t("rx.refills")}
                         </label>
                         <Input
                           type="number"
@@ -2274,7 +2276,7 @@ function RecordsPageContent() {
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Start Date *
+                          {t("rx.startRequired")}
                         </label>
                         <Input
                           type="date"
@@ -2290,7 +2292,7 @@ function RecordsPageContent() {
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          End Date
+                          {t("rx.end")}
                         </label>
                         <Input
                           type="date"
@@ -2306,7 +2308,7 @@ function RecordsPageContent() {
                       </div>
                       <div className="sm:col-span-2">
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Instructions
+                          {t("rx.instructions")}
                         </label>
                         <Input
                           value={prescriptionForm.instructions}
@@ -2317,16 +2319,14 @@ function RecordsPageContent() {
                               instructions: e.target.value,
                             }))
                           }
-                          placeholder="Give with food"
+                          placeholder={t("rx.placeholders.instructions")}
                         />
                       </div>
                     </div>
 
                     <div className="mt-4 space-y-3">
                       <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-                        Controlled-substance recordkeeping is not automated.
-                        When applicable, complete the clinic&apos;s required
-                        controlled drug log separately.
+                        {t("rx.controlled")}
                       </p>
                       <PrescriptionSafetyPanel
                         medicationName={medicationNameForSafety}
@@ -2334,7 +2334,7 @@ function RecordsPageContent() {
                         errorMessage={
                           prescriptionSafety.error?.message ??
                           (prescriptionSafetyMissing
-                            ? "Please retry."
+                            ? t("rx.pleaseRetry")
                             : undefined)
                         }
                         warnings={verifiedPrescriptionSafety?.warnings ?? []}
@@ -2356,8 +2356,7 @@ function RecordsPageContent() {
                             className="mt-0.5"
                           />
                           <span>
-                            Clinician reviewed and accepts these prescription
-                            safety warnings.
+                            {t("rx.accept")}
                           </span>
                         </label>
                       )}
@@ -2373,7 +2372,7 @@ function RecordsPageContent() {
                         {createPrescription.isPending ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : null}
-                        Save Prescription
+                        {t("rx.save")}
                       </Button>
                       <Button
                         type="button"
@@ -2388,7 +2387,7 @@ function RecordsPageContent() {
                           );
                         }}
                       >
-                        Cancel
+                        {t("cancel")}
                       </Button>
                     </div>
                   </form>
@@ -2398,37 +2397,37 @@ function RecordsPageContent() {
                   <RecordsErrorPanel
                     message={
                       prescriptionsError
-                        ? `Unable to load prescriptions. ${prescriptionsError.message}`
-                        : "Unable to load prescriptions. Please retry."
+                        ? t("rx.failedMessage", { message: prescriptionsError.message })
+                        : t("rx.failed")
                     }
                   />
                 ) : isLoadingPrescriptions ? (
-                  <RecordsLoadingPanel label="Loading prescriptions..." />
+                  <RecordsLoadingPanel label={t("rx.loading")} />
                 ) : prescriptionsList && prescriptionsList.length > 0 ? (
                   <div className="overflow-x-auto rounded-lg border border-border">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border bg-muted/50">
                           <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                            Medication
+                            {t("rx.columns.medication")}
                           </th>
                           <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                            Dosage
+                            {t("rx.columns.dosage")}
                           </th>
                           <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                            Frequency
+                            {t("rx.columns.frequency")}
                           </th>
                           <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                            Inventory
+                            {t("rx.columns.inventory")}
                           </th>
                           <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                            Status
+                            {t("columns.status")}
                           </th>
                           <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                            Refills
+                            {t("rx.refills")}
                           </th>
                           <th className="px-4 py-3 text-right font-medium text-muted-foreground">
-                            Actions
+                            {t("columns.actions")}
                           </th>
                         </tr>
                       </thead>
@@ -2451,7 +2450,7 @@ function RecordsPageContent() {
                                   {rx.productName}
                                   {rx.quantity != null ? (
                                     <span className="block text-xs">
-                                      Dispensed {rx.quantity}
+                                      {t("rx.dispensed", { quantity: rx.quantity })}
                                     </span>
                                   ) : null}
                                 </span>
@@ -2466,7 +2465,7 @@ function RecordsPageContent() {
                                   getPrescriptionStatusBadge(rx.effectiveStatus)
                                 )}
                               >
-                                {rx.effectiveStatus ?? "unknown"}
+                                {t(`rx.status.${rx.effectiveStatus ?? "unknown"}`)}
                               </span>
                             </td>
                             <td className="px-4 py-3">
@@ -2479,8 +2478,8 @@ function RecordsPageContent() {
                                   size="sm"
                                   title={
                                     rx.effectiveStatus === "active"
-                                      ? "Print Label"
-                                      : "Only active prescriptions can print a dispensing label"
+                                      ? t("rx.printLabel")
+                                      : t("rx.onlyActiveLabel")
                                   }
                                   disabled={rx.effectiveStatus !== "active"}
                                   onClick={async () => {
@@ -2507,14 +2506,14 @@ function RecordsPageContent() {
                                     startDate: rx.startDate
                                       ? formatClinicalDate(
                                           rx.startDate,
-                                          recordsTimeZone
+                                          recordsTimeZone, undefined, locale
                                         )
                                       : formatClinicalDate(
                                           dateInputValue(
                                             new Date(),
                                             recordsTimeZone
                                           ),
-                                          recordsTimeZone
+                                          recordsTimeZone, undefined, locale
                                         ),
                                     quantity: rx.quantity != null ? String(rx.quantity) : undefined,
                                     refillsRemaining: rx.refillsRemaining ?? undefined,
@@ -2524,7 +2523,7 @@ function RecordsPageContent() {
                                   }}
                                 >
                                   <Tag className="mr-1 h-3.5 w-3.5" />
-                                  Print Label
+                                  {t("rx.printLabel")}
                                 </Button>
                               </div>
                               <PrescriptionLifecycleControl
@@ -2553,7 +2552,7 @@ function RecordsPageContent() {
                     </table>
                   </div>
                 ) : (
-                  <EmptyState icon={Pill} title="No prescriptions yet" />
+                  <EmptyState icon={Pill} title={t("rx.empty")} />
                 )}
               </div>
             )}
@@ -2575,7 +2574,7 @@ function RecordsPageContent() {
                       }}
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      Add Problem
+                      {t("problems.add")}
                     </Button>
                   </div>
                 )}
@@ -2597,7 +2596,7 @@ function RecordsPageContent() {
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div className="sm:col-span-2">
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Problem *
+                          {t("problems.problemRequired")}
                         </label>
                         <Input
                           name="description"
@@ -2610,12 +2609,12 @@ function RecordsPageContent() {
                               description: e.target.value,
                             }))
                           }
-                          placeholder="e.g. Chronic otitis"
+                          placeholder={t("problems.placeholder")}
                         />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Status
+                          {t("columns.status")}
                         </label>
                         <select
                           name="status"
@@ -2630,14 +2629,14 @@ function RecordsPageContent() {
                         >
                           {PROBLEM_STATUSES.map((status) => (
                             <option key={status} value={status}>
-                              {status.charAt(0).toUpperCase() + status.slice(1)}
+                              {t(`problems.status.${status}`)}
                             </option>
                           ))}
                         </select>
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Onset Date
+                          {t("problems.onset")}
                         </label>
                         <Input
                           name="onsetDate"
@@ -2664,7 +2663,7 @@ function RecordsPageContent() {
                         className="h-11 sm:h-9"
                         disabled={!canSubmitProblem}
                       >
-                        {createProblem.isPending ? "Saving..." : "Save"}
+                        {createProblem.isPending ? t("saving") : t("save")}
                       </Button>
                       <Button
                         type="button"
@@ -2676,7 +2675,7 @@ function RecordsPageContent() {
                           setProblemForm(initialProblemForm());
                         }}
                       >
-                        Cancel
+                        {t("cancel")}
                       </Button>
                     </div>
                   </form>
@@ -2686,12 +2685,12 @@ function RecordsPageContent() {
                   <RecordsErrorPanel
                     message={
                       problemsError
-                        ? `Unable to load problems. ${problemsError.message}`
-                        : "Unable to load problems. Please retry."
+                        ? t("problems.failedMessage", { message: problemsError.message })
+                        : t("problems.failed")
                     }
                   />
                 ) : isLoadingProblems ? (
-                  <RecordsLoadingPanel label="Loading problems..." />
+                  <RecordsLoadingPanel label={t("problems.loading")} />
                 ) : problems && problems.length > 0 ? (
                   <div className="space-y-2">
                     {problems.map((problem) => (
@@ -2712,10 +2711,10 @@ function RecordsPageContent() {
                           </p>
                           {problem.onsetDate && (
                             <p className="text-xs text-muted-foreground mt-0.5">
-                              Onset:{" "}
+                              {t("problems.onsetPrefix")}{" "}
                               {formatClinicalDate(
                                 problem.onsetDate,
-                                recordsTimeZone
+                                recordsTimeZone, undefined, locale
                               )}
                             </p>
                           )}
@@ -2731,7 +2730,7 @@ function RecordsPageContent() {
                                   : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
                             )}
                           >
-                            {problem.status ?? "active"}
+                            {t(`problems.statusLower.${problem.status ?? "active"}`)}
                           </span>
                           {canManageProblems && (
                             <div className="flex flex-wrap gap-1">
@@ -2748,7 +2747,7 @@ function RecordsPageContent() {
                                     })
                                   }
                                 >
-                                  Reopen
+                                  {t("problems.reopen")}
                                 </Button>
                               )}
                               {problem.status !== "chronic" && (
@@ -2764,7 +2763,7 @@ function RecordsPageContent() {
                                     })
                                   }
                                 >
-                                  Chronic
+                                  {t("problems.chronic")}
                                 </Button>
                               )}
                               {problem.status !== "resolved" && (
@@ -2780,7 +2779,7 @@ function RecordsPageContent() {
                                     })
                                   }
                                 >
-                                  Resolve
+                                  {t("problems.resolve")}
                                 </Button>
                               )}
                             </div>
@@ -2792,7 +2791,7 @@ function RecordsPageContent() {
                 ) : (
                   <EmptyState
                     icon={ClipboardList}
-                    title="No problems recorded"
+                    title={t("problems.empty")}
                   />
                 )}
               </div>
@@ -2806,12 +2805,10 @@ function RecordsPageContent() {
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                     <div>
                       <p className="font-medium">
-                        Manual lab entry only
+                        {t("labs.manualOnly")}
                       </p>
                       <p className="mt-1 text-xs leading-5 text-amber-900 dark:text-amber-200">
-                        Reference lab ordering is disabled until IDEXX, Antech,
-                        or Zoetis provider credentials and a real adapter are
-                        connected.
+                        {t("labs.manualHelp")}
                       </p>
                     </div>
                   </div>
@@ -2829,7 +2826,7 @@ function RecordsPageContent() {
                       }}
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      Add Manual Lab Result
+                      {t("labs.addManual")}
                     </Button>
                   )}
                 </div>
@@ -2875,43 +2872,38 @@ function RecordsPageContent() {
                       <div className="space-y-3 rounded-md border border-blue-300 bg-blue-50 px-3 py-3 text-sm text-blue-950 dark:border-blue-900 dark:bg-blue-950/30 dark:text-blue-100">
                         <div>
                           <p className="font-medium">
-                            Creating an attributed replacement
+                            {t("labs.creatingReplacement")}
                           </p>
                           <p className="mt-1 text-xs">
-                            Source chart: {selectedPatient?.name ?? "Unknown"} · Correct destination: {replacementPatient?.name ?? "Choose a patient"}. Only the test name was copied. Deliberately review the destination and enter new values before saving; nothing is submitted automatically.
+                            {t("labs.replacementSummary", {
+                              source: selectedPatient?.name ?? t("labs.unknown"),
+                              destination: replacementPatient?.name ?? t("labs.choosePatient"),
+                            })}
                           </p>
                           <p className="mt-2 text-xs">
-                            If the original visit is still open and this work
-                            was unbilled, a same-patient replacement creates new
-                            unresolved visit work. Prior charged or no-charge
-                            work stays unchanged and is not billed again.
-                            Closed-visit and wrong-patient replacements from this
-                            dashboard create no visit work.
+                            {t("labs.replacementBilling")}
                           </p>
                         </div>
                         <div className="rounded-md border border-blue-200 bg-background/80 p-3 text-foreground dark:border-blue-900">
                           <label className="block text-xs font-medium">
-                            Replacement patient
+                            {t("labs.replacementPatient")}
                             <Input
                               className="mt-1"
                               value={replacementPatientSearch}
                               onChange={(event) =>
                                 setReplacementPatientSearch(event.target.value)
                               }
-                              placeholder="Search another patient by name or owner"
+                              placeholder={t("labs.replacementSearch")}
                             />
                           </label>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            Leave {selectedPatient?.name ?? "this patient"}{" "}
-                            selected for a same-patient correction, or search
-                            and deliberately choose the correct chart for a
-                            wrong-patient repair.
+                            {t("labs.replacementHelp", { name: selectedPatient?.name ?? t("labs.thisPatient") })}
                           </p>
                           {canSearchReplacementPatients ? (
                             <div className="mt-2 max-h-40 space-y-1 overflow-y-auto">
                               {replacementPatientResults.isLoading ? (
                                 <p className="px-2 py-1 text-xs text-muted-foreground">
-                                  Searching patients…
+                                  {t("labs.searchingPatients")}
                                 </p>
                               ) : replacementPatientResults.data?.length ? (
                                 replacementPatientResults.data.map((option) => (
@@ -2937,13 +2929,13 @@ function RecordsPageContent() {
                                         option.clientLastName,
                                       ]
                                         .filter(Boolean)
-                                        .join(" ") || "Owner unavailable"}
+                                        .join(" ") || t("labs.ownerUnavailable")}
                                     </span>
                                   </button>
                                 ))
                               ) : (
                                 <p className="px-2 py-1 text-xs text-muted-foreground">
-                                  No matching patient found.
+                                  {t("labs.noMatchingPatient")}
                                 </p>
                               )}
                             </div>
@@ -2954,7 +2946,7 @@ function RecordsPageContent() {
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Test Name *
+                          {t("labs.testNameRequired")}
                         </label>
                         <Input
                           name="testName"
@@ -2967,12 +2959,12 @@ function RecordsPageContent() {
                               testName: e.target.value,
                             }))
                           }
-                          placeholder="e.g. CBC"
+                          placeholder={t("labs.placeholders.test")}
                         />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Result Value
+                          {t("labs.resultValue")}
                         </label>
                         <Input
                           name="resultValue"
@@ -2984,7 +2976,7 @@ function RecordsPageContent() {
                               resultValue: e.target.value,
                             }))
                           }
-                          placeholder="e.g. 12.5"
+                          placeholder={t("labs.placeholders.value")}
                         />
                       </div>
                       <div>
@@ -2992,7 +2984,7 @@ function RecordsPageContent() {
                           htmlFor="lab-result-flag"
                           className="block text-xs font-medium text-muted-foreground mb-1"
                         >
-                          Clinical flag
+                          {t("labs.flag")}
                         </label>
                         <select
                           id="lab-result-flag"
@@ -3006,15 +2998,15 @@ function RecordsPageContent() {
                           }
                           className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          <option value="unknown">Not assessed</option>
-                          <option value="normal">Normal</option>
-                          <option value="abnormal">Abnormal</option>
-                          <option value="critical">Critical</option>
+                          <option value="unknown">{tl("flagOption.unknown")}</option>
+                          <option value="normal">{tl("flagOption.normal")}</option>
+                          <option value="abnormal">{tl("flagOption.abnormal")}</option>
+                          <option value="critical">{tl("flagOption.critical")}</option>
                         </select>
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Unit
+                          {t("labs.unit")}
                         </label>
                         <Input
                           name="unit"
@@ -3026,12 +3018,12 @@ function RecordsPageContent() {
                               unit: e.target.value,
                             }))
                           }
-                          placeholder="e.g. mg/dL"
+                          placeholder={t("labs.placeholders.unit")}
                         />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Ref. Range Low
+                          {t("labs.refLow")}
                         </label>
                         <Input
                           name="referenceRangeLow"
@@ -3051,12 +3043,12 @@ function RecordsPageContent() {
                               referenceRangeLow: e.target.value,
                             }))
                           }
-                          placeholder="e.g. 7.0"
+                          placeholder={t("labs.placeholders.low")}
                         />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Ref. Range High
+                          {t("labs.refHigh")}
                         </label>
                         <Input
                           name="referenceRangeHigh"
@@ -3080,14 +3072,14 @@ function RecordsPageContent() {
                               referenceRangeHigh: e.target.value,
                             }))
                           }
-                          placeholder="e.g. 27.0"
+                          placeholder={t("labs.placeholders.high")}
                         />
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {replacesLabResultId
-                        ? "Enter a fresh result value to create a completed replacement and send it to the clinic Lab Inbox for review. A replacement cannot be saved as an empty pending result."
-                        : "Entering a value records this result as completed and sends it to the clinic Lab Inbox for review. A result without values stays pending."}
+                        ? t("labs.replacementValueHelp")
+                        : t("labs.valueHelp")}
                     </p>
                     <div className="flex gap-2">
                       <Button
@@ -3096,7 +3088,7 @@ function RecordsPageContent() {
                         className="h-11 sm:h-9"
                         disabled={!canSubmitLabResult}
                       >
-                        {createLabResult.isPending ? "Saving..." : "Save"}
+                        {createLabResult.isPending ? t("saving") : t("save")}
                       </Button>
                       <Button
                         type="button"
@@ -3118,7 +3110,7 @@ function RecordsPageContent() {
                           labResultCreationOperationId.current = null;
                         }}
                       >
-                        Cancel
+                        {t("cancel")}
                       </Button>
                     </div>
                   </form>
@@ -3128,12 +3120,12 @@ function RecordsPageContent() {
                   <RecordsErrorPanel
                     message={
                       labResultsError
-                        ? `Unable to load lab results. ${labResultsError.message}`
-                        : "Unable to load lab results. Please retry."
+                        ? t("labs.failedMessage", { message: labResultsError.message })
+                        : t("labs.failed")
                     }
                   />
                 ) : isLoadingLabResults ? (
-                  <RecordsLoadingPanel label="Loading lab results..." />
+                  <RecordsLoadingPanel label={t("labs.loading")} />
                 ) : labResultsList && labResultsList.length > 0 ? (
                   <div className="space-y-4">
                     {labTrendGroups.length > 0 && (
@@ -3144,31 +3136,31 @@ function RecordsPageContent() {
                         <thead>
                           <tr className="border-b border-border bg-muted/50">
                             <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                              Test Name
+                              {t("labs.columns.test")}
                             </th>
                             <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                              Result
+                              {t("labs.columns.result")}
                             </th>
                             <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                              Unit
+                              {t("labs.unit")}
                             </th>
                             <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                              Reference Range
+                              {t("labs.columns.range")}
                             </th>
                             <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                              Status
+                              {t("columns.status")}
                             </th>
                             <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                              Review evidence
+                              {t("labs.columns.evidence")}
                             </th>
                             <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                              Ordered By
+                              {t("labs.columns.orderedBy")}
                             </th>
                             <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                              Date
+                              {t("columns.date")}
                             </th>
                             <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                              Actions
+                              {t("columns.actions")}
                             </th>
                           </tr>
                         </thead>
@@ -3196,7 +3188,7 @@ function RecordsPageContent() {
                                       href={`/records?patientId=${lab.replacesLabResultPatientId ?? patientId}&tab=labResults#lab-result-${lab.replacesLabResultId}`}
                                       className="mt-1 block text-xs font-normal text-primary hover:underline"
                                     >
-                                      Replaces entered-in-error result
+                                      {t("labs.replacesError")}
                                     </a>
                                   ) : null}
                                   {lab.replacementLabResultId ? (
@@ -3204,7 +3196,7 @@ function RecordsPageContent() {
                                       href={`/records?patientId=${lab.replacementLabResultPatientId ?? patientId}&tab=labResults#lab-result-${lab.replacementLabResultId}`}
                                       className="mt-1 block text-xs font-normal text-primary hover:underline"
                                     >
-                                      View replacement result
+                                      {t("labs.viewReplacement")}
                                     </a>
                                   ) : null}
                                 </td>
@@ -3235,7 +3227,7 @@ function RecordsPageContent() {
                                         getLabStatusBadge(lab.status)
                                       )}
                                     >
-                                      {lab.status}
+                                      {tl(`status.${lab.status}`)}
                                     </span>
                                     {lab.resultFlag !== "unknown" ? (
                                       <span className={cn(
@@ -3246,7 +3238,7 @@ function RecordsPageContent() {
                                             ? "text-amber-700 dark:text-amber-300"
                                             : "text-emerald-700 dark:text-emerald-300",
                                       )}>
-                                        {lab.resultFlag}
+                                        {tl(`flags.${lab.resultFlag}`)}
                                       </span>
                                     ) : null}
                                   </div>
@@ -3254,19 +3246,22 @@ function RecordsPageContent() {
                                 <td className="px-4 py-3 text-xs text-muted-foreground">
                                   {lab.completedAt ? (
                                     <span className="block">
-                                      Completed {formatClinicalDate(lab.completedAt, recordsTimeZone)} · {lab.completionActorName ?? "actor unavailable (legacy)"}
+                                      {t("labs.completed", {
+                                        date: formatClinicalDate(lab.completedAt, recordsTimeZone, undefined, locale),
+                                        actor: lab.completionActorName ?? t("labs.actorUnavailable"),
+                                      })}
                                     </span>
                                   ) : (
-                                    "Awaiting values"
+                                    t("labs.awaitingValues")
                                   )}
                                   {lab.reviewedAt ? (
                                     <span className="mt-1 block">
-                                      Reviewed {formatClinicalDate(lab.reviewedAt, recordsTimeZone)}{lab.reviewedByName ? ` by ${lab.reviewedByName}` : ""}
+                                      {t("labs.reviewed", { date: formatClinicalDate(lab.reviewedAt, recordsTimeZone, undefined, locale) })}{lab.reviewedByName ? ` ${t("labs.reviewedBy", { name: lab.reviewedByName })}` : ""}
                                     </span>
                                   ) : null}
                                   {lab.followUpStatus === "open" ? (
                                     <span className="mt-1 block font-medium text-amber-700 dark:text-amber-300">
-                                      Follow-up: {lab.followUpAssigneeName ?? "assigned"}
+                                      {t("labs.followUp", { name: lab.followUpAssigneeName ?? t("labs.assigned") })}
                                     </span>
                                   ) : null}
                                 </td>
@@ -3277,7 +3272,7 @@ function RecordsPageContent() {
                                   {lab.createdAt
                                     ? formatClinicalDate(
                                         lab.createdAt,
-                                        recordsTimeZone
+                                        recordsTimeZone, undefined, locale
                                       )
                                     : "--"}
                                 </td>
@@ -3343,7 +3338,7 @@ function RecordsPageContent() {
                                               null;
                                           }}
                                         >
-                                          Create replacement
+                                          {t("labs.createReplacement")}
                                         </Button>
                                       ) : null}
                                     </div>
@@ -3373,7 +3368,7 @@ function RecordsPageContent() {
                                             updateLabResultStatus.isPending
                                           }
                                         >
-                                          Mark Reviewed
+                                          {t("labs.markReviewed")}
                                         </Button>
                                       ) : lab.status === "completed" &&
                                         lab.resultFlag === "critical" &&
@@ -3381,13 +3376,13 @@ function RecordsPageContent() {
                                         canManageLabResults ? (
                                         <Button asChild variant="ghost" size="sm">
                                           <Link href={`/lab-results?resultId=${lab.id}`}>
-                                            Assign follow-up
+                                            {t("labs.assignFollowUp")}
                                           </Link>
                                         </Button>
                                       ) : lab.status === "pending" && canManageLabResults ? (
                                         <Button asChild variant="ghost" size="sm">
                                           <Link href={`/lab-results?resultId=${lab.id}`}>
-                                            Open selected result
+                                            {t("labs.openSelected")}
                                           </Link>
                                         </Button>
                                       ) : null}
@@ -3396,7 +3391,7 @@ function RecordsPageContent() {
                                         correction={null}
                                         canCorrect={canCorrectClinicalRecords}
                                         isPending={correctLabResult.isPending}
-                                        description="The original result and immutable event evidence remain permanently visible in chart history. It will leave the active Lab Inbox, trends, and follow-up workflows. Unresolved unbilled visit work is voided; charged or no-charge financial history is never changed. Create an attributed replacement after confirming this correction."
+                                        description={t("labs.correctionHelp")}
                                         onCorrect={async (reason) => {
                                           let operationId =
                                             labCorrectionOperationIds.current.get(
@@ -3428,7 +3423,7 @@ function RecordsPageContent() {
                     </div>
                   </div>
                 ) : (
-                  <EmptyState icon={FlaskConical} title="No lab results yet" />
+                  <EmptyState icon={FlaskConical} title={t("labs.empty")} />
                 )}
               </div>
             )}
@@ -3449,7 +3444,7 @@ function RecordsPageContent() {
                       }}
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      Add Procedure
+                      {t("procedures.add")}
                     </Button>
                   </div>
                 )}
@@ -3480,7 +3475,7 @@ function RecordsPageContent() {
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Name *
+                          {t("procedures.nameRequired")}
                         </label>
                         <Input
                           name="name"
@@ -3493,12 +3488,12 @@ function RecordsPageContent() {
                               name: e.target.value,
                             }))
                           }
-                          placeholder="e.g. Dental Prophylaxis"
+                          placeholder={t("procedures.placeholders.name")}
                         />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Duration (minutes)
+                          {t("procedures.durationMinutes")}
                         </label>
                         <Input
                           name="durationMinutes"
@@ -3518,12 +3513,12 @@ function RecordsPageContent() {
                               durationMinutes: e.target.value,
                             }))
                           }
-                          placeholder="e.g. 45"
+                          placeholder={t("procedures.placeholders.duration")}
                         />
                       </div>
                       <div className="sm:col-span-2">
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Description
+                          {t("procedures.description")}
                         </label>
                         <Input
                           name="description"
@@ -3535,12 +3530,12 @@ function RecordsPageContent() {
                               description: e.target.value,
                             }))
                           }
-                          placeholder="Brief description of the procedure"
+                          placeholder={t("procedures.placeholders.description")}
                         />
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Anesthesia Used
+                          {t("procedures.anesthesiaUsed")}
                         </label>
                         <Input
                           name="anesthesiaUsed"
@@ -3552,12 +3547,12 @@ function RecordsPageContent() {
                               anesthesiaUsed: e.target.value,
                             }))
                           }
-                          placeholder="e.g. Isoflurane"
+                          placeholder={t("procedures.placeholders.anesthesia")}
                         />
                       </div>
                       <div className="sm:col-span-2">
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
-                          Notes
+                          {t("procedures.notes")}
                         </label>
                         <Input
                           name="notes"
@@ -3569,7 +3564,7 @@ function RecordsPageContent() {
                               notes: e.target.value,
                             }))
                           }
-                          placeholder="Additional notes"
+                          placeholder={t("procedures.placeholders.notes")}
                         />
                       </div>
                     </div>
@@ -3580,7 +3575,7 @@ function RecordsPageContent() {
                         className="h-11 sm:h-9"
                         disabled={!canSubmitProcedure}
                       >
-                        {createProcedure.isPending ? "Saving..." : "Save"}
+                        {createProcedure.isPending ? t("saving") : t("save")}
                       </Button>
                       <Button
                         type="button"
@@ -3592,7 +3587,7 @@ function RecordsPageContent() {
                           setProcedureForm(initialProcedureForm());
                         }}
                       >
-                        Cancel
+                        {t("cancel")}
                       </Button>
                     </div>
                   </form>
@@ -3602,31 +3597,31 @@ function RecordsPageContent() {
                   <RecordsErrorPanel
                     message={
                       proceduresError
-                        ? `Unable to load procedures. ${proceduresError.message}`
-                        : "Unable to load procedures. Please retry."
+                        ? t("procedures.failedMessage", { message: proceduresError.message })
+                        : t("procedures.failed")
                     }
                   />
                 ) : isLoadingProcedures ? (
-                  <RecordsLoadingPanel label="Loading procedures..." />
+                  <RecordsLoadingPanel label={t("procedures.loading")} />
                 ) : proceduresList && proceduresList.length > 0 ? (
                   <div className="overflow-x-auto rounded-lg border border-border">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-border bg-muted/50">
                           <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                            Name
+                            {t("procedures.columns.name")}
                           </th>
                           <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                            Performed By
+                            {t("procedures.columns.by")}
                           </th>
                           <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                            Duration
+                            {t("procedures.columns.duration")}
                           </th>
                           <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                            Anesthesia
+                            {t("procedures.columns.anesthesia")}
                           </th>
                           <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                            Date
+                            {t("columns.date")}
                           </th>
                         </tr>
                       </thead>
@@ -3649,7 +3644,7 @@ function RecordsPageContent() {
                             </td>
                             <td className="px-4 py-3 text-muted-foreground">
                               {proc.durationMinutes
-                                ? `${proc.durationMinutes} min`
+                                ? t("procedures.minutes", { count: proc.durationMinutes })
                                 : "--"}
                             </td>
                             <td className="px-4 py-3 text-muted-foreground">
@@ -3659,7 +3654,7 @@ function RecordsPageContent() {
                               {proc.createdAt
                                 ? formatClinicalDate(
                                     proc.createdAt,
-                                    recordsTimeZone
+                                    recordsTimeZone, undefined, locale
                                   )
                                 : "--"}
                             </td>
@@ -3669,7 +3664,7 @@ function RecordsPageContent() {
                     </table>
                   </div>
                 ) : (
-                  <EmptyState icon={Scissors} title="No procedures recorded" />
+                  <EmptyState icon={Scissors} title={t("procedures.empty")} />
                 )}
               </div>
             )}
@@ -3684,7 +3679,7 @@ function RecordsPageContent() {
         <EmptyState
           className="mt-6"
           icon={Search}
-          title="Search for a patient above to view their medical records"
+          title={t("searchPrompt")}
         />
       )}
     </div>
@@ -3692,8 +3687,9 @@ function RecordsPageContent() {
 }
 
 export default function RecordsPage() {
+  const t = useTranslations("records.page");
   return (
-    <Suspense fallback={<RecordsLoadingPanel label="Loading records..." />}>
+    <Suspense fallback={<RecordsLoadingPanel label={t("loadingRecords")} />}>
       <RecordsPageContent />
     </Suspense>
   );
