@@ -1,14 +1,13 @@
 import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
+import en from "@/messages/en.json";
 import { describe, expect, it } from "vitest";
 
 describe("demo conversion bridge UI", () => {
   const login = readFileSync("components/demo/demo-login.tsx", "utf8");
   const demoAccessRoute = readFileSync("app/api/demo-access/route.ts", "utf8");
   const register = readFileSync("app/(auth)/register/register-form.tsx", "utf8");
-  const firstDayRecommendations = readFileSync(
-    "components/onboarding/first-day-recommendations.tsx",
-    "utf8",
-  );
+  const firstDayRecommendations = readTranslatedSource("components/onboarding/first-day-recommendations.tsx");
   const layout = readFileSync("app/(dashboard)/layout.tsx", "utf8");
   const bar = readFileSync("components/demo/demo-conversion-bar.tsx", "utf8");
   const tracker = readFileSync(
@@ -71,10 +70,15 @@ describe("demo conversion bridge UI", () => {
     expect(register.indexOf("Your first day is ready.")).toBeLessThan(
       register.indexOf("Secure your workspace."),
     );
-    expect(firstDayRecommendations).toContain("FIRST_GOAL_RECOMMENDATIONS");
-    expect(firstDayRecommendations).toContain("Plan a safe first import");
-    expect(firstDayRecommendations).toContain("Explore a ready-made clinic");
-    expect(firstDayRecommendations).toContain("Review the self-hosted path");
+    expect(firstDayRecommendations).toContain("firstGoalRecommendations");
+    for (const [key, text] of [
+      ["planASafeFirstImport", "Plan a safe first import"],
+      ["exploreAReadyMadeClinic", "Explore a ready-made clinic"],
+      ["reviewTheSelfHostedPath", "Review the self-hosted path"],
+    ] as const) {
+      expect(firstDayRecommendations).toContain(`t("${key}")`);
+      expect(en.onboarding.firstDay[key]).toBe(text);
+    }
     expect(register).toContain('label="Password"');
     expect(register).not.toContain(
       "Two quick choices make the rest of setup feel like your clinic—not a generic software tour.",

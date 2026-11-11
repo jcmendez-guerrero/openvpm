@@ -1,3 +1,4 @@
+import { useTranslations } from "use-intl";
 import {
   CalendarCheck2,
   Check,
@@ -29,41 +30,45 @@ const RECOMMENDATION_TONES: Record<
   },
 };
 
-const FIRST_GOAL_RECOMMENDATIONS: Record<
+function firstGoalRecommendations(
+  t: (key: string) => string,
+): Record<
   FirstGoal,
   { title: string; body: string; pictureLabel: string; rowLabel: string }
-> = {
+> {
+  return {
   run_visit: {
-    title: "Run one real visit",
-    body: "Add one owner and pet, then work from check-in through the client handoff.",
-    pictureLabel: "Your clinic day",
-    rowLabel: "New patient",
+    title: t("runOneRealVisit"),
+    body: t("addOneOwnerAndPet"),
+    pictureLabel: t("yourClinicDay"),
+    rowLabel: t("newPatient"),
   },
   import_records: {
-    title: "Plan a safe first import",
-    body: "Inventory an export and review one representative chart before anything goes live.",
-    pictureLabel: "Migration preview",
-    rowLabel: "Review one chart",
+    title: t("planASafeFirstImport"),
+    body: t("inventoryAnExportAndReview"),
+    pictureLabel: t("migrationPreview"),
+    rowLabel: t("reviewOneChart"),
   },
   start_fresh: {
-    title: "Build your first real visit",
-    body: "Set your clinic basics, add one owner and pet, then book the first appointment.",
-    pictureLabel: "Your clinic day",
-    rowLabel: "First appointment",
+    title: t("buildYourFirstRealVisit"),
+    body: t("setYourClinicBasicsAdd"),
+    pictureLabel: t("yourClinicDay"),
+    rowLabel: t("firstAppointment"),
   },
   explore_sample: {
-    title: "Explore a ready-made clinic",
-    body: "Open a sample schedule and patient timeline without using real clinic data.",
-    pictureLabel: "Sample clinic",
-    rowLabel: "Guided visit",
+    title: t("exploreAReadyMadeClinic"),
+    body: t("openASampleScheduleAnd"),
+    pictureLabel: t("sampleClinic"),
+    rowLabel: t("guidedVisit"),
   },
   self_host: {
-    title: "Review the self-hosted path",
-    body: "Confirm deployment and data-ownership controls before moving any live work.",
-    pictureLabel: "Self-hosted setup",
-    rowLabel: "Deployment plan",
+    title: t("reviewTheSelfHostedPath"),
+    body: t("confirmDeploymentAndDataOwnership"),
+    pictureLabel: t("selfHostedSetup"),
+    rowLabel: t("deploymentPlan"),
   },
-};
+  };
+}
 
 function RecommendationCard({
   title,
@@ -121,22 +126,23 @@ export function FirstDayRecommendations({
   hasImportedData?: boolean;
   primaryGoal?: FirstGoal;
 }) {
+  const t = useTranslations("onboarding.firstDay");
   const primaryRecommendation = hasImportedData
     ? {
-        title: "Book one real appointment",
-        body: "Choose a patient from your reviewed records and put one visit on the schedule.",
-        pictureLabel: "Your clinic day",
-        rowLabel: "First visit",
+        title: t("bookOneRealAppointment"),
+        body: t("chooseAPatientFromYour"),
+        pictureLabel: t("yourClinicDay"),
+        rowLabel: t("firstVisit"),
       }
-    : FIRST_GOAL_RECOMMENDATIONS[primaryGoal];
+    : firstGoalRecommendations(t)[primaryGoal];
 
   return (
-    <section aria-label="Your first-day recommendations">
+    <section aria-label={t("yourFirstDayRecommendations")}>
       <ul className="grid gap-6 sm:grid-cols-3 sm:gap-5">
         <RecommendationCard
           title={primaryRecommendation.title}
           body={primaryRecommendation.body}
-          tag="Best next step"
+          tag={t("bestNext")}
           tone="primary"
           tilt="sm:-rotate-1"
         >
@@ -156,9 +162,9 @@ export function FirstDayRecommendations({
         </RecommendationCard>
 
         <RecommendationCard
-          title="Make getting paid easy"
-          body="Send an online invoice and let clients pay by card from their private link."
-          tag="Get paid faster"
+          title={t("makeGettingPaidEasy")}
+          body={t("payBody")}
+          tag={t("payTag")}
           tone="violet"
           tilt="sm:rotate-1"
         >
@@ -167,7 +173,7 @@ export function FirstDayRecommendations({
           </span>
           <div className="rounded-lg bg-white/90 px-3 py-2.5 shadow-sm">
             <div className="flex items-center justify-between text-xs text-slate-500">
-              <span>Invoice total</span>
+              <span>{t("invoiceTotal")}</span>
               <span className="font-semibold text-slate-900">$68.00</span>
             </div>
             <div className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-violet-700">
@@ -177,9 +183,9 @@ export function FirstDayRecommendations({
         </RecommendationCard>
 
         <RecommendationCard
-          title="Give clients one simple place"
-          body="Share visits, vaccine history, and bills through a private client portal."
-          tag="Fewer status calls"
+          title={t("giveClientsOneSimplePlace")}
+          body={t("portalBody")}
+          tag={t("portalTag")}
           tone="coral"
           tilt="sm:-rotate-1"
         >
@@ -192,10 +198,10 @@ export function FirstDayRecommendations({
             </span>
             <div className="min-w-0">
               <p className="text-xs font-semibold text-slate-900">
-                Everything in one link
+                {t("everythingInOneLink")}
               </p>
               <p className="text-[10px] text-slate-500">
-                Visits · Vaccines · Bills
+                {t("visitsVaccinesBills")}
               </p>
             </div>
           </div>

@@ -2747,6 +2747,62 @@
     },
     "choosePath": {
       "buildMyFirstDay": "Build my first day"
+    },
+    "inviteTeam": {
+      "addThePeopleYouWork": "Add the people you work with. We will email them a link to set up their own login. Every plan includes unlimited staff.",
+      "addAnother": "Add another",
+      "name": "Name",
+      "frontDesk": "Front desk",
+      "veterinarian": "Veterinarian",
+      "technician": "Technician",
+      "viewerReadOnly": "Viewer (read only)",
+      "admin": "Admin",
+      "sent1Invite": "Sent 1 invite",
+      "fixInvalidTeammateEmailsBefore": "Fix invalid teammate emails before continuing.",
+      "emailTooLong": "Email must be at most {max} characters.",
+      "emailInvalid": "Enter a valid teammate email.",
+      "inviteFailedReason": "Could not invite {email}: {message}",
+      "inviteFailed": "Could not invite {email}",
+      "sentInvites": "Sent {count} invites",
+      "nameLabel": "Teammate name {n}",
+      "emailLabel": "Teammate email {n}",
+      "roleLabel": "Teammate role {n}",
+      "removeLabel": "Remove teammate {n}"
+    },
+    "firstDay": {
+      "everythingInOneLink": "Everything in one link",
+      "visitsVaccinesBills": "Visits · Vaccines · Bills",
+      "invoiceTotal": "Invoice total",
+      "yourFirstDayRecommendations": "Your first-day recommendations",
+      "makeGettingPaidEasy": "Make getting paid easy",
+      "giveClientsOneSimplePlace": "Give clients one simple place",
+      "runOneRealVisit": "Run one real visit",
+      "addOneOwnerAndPet": "Add one owner and pet, then work from check-in through the client handoff.",
+      "yourClinicDay": "Your clinic day",
+      "newPatient": "New patient",
+      "planASafeFirstImport": "Plan a safe first import",
+      "inventoryAnExportAndReview": "Inventory an export and review one representative chart before anything goes live.",
+      "migrationPreview": "Migration preview",
+      "reviewOneChart": "Review one chart",
+      "buildYourFirstRealVisit": "Build your first real visit",
+      "setYourClinicBasicsAdd": "Set your clinic basics, add one owner and pet, then book the first appointment.",
+      "firstAppointment": "First appointment",
+      "exploreAReadyMadeClinic": "Explore a ready-made clinic",
+      "openASampleScheduleAnd": "Open a sample schedule and patient timeline without using real clinic data.",
+      "sampleClinic": "Sample clinic",
+      "guidedVisit": "Guided visit",
+      "reviewTheSelfHostedPath": "Review the self-hosted path",
+      "confirmDeploymentAndDataOwnership": "Confirm deployment and data-ownership controls before moving any live work.",
+      "selfHostedSetup": "Self-hosted setup",
+      "deploymentPlan": "Deployment plan",
+      "bookOneRealAppointment": "Book one real appointment",
+      "chooseAPatientFromYour": "Choose a patient from your reviewed records and put one visit on the schedule.",
+      "firstVisit": "First visit",
+      "bestNext": "Best next step",
+      "payBody": "Send an online invoice and let clients pay by card from their private link.",
+      "payTag": "Get paid faster",
+      "portalBody": "Share visits, vaccine history, and bills through a private client portal.",
+      "portalTag": "Fewer status calls"
     }
   },
   "welcome": {
@@ -2815,6 +2871,15 @@
       "question": "Which pets are overdue for vaccines?",
       "answer": "Biscuit is 5 days past due for the DHPP shot.",
       "label": "Example: you ask \"{question}\" and the AI answers \"{answer}\""
+    }
+  },
+  "tour": {
+    "coachmark": {
+      "back": "Back",
+      "skipTour": "Skip tour",
+      "finish": "Finish",
+      "skipThisStep": "Skip this step",
+      "next": "Next"
     }
   }
 }

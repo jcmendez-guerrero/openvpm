@@ -236,7 +236,7 @@ describe("onboarding UI states", () => {
     expect(inviteTeam).toContain("function getInviteEmailError");
     expect(inviteTeam).toContain("trimmed.length > SETTINGS_EMAIL_MAX_LENGTH");
     expect(inviteTeam).toContain(
-      "const invalidRows = rows.filter((r) => getInviteEmailError(r.email));",
+      "const invalidRows = rows.filter((r) => getInviteEmailError(r.email, t));",
     );
     expect(inviteTeam).toContain("if (invalidRows.length > 0) {");
     expect(inviteTeam).toContain(

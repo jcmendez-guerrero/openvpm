@@ -2747,6 +2747,62 @@
     },
     "choosePath": {
       "buildMyFirstDay": "Armar mi primer día"
+    },
+    "inviteTeam": {
+      "addThePeopleYouWork": "Agregue a las personas con las que trabaja. Les enviaremos por correo un enlace para crear su propio acceso. Todos los planes incluyen personal ilimitado.",
+      "addAnother": "Agregar otra persona",
+      "name": "Nombre",
+      "frontDesk": "Recepción",
+      "veterinarian": "Veterinario",
+      "technician": "Técnico",
+      "viewerReadOnly": "Lector (solo lectura)",
+      "admin": "Administrador",
+      "sent1Invite": "Se envió 1 invitación",
+      "fixInvalidTeammateEmailsBefore": "Corrija los correos inválidos antes de continuar.",
+      "emailTooLong": "El correo debe tener como máximo {max} caracteres.",
+      "emailInvalid": "Ingrese un correo válido.",
+      "inviteFailedReason": "No se pudo invitar a {email}: {message}",
+      "inviteFailed": "No se pudo invitar a {email}",
+      "sentInvites": "Se enviaron {count} invitaciones",
+      "nameLabel": "Nombre del compañero {n}",
+      "emailLabel": "Correo del compañero {n}",
+      "roleLabel": "Rol del compañero {n}",
+      "removeLabel": "Quitar compañero {n}"
+    },
+    "firstDay": {
+      "everythingInOneLink": "Todo en un enlace",
+      "visitsVaccinesBills": "Visitas · Vacunas · Facturas",
+      "invoiceTotal": "Total de la factura",
+      "yourFirstDayRecommendations": "Sus recomendaciones para el primer día",
+      "makeGettingPaidEasy": "Facilite el cobro",
+      "giveClientsOneSimplePlace": "Dé a sus clientes un lugar sencillo",
+      "runOneRealVisit": "Haga una visita real",
+      "addOneOwnerAndPet": "Agregue un propietario y su mascota, y trabaje desde el registro de llegada hasta la entrega al cliente.",
+      "yourClinicDay": "El día de su clínica",
+      "newPatient": "Paciente nuevo",
+      "planASafeFirstImport": "Planifique una primera importación segura",
+      "inventoryAnExportAndReview": "Revise el inventario de una exportación y una ficha representativa antes de que algo entre en uso.",
+      "migrationPreview": "Vista previa de la migración",
+      "reviewOneChart": "Revisar una ficha",
+      "buildYourFirstRealVisit": "Arme su primera visita real",
+      "setYourClinicBasicsAdd": "Configure los datos básicos de su clínica, agregue un propietario y su mascota, y luego agende la primera cita.",
+      "firstAppointment": "Primera cita",
+      "exploreAReadyMadeClinic": "Explore una clínica de ejemplo",
+      "openASampleScheduleAnd": "Abra una agenda y un historial de paciente de ejemplo sin usar datos reales de la clínica.",
+      "sampleClinic": "Clínica de ejemplo",
+      "guidedVisit": "Visita guiada",
+      "reviewTheSelfHostedPath": "Revise la opción autoalojada",
+      "confirmDeploymentAndDataOwnership": "Confirme los controles de despliegue y de propiedad de los datos antes de mover cualquier trabajo real.",
+      "selfHostedSetup": "Instalación autoalojada",
+      "deploymentPlan": "Plan de despliegue",
+      "bookOneRealAppointment": "Agende una cita real",
+      "chooseAPatientFromYour": "Elija un paciente de sus registros revisados y ponga una visita en la agenda.",
+      "firstVisit": "Primera visita",
+      "bestNext": "Mejor siguiente paso",
+      "payBody": "Envíe una factura en línea y deje que los clientes paguen con tarjeta desde su enlace privado.",
+      "payTag": "Cobre más rápido",
+      "portalBody": "Comparta visitas, historial de vacunas y facturas mediante un portal privado para clientes.",
+      "portalTag": "Menos llamadas para preguntar"
     }
   },
   "welcome": {
@@ -2815,6 +2871,15 @@
       "question": "¿Qué mascotas tienen vacunas atrasadas?",
       "answer": "Biscuit tiene la vacuna DHPP atrasada por 5 días.",
       "label": "Ejemplo: usted pregunta \"{question}\" y la IA responde \"{answer}\""
+    }
+  },
+  "tour": {
+    "coachmark": {
+      "back": "Atrás",
+      "skipTour": "Saltar recorrido",
+      "finish": "Terminar",
+      "skipThisStep": "Saltar este paso",
+      "next": "Siguiente"
     }
   }
 }
