@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import { csvToClientRecords } from "../import";
 import { parseCsv } from "../parse";
@@ -196,8 +196,8 @@ describe("rowsToCsv / recordsToCsv", () => {
 });
 
 describe("CSV export call sites", () => {
-  const settings = readFileSync("app/(dashboard)/settings/page.tsx", "utf8");
-  const reports = readFileSync("app/(dashboard)/reports/page.tsx", "utf8");
+  const settings = readTranslatedSource("app/(dashboard)/settings/page.tsx");
+  const reports = readTranslatedSource("app/(dashboard)/reports/page.tsx");
 
   it("Settings data export uses the shared serializer", () => {
     expect(settings).toContain(

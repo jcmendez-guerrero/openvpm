@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useTranslations } from "use-intl";
 
 import {
   Building2,
@@ -27,7 +28,7 @@ import {
   CLINIC_MODEL_OPTIONS,
   FIRST_GOAL_OPTIONS,
   SELF_HOST_GOAL,
-  clinicModelOption,
+  firstDayTaskSource,
   firstDayTasks,
   type ClinicModel,
   type FirstGoal,
@@ -71,10 +72,10 @@ export function ClinicIntentBuilder({
   firstGoal,
   onClinicModelChange,
   onFirstGoalChange,
-  intro = "Start with one useful workflow. We’ll shape OpenVPM around the way your team works—and you stay in control.",
+  intro,
   showClinicModel = true,
   showFirstGoal = true,
-  goalLegend = "What would feel useful first?",
+  goalLegend,
   beforeChoices,
   afterChoices,
 }: {
@@ -89,8 +90,12 @@ export function ClinicIntentBuilder({
   beforeChoices?: ReactNode;
   afterChoices?: ReactNode;
 }) {
-  const selectedModel = clinicModelOption(clinicModel);
+  const t = useTranslations("onboarding.intentBuilder");
+  const pt = useTranslations("onboarding.profile");
+  // undefined means "use the default copy"; null hides the intro.
+  const introText = intro === undefined ? t("intro") : intro;
   const tasks = firstDayTasks(clinicModel, firstGoal);
+  const taskSource = firstDayTaskSource(clinicModel, firstGoal);
   const goalOptions =
     clinicModel === "exploring"
       ? [...FIRST_GOAL_OPTIONS, SELF_HOST_GOAL]
@@ -107,16 +112,16 @@ export function ClinicIntentBuilder({
       <div className="min-w-0">
         {beforeChoices}
 
-        {intro ? (
+        {introText ? (
           <p className="max-w-2xl text-[15px] leading-7 text-slate-600 sm:text-base">
-            {intro}
+            {introText}
           </p>
         ) : null}
 
         {showClinicModel ? (
-          <fieldset className={intro ? "mt-7" : undefined}>
+          <fieldset className={introText ? "mt-7" : undefined}>
             <legend className="text-sm font-semibold text-slate-950 sm:text-base">
-              What kind of care do you provide?
+              {t("careLegend")}
             </legend>
             <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
               {CLINIC_MODEL_OPTIONS.map((option) => {
@@ -144,7 +149,7 @@ export function ClinicIntentBuilder({
                       <Icon className="h-5 w-5" strokeWidth={1.8} />
                     </span>
                     <span className="mt-2.5 block max-w-[10rem] text-[13px] font-semibold leading-[1.3] text-slate-900 sm:text-sm">
-                      {option.label}
+                      {pt(`models.${option.value}.label`)}
                     </span>
                     {active ? (
                       <span className="absolute right-2.5 top-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
@@ -161,11 +166,11 @@ export function ClinicIntentBuilder({
         {showFirstGoal ? (
           <fieldset
             className={
-              showClinicModel || intro || beforeChoices ? "mt-6" : undefined
+              showClinicModel || introText || beforeChoices ? "mt-6" : undefined
             }
           >
             <legend className="text-sm font-semibold text-slate-950 sm:text-base">
-              {goalLegend}
+              {goalLegend ?? t("goalLegend")}
             </legend>
             <div className="mt-2.5 grid gap-2.5 sm:grid-cols-2">
               {goalOptions.map((option) => {
@@ -195,7 +200,7 @@ export function ClinicIntentBuilder({
                       <Icon className="h-[18px] w-[18px]" strokeWidth={1.8} />
                     </span>
                     <span className="min-w-0 flex-1 text-[13px] font-medium leading-5 text-slate-800 sm:text-sm">
-                      {option.label}
+                      {pt(`goals.${option.value}`)}
                     </span>
                     <span
                       className={cn(
@@ -237,10 +242,12 @@ export function ClinicIntentBuilder({
               </span>
               <div>
                 <h3 className="font-heading text-lg font-semibold text-slate-950 sm:text-xl">
-                  Your first OpenVPM day
+                  {t("firstDayTitle")}
                 </h3>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  Shaped for {selectedModel.shortLabel.toLowerCase()} care
+                  {t("shapedFor", {
+                    care: pt(`models.${clinicModel}.shortLabel`).toLowerCase(),
+                  })}
                 </p>
               </div>
             </div>
@@ -261,7 +268,7 @@ export function ClinicIntentBuilder({
                       <Icon className="h-[18px] w-[18px]" strokeWidth={1.8} />
                     </span>
                     <span className="text-sm font-medium leading-5 text-slate-800">
-                      {task}
+                      {pt(`tasks.${taskSource}.${index}`)}
                     </span>
                   </li>
                 );
@@ -270,7 +277,7 @@ export function ClinicIntentBuilder({
 
             <div className="mt-4 flex items-center gap-2 text-xs text-primary">
               <ShieldCheck className="h-4 w-4" strokeWidth={1.8} />
-              <span>Nothing moves until you review it.</span>
+              <span>{t("nothingMoves")}</span>
             </div>
           </div>
           <style>{`

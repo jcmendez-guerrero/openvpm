@@ -1,18 +1,9 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
-const pageSource = readFileSync(
-  new URL("../../app/(dashboard)/recalls/page.tsx", import.meta.url),
-  "utf8"
-);
-const routerSource = readFileSync(
-  new URL("../../server/routers/notifications.ts", import.meta.url),
-  "utf8"
-);
-const serviceSource = readFileSync(
-  new URL("../../server/vaccination-recalls.ts", import.meta.url),
-  "utf8"
-);
+const pageSource = readTranslatedSource(new URL("../../app/(dashboard)/recalls/page.tsx", import.meta.url));
+const routerSource = readTranslatedSource(new URL("../../server/routers/notifications.ts", import.meta.url));
+const serviceSource = readTranslatedSource(new URL("../../server/vaccination-recalls.ts", import.meta.url));
 
 describe("vaccination recall operator UI", () => {
   it("shows server-computed eligibility and only selects eligible recipients", () => {

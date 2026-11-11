@@ -28,7 +28,7 @@ describe("client detail communication log UI", () => {
     expect(source).toContain(
       'import { communicationStatusLabel } from "@/lib/communications/status"'
     );
-    expect(source).toContain("const statusLabel = communicationStatusLabel(message)");
+    expect(source).toContain("const statusLabel = communicationStatusLabel(message, statusT)");
     expect(source).not.toContain("const communicationStatusLabels =");
     expect(source).toContain("{ clientId }");
     expect(source).toContain('title="No communication log yet"');

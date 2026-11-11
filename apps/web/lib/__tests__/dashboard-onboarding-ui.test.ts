@@ -185,9 +185,9 @@ describe("dashboard onboarding UI states", () => {
   it("uses the selected pathway to put a tailored first win first", () => {
     expect(activationSource).toContain("getOnboardingIntentOption");
     expect(activationSource).toContain("pathway.firstWinTarget");
-    expect(activationSource).toContain("label: pathway.firstWin");
-    expect(activationSource).toContain("hint: pathway.firstWinHint");
-    expect(activationSource).toContain("{pathway.shortLabel} · {done} of {total} done");
+    expect(activationSource).toContain("intents.${pathway.value}.firstWin");
+    expect(activationSource).toContain("intents.${pathway.value}.firstWinHint");
+    expect(activationSource).toContain("{profileT(`intents.${pathway.value}.shortLabel`)} · {done} of {total} done");
   });
 
   it("turns the activation checklist into a mobile first-win path with a persisted help request", () => {

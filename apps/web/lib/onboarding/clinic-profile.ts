@@ -194,6 +194,14 @@ export function firstDayTasks(
   return GOAL_FIRST_DAY_TASKS[goal] ?? MODEL_FIRST_DAY_TASKS[model];
 }
 
+/** Which task list firstDayTasks picked; the UI uses it as the catalog key. */
+export function firstDayTaskSource(
+  model: ClinicModel,
+  goal: FirstGoal,
+): ClinicModel | FirstGoal {
+  return GOAL_FIRST_DAY_TASKS[goal] ? goal : model;
+}
+
 export function clinicModelOption(value: ClinicModel): ClinicModelOption {
   return (
     CLINIC_MODEL_OPTIONS.find((option) => option.value === value) ??

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
   CONTROLLED_SUBSTANCE_DRUG_NAME_MAX_LENGTH,
@@ -14,10 +14,7 @@ import {
 } from "../controlled-substances/policy";
 
 describe("controlled substances UI bounds", () => {
-  const source = readFileSync(
-    "app/(dashboard)/controlled-substances/page.tsx",
-    "utf8"
-  );
+  const source = readTranslatedSource("app/(dashboard)/controlled-substances/page.tsx");
 
   it("keeps log entry controls aligned to shared policy", () => {
     expect(CONTROLLED_SUBSTANCE_DRUG_NAME_MAX_LENGTH).toBe(255);

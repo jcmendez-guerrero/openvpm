@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useEffect, useMemo, useState } from "react";
 import { Check, ClipboardCopy, RotateCcw, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,32 +11,13 @@ import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "openvpm:migration-review:v1";
 
+// Step text lives in the catalog: migration.reviewChecklist.steps.<id>.
 const reviewSteps = [
-  {
-    id: "totals",
-    title: "Confirm the high-level totals",
-    detail: "Check that the client, patient, reminder, service, and product counts look plausible.",
-  },
-  {
-    id: "known-records",
-    title: "Find a few familiar clients and patients",
-    detail: "Use search and open several records you know well. Confirm identity and relationships before clinical use.",
-  },
-  {
-    id: "care-history",
-    title: "Review care history",
-    detail: "Sample prior appointments, prescriptions, fills, lab reports, and reminders across different years.",
-  },
-  {
-    id: "business-history",
-    title: "Review business history",
-    detail: "Sample historical documents and financial records. These are reference history, not live receivables.",
-  },
-  {
-    id: "exceptions",
-    title: "Sample items marked Needs review",
-    detail: "Check a few familiar examples. OpenVPM remains responsible for the bulk reconciliation queue.",
-  },
+  { id: "totals" },
+  { id: "known-records" },
+  { id: "care-history" },
+  { id: "business-history" },
+  { id: "exceptions" },
 ] as const;
 
 type StepId = (typeof reviewSteps)[number]["id"];
@@ -53,6 +36,7 @@ function readCompleted(): StepId[] {
 }
 
 export function MigrationReviewChecklist() {
+  const t = useTranslations("migration.reviewChecklist");
   const [completed, setCompleted] = useState<StepId[]>([]);
   const [ready, setReady] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
@@ -86,7 +70,7 @@ export function MigrationReviewChecklist() {
   async function copyIssueTemplate() {
     try {
       await navigator.clipboard.writeText(
-        "Migration review issue\nCategory: \nOpenVPM record reference: \nWhat I expected: \nWhat I observed: \n\nDo not include names, contact details, medical details, or source-system identifiers.",
+        t("issueTemplate"),
       );
       setCopyState("copied");
     } catch {
@@ -102,17 +86,15 @@ export function MigrationReviewChecklist() {
           <div>
             <div className="flex items-center gap-2 text-primary">
               <ShieldCheck className="h-5 w-5" aria-hidden="true" />
-              <CardTitle>Data validation guide</CardTitle>
+              <CardTitle>{t("dataValidationGuide")}</CardTitle>
             </div>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-              Work through a small, representative sample before relying on the
-              imported history. Your checklist stays in this browser session
-              and is never written to clinic records.
+              {t("workThroughASmallRepresentative")}
             </p>
           </div>
           <div className="min-w-40 rounded-lg border border-border bg-background p-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium">Review progress</span>
+              <span className="font-medium">{t("reviewProgress")}</span>
               <span className="tabular-nums text-muted-foreground">
                 {completed.length}/{reviewSteps.length}
               </span>
@@ -120,7 +102,7 @@ export function MigrationReviewChecklist() {
             <div
               className="mt-2 h-2 overflow-hidden rounded-full bg-muted"
               role="progressbar"
-              aria-label="Migration review progress"
+              aria-label={t("migrationReviewProgress")}
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={progress}
@@ -134,15 +116,15 @@ export function MigrationReviewChecklist() {
         </div>
       </CardHeader>
       <CardContent className="space-y-5 p-4 sm:p-6">
-        <nav aria-label="Data validation shortcuts" className="flex flex-wrap gap-2">
+        <nav aria-label={t("dataValidationShortcuts")} className="flex flex-wrap gap-2">
           <Button asChild variant="outline">
-            <Link href="/clients">Find a familiar client</Link>
+            <Link href="/clients">{t("findAFamiliarClient")}</Link>
           </Button>
           <Button asChild variant="outline">
-            <Link href="/patients">Find a familiar patient</Link>
+            <Link href="/patients">{t("findAFamiliarPatient")}</Link>
           </Button>
           <Button asChild variant="ghost">
-            <Link href="#archive-records">Browse imported history</Link>
+            <Link href="#archive-records">{t("browseImportedHistory")}</Link>
           </Button>
         </nav>
 
@@ -175,9 +157,11 @@ export function MigrationReviewChecklist() {
                     {checked ? <Check className="h-3.5 w-3.5" /> : null}
                   </span>
                   <span>
-                    <span className="block font-medium">{step.title}</span>
+                    <span className="block font-medium">
+                      {t(`steps.${step.id}.title`)}
+                    </span>
                     <span className="mt-1 block text-sm leading-5 text-muted-foreground">
-                      {step.detail}
+                      {t(`steps.${step.id}.detail`)}
                     </span>
                   </span>
                 </button>
@@ -188,25 +172,22 @@ export function MigrationReviewChecklist() {
 
         <div className="flex flex-col gap-3 rounded-lg border border-dashed border-border p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-medium">Found something that looks wrong?</p>
+            <p className="font-medium">{t("foundSomethingThatLooksWrong")}</p>
             <p className="mt-1 text-sm leading-5 text-muted-foreground">
-              Copy a privacy-safe report outline. Use only the OpenVPM record
-              reference—never paste names, contact information, medical detail,
-              or old-system identifiers into email or chat.
+              {t("copyAPrivacySafeReport")}
             </p>
             <p className="mt-2 text-sm font-medium text-foreground">
-              Completing this checklist records no approval and never releases
-              protected review mode.
+              {t("completingThisChecklistRecordsNo")}
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
             <Button type="button" variant="outline" onClick={copyIssueTemplate}>
               <ClipboardCopy className="mr-2 h-4 w-4" aria-hidden="true" />
               {copyState === "copied"
-                ? "Template copied"
+                ? t("templateCopied")
                 : copyState === "failed"
-                  ? "Copy unavailable"
-                  : "Copy safe issue template"}
+                  ? t("copyUnavailable")
+                  : t("copySafeIssueTemplate")}
             </Button>
             {completed.length ? (
               <Button
@@ -215,7 +196,7 @@ export function MigrationReviewChecklist() {
                 onClick={() => setCompleted([])}
               >
                 <RotateCcw className="mr-2 h-4 w-4" aria-hidden="true" />
-                Reset
+                {t("reset")}
               </Button>
             ) : null}
           </div>

@@ -1,19 +1,15 @@
-import { readFileSync } from "node:fs";
 import { readTranslatedSource } from "@/i18n/translated-source";
 import en from "@/messages/en.json";
 import { describe, expect, it } from "vitest";
 
 describe("demo conversion bridge UI", () => {
-  const login = readFileSync("components/demo/demo-login.tsx", "utf8");
-  const demoAccessRoute = readFileSync("app/api/demo-access/route.ts", "utf8");
-  const register = readFileSync("app/(auth)/register/register-form.tsx", "utf8");
+  const login = readTranslatedSource("components/demo/demo-login.tsx");
+  const demoAccessRoute = readTranslatedSource("app/api/demo-access/route.ts");
+  const register = readTranslatedSource("app/(auth)/register/register-form.tsx");
   const firstDayRecommendations = readTranslatedSource("components/onboarding/first-day-recommendations.tsx");
-  const layout = readFileSync("app/(dashboard)/layout.tsx", "utf8");
-  const bar = readFileSync("components/demo/demo-conversion-bar.tsx", "utf8");
-  const tracker = readFileSync(
-    "components/demo/demo-funnel-tracker.tsx",
-    "utf8",
-  );
+  const layout = readTranslatedSource("app/(dashboard)/layout.tsx");
+  const bar = readTranslatedSource("components/demo/demo-conversion-bar.tsx");
+  const tracker = readTranslatedSource("components/demo/demo-funnel-tracker.tsx");
 
   it("instruments the email gate and start-clinic CTA", () => {
     expect(login).toContain("FUNNEL_EVENTS.demoLand");

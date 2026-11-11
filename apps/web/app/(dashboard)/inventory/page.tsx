@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations, useLocale } from "use-intl";
+
 import { MarkupInput } from "@/components/inventory/markup-input";
 
 import { useMemo, useRef, useState } from "react";
@@ -54,43 +56,44 @@ import {
 } from "@/lib/inventory/policy";
 
 const CATEGORIES = [
-  { label: "All Categories", value: "" },
-  { label: "Medication", value: "medication" },
-  { label: "Preventive", value: "preventive" },
-  { label: "Supplement", value: "supplement" },
-  { label: "Food", value: "food" },
-  { label: "Supply", value: "supply" },
+  // Labels are catalog keys under inventory.
+  { label: "categories.all", value: "" },
+  { label: "categories.medication", value: "medication" },
+  { label: "categories.preventive", value: "preventive" },
+  { label: "categories.supplement", value: "supplement" },
+  { label: "categories.food", value: "food" },
+  { label: "categories.supply", value: "supply" },
 ] as const;
 
 const ALERT_FILTERS = [
-  { label: "All", value: "all" },
-  { label: "Needs Attention", value: "attention" },
-  { label: "Low Stock", value: "low_stock" },
-  { label: "Expired", value: "expired" },
-  { label: "Expiring Soon", value: "expiring_soon" },
+  { label: "alerts.all", value: "all" },
+  { label: "alerts.attention", value: "attention" },
+  { label: "alerts.low_stock", value: "low_stock" },
+  { label: "alerts.expired", value: "expired" },
+  { label: "alerts.expiring_soon", value: "expiring_soon" },
 ] as const;
 
 type AlertFilter = (typeof ALERT_FILTERS)[number]["value"];
 
 function stockBadge(status: string) {
   if (status === "not_tracked") {
-    return { label: "Stock not tracked", className: "bg-slate-100 text-slate-700" };
+    return { label: "stock.not_tracked", className: "bg-slate-100 text-slate-700" };
   }
   if (status === "out") {
-    return { label: "Out", className: "bg-red-100 text-red-700" };
+    return { label: "stock.out", className: "bg-red-100 text-red-700" };
   }
   if (status === "low") {
-    return { label: "Low Stock", className: "bg-amber-100 text-amber-700" };
+    return { label: "stock.low", className: "bg-amber-100 text-amber-700" };
   }
-  return { label: "In Stock", className: "bg-green-100 text-green-700" };
+  return { label: "stock.in", className: "bg-green-100 text-green-700" };
 }
 
 function expirationBadge(status: string) {
   if (status === "expired") {
-    return { label: "Expired", className: "bg-red-100 text-red-700" };
+    return { label: "expiration.expired", className: "bg-red-100 text-red-700" };
   }
   if (status === "expiring_soon") {
-    return { label: "Expiring Soon", className: "bg-orange-100 text-orange-700" };
+    return { label: "expiration.expiring_soon", className: "bg-orange-100 text-orange-700" };
   }
   return null;
 }
@@ -107,22 +110,23 @@ function canManageInventoryRole(role?: string | null): boolean {
   );
 }
 
-function formatDateOnly(value: string): string {
+function formatDateOnly(value: string, locale = "en-US"): string {
   if (!isInventoryOptionalExpirationDateInputValid(value)) {
     return value;
   }
-  return formatClinicalDate(value, "UTC", value);
+  return formatClinicalDate(value, "UTC", value, locale);
 }
 
 // --- Add Product Form ---
 
 function AddProductForm({ onClose }: { onClose: () => void }) {
+  const t = useTranslations("inventory");
   const utils = trpc.useUtils();
   const createMutation = trpc.inventory.create.useMutation({
     onSuccess: () => {
       utils.inventory.list.invalidate();
       onClose();
-      toast.success("Product added");
+      toast.success(t("productAdded"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -187,22 +191,20 @@ function AddProductForm({ onClose }: { onClose: () => void }) {
       onSubmit={handleSubmit}
       className="mt-4 rounded-lg border border-border bg-card p-4 space-y-3"
     >
-      <h3 className="font-medium text-sm">Add Product</h3>
+      <h3 className="font-medium text-sm">{t("addProduct")}</h3>
       <p className="text-xs text-muted-foreground">
-        Use one consistent inventory unit. For medication dispensed as tablets,
-        enter stock and price per tablet—not per bottle or package. Prescription
-        quantities, stock deductions, and invoice totals all use this unit.
+        {t("useOneConsistentInventoryUnit")}
       </p>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Input
-          placeholder="Name *"
+          placeholder={t("name2")}
           value={form.name}
           maxLength={INVENTORY_PRODUCT_NAME_MAX_LENGTH}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
           required
         />
         <Input
-          placeholder="SKU"
+          placeholder={t("sku")}
           value={form.sku}
           maxLength={INVENTORY_PRODUCT_SKU_MAX_LENGTH}
           onChange={(e) => setForm({ ...form, sku: e.target.value })}
@@ -212,10 +214,10 @@ function AddProductForm({ onClose }: { onClose: () => void }) {
           onChange={(e) => setForm({ ...form, category: e.target.value })}
           className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
         >
-          <option value="">Category</option>
+          <option value="">{t("category")}</option>
           {CATEGORIES.slice(1).map((c) => (
             <option key={c.value} value={c.value}>
-              {c.label}
+              {t(c.label)}
             </option>
           ))}
         </select>
@@ -224,7 +226,7 @@ function AddProductForm({ onClose }: { onClose: () => void }) {
           min={INVENTORY_MONEY_AMOUNT_MIN}
           max={INVENTORY_MONEY_AMOUNT_MAX}
           step="0.01"
-          placeholder="Price per unit *"
+          placeholder={t("pricePerUnit")}
           value={form.unitPrice}
           onChange={(e) => setForm({ ...form, unitPrice: e.target.value })}
           required
@@ -237,14 +239,14 @@ function AddProductForm({ onClose }: { onClose: () => void }) {
               setForm({ ...form, taxable: event.target.checked })
             }
           />
-          Taxable
+          {t("taxable")}
         </label>
         <Input
           type="number"
           min={INVENTORY_MONEY_AMOUNT_MIN}
           max={INVENTORY_MONEY_AMOUNT_MAX}
           step="0.01"
-          placeholder="Cost per unit"
+          placeholder={t("costPerUnit")}
           value={form.costPrice}
           onChange={(e) => setForm({ ...form, costPrice: e.target.value })}
         />
@@ -254,7 +256,7 @@ function AddProductForm({ onClose }: { onClose: () => void }) {
           min={INVENTORY_STOCK_QUANTITY_MIN}
           max={INVENTORY_STOCK_QUANTITY_MAX}
           step="0.001"
-          placeholder="Stock units"
+          placeholder={t("stockUnits")}
           value={form.stockQuantity}
           onChange={(e) =>
             setForm({ ...form, stockQuantity: Number(e.target.value) })
@@ -265,21 +267,21 @@ function AddProductForm({ onClose }: { onClose: () => void }) {
           min={INVENTORY_STOCK_QUANTITY_MIN}
           max={INVENTORY_STOCK_QUANTITY_MAX}
           step={1}
-          placeholder="Reorder Point"
+          placeholder={t("reorderPoint2")}
           value={form.reorderPoint}
           onChange={(e) =>
             setForm({ ...form, reorderPoint: parseInt(e.target.value) || 0 })
           }
         />
         <Input
-          placeholder="Lot Number"
+          placeholder={t("lotNumber")}
           value={form.lotNumber}
           maxLength={INVENTORY_PRODUCT_LOT_NUMBER_MAX_LENGTH}
           onChange={(e) => setForm({ ...form, lotNumber: e.target.value })}
         />
         <Input
           type="date"
-          placeholder="Expiration Date"
+          placeholder={t("expirationDate")}
           value={form.expirationDate}
           aria-invalid={
             !isInventoryOptionalExpirationDateInputValid(form.expirationDate) ||
@@ -296,10 +298,10 @@ function AddProductForm({ onClose }: { onClose: () => void }) {
           size="sm"
           disabled={!canSubmit || createMutation.isPending}
         >
-          {createMutation.isPending ? "Adding..." : "Add Product"}
+          {createMutation.isPending ? t("adding") : t("addProduct")}
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={onClose}>
-          Cancel
+          {t("cancel")}
         </Button>
       </div>
       {createMutation.error && (
@@ -335,13 +337,14 @@ function EditProductRow({
   canManagePricing: boolean;
   onClose: () => void;
 }) {
+  const t = useTranslations("inventory");
   const utils = trpc.useUtils();
   const formatCurrency = useCurrencyFormatter();
   const updateMutation = trpc.inventory.update.useMutation({
     onSuccess: () => {
       utils.inventory.list.invalidate();
       onClose();
-      toast.success("Product updated");
+      toast.success(t("productUpdated"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -439,7 +442,7 @@ function EditProductRow({
             )}
           {CATEGORIES.slice(1).map((c) => (
             <option key={c.value} value={c.value}>
-              {c.label}
+              {t(c.label)}
             </option>
           ))}
         </select>
@@ -466,7 +469,7 @@ function EditProductRow({
                   setForm({ ...form, taxable: event.target.checked })
                 }
               />
-              Taxable
+              {t("taxable")}
             </label>
           </td>
           <td className="px-4 py-2">
@@ -491,13 +494,12 @@ function EditProductRow({
             {formatCurrency(product.unitPrice)}
           </td>
           <td className="px-4 py-2 text-xs text-muted-foreground">
-            {product.taxable ? "Taxable" : "Not taxable"}
+            {product.taxable ? t("taxable") : t("notTaxable")}
           </td>
           <td className="px-4 py-2 text-right text-xs text-muted-foreground">
             {product.costPrice ? formatCurrency(product.costPrice) : "\u2014"}
             <p className="mt-1 text-left">
-              Price and tax changes need an administrator or front desk
-              teammate.
+              {t("priceAndTaxChangesNeed")}
             </p>
           </td>
         </>
@@ -527,7 +529,7 @@ function EditProductRow({
             maxLength={INVENTORY_PRODUCT_LOT_NUMBER_MAX_LENGTH}
             onChange={(e) => setForm({ ...form, lotNumber: e.target.value })}
             className="h-8 text-sm"
-            placeholder="Lot"
+            placeholder={t("lot")}
           />
           <Input
             type="date"
@@ -552,7 +554,7 @@ function EditProductRow({
             size="sm"
             variant="ghost"
             className="h-7 w-7 p-0"
-            aria-label="Save product"
+            aria-label={t("saveProduct")}
             onClick={handleSave}
             disabled={!canSave || updateMutation.isPending}
           >
@@ -583,6 +585,7 @@ function StartTrackingPopover({
   productName: string;
   onClose: () => void;
 }) {
+  const t = useTranslations("inventory");
   const utils = trpc.useUtils();
   const [stockQuantity, setStockQuantity] = useState(0);
   const [reorderPoint, setReorderPoint] = useState(10);
@@ -590,7 +593,7 @@ function StartTrackingPopover({
     onSuccess: async () => {
       await utils.inventory.list.invalidate();
       onClose();
-      toast.success("Stock tracking started");
+      toast.success(t("stockTrackingStarted"));
     },
     onError: (error) => toast.error(error.message),
   });
@@ -602,12 +605,11 @@ function StartTrackingPopover({
     <div className="absolute right-0 top-9 z-20 w-72 rounded-lg border border-border bg-popover p-4 shadow-lg">
       <p className="text-sm font-medium">Start tracking {productName}</p>
       <p className="mt-1 text-xs text-muted-foreground">
-        Enter a reviewed opening quantity. Imported source stock and lots are
-        not assumed.
+        {t("enterAReviewedOpeningQuantity")}
       </p>
       <div className="mt-3 grid grid-cols-2 gap-2">
         <label className="text-xs">
-          Opening units
+          {t("openingUnits")}
           <Input
             type="number"
             min={0}
@@ -620,7 +622,7 @@ function StartTrackingPopover({
           />
         </label>
         <label className="text-xs">
-          Reorder point
+          {t("reorderPoint")}
           <Input
             type="number"
             min={0}
@@ -635,7 +637,7 @@ function StartTrackingPopover({
       </div>
       <div className="mt-3 flex justify-end gap-2">
         <Button type="button" size="sm" variant="ghost" onClick={onClose}>
-          Cancel
+          {t("cancel")}
         </Button>
         <Button
           type="button"
@@ -645,7 +647,7 @@ function StartTrackingPopover({
             mutation.mutate({ id: productId, stockQuantity, reorderPoint })
           }
         >
-          Start tracking
+          {t("startTracking")}
         </Button>
       </div>
     </div>
@@ -665,6 +667,7 @@ function StockAdjustPopover({
   productStockQuantity: number;
   onClose: () => void;
 }) {
+  const t = useTranslations("inventory");
   const utils = trpc.useUtils();
   // The ref blocks a second click before React re-renders the disabled
   // buttons, and the operation id lets the server replay a retried
@@ -679,7 +682,7 @@ function StockAdjustPopover({
       operationIdRef.current = null;
       utils.inventory.list.invalidate();
       onClose();
-      toast.success("Stock adjusted");
+      toast.success(t("stockAdjusted"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -731,18 +734,18 @@ function StockAdjustPopover({
         min={INVENTORY_ADJUSTMENT_QUANTITY_MIN}
         max={INVENTORY_STOCK_QUANTITY_MAX}
         step="0.001"
-        aria-label="Stock adjustment quantity"
+        aria-label={t("stockAdjustmentQuantity")}
         value={qty}
         onChange={(e) => setQty(Number(e.target.value))}
         className="h-8 text-sm mb-2"
-        placeholder="Quantity"
+        placeholder={t("quantity")}
       />
       <Input
         value={reason}
         maxLength={INVENTORY_ADJUSTMENT_REASON_MAX_LENGTH}
         onChange={(e) => setReason(e.target.value)}
         className="h-8 text-sm mb-2"
-        placeholder="Reason *"
+        placeholder={t("reason")}
       />
       <div className="flex gap-2">
         <Button
@@ -770,7 +773,7 @@ function StockAdjustPopover({
         className="mt-2 w-full h-7 text-xs"
         onClick={onClose}
       >
-        Cancel
+        {t("cancel")}
       </Button>
       {adjustMutation.error && (
         <p className="text-xs text-destructive mt-1">
@@ -784,12 +787,13 @@ function StockAdjustPopover({
 // --- Add Supplier Form ---
 
 function AddSupplierForm({ onClose }: { onClose: () => void }) {
+  const t = useTranslations("inventory");
   const utils = trpc.useUtils();
   const createMutation = trpc.inventory.createSupplier.useMutation({
     onSuccess: () => {
       utils.inventory.listSuppliers.invalidate();
       onClose();
-      toast.success("Supplier added");
+      toast.success(t("supplierAdded"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -840,37 +844,37 @@ function AddSupplierForm({ onClose }: { onClose: () => void }) {
       onSubmit={handleSubmit}
       className="mt-4 rounded-lg border border-border bg-card p-4 space-y-3"
     >
-      <h3 className="font-medium text-sm">Add Supplier</h3>
+      <h3 className="font-medium text-sm">{t("addSupplier")}</h3>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <Input
-          placeholder="Name *"
+          placeholder={t("name2")}
           value={form.name}
           maxLength={INVENTORY_SUPPLIER_NAME_MAX_LENGTH}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
           required
         />
         <Input
-          placeholder="Email"
+          placeholder={t("email")}
           type="email"
           value={form.contactEmail}
           maxLength={INVENTORY_SUPPLIER_EMAIL_MAX_LENGTH}
           onChange={(e) => setForm({ ...form, contactEmail: e.target.value })}
         />
         <Input
-          placeholder="Phone"
+          placeholder={t("phone")}
           value={form.phone}
           maxLength={INVENTORY_SUPPLIER_PHONE_MAX_LENGTH}
           onChange={(e) => setForm({ ...form, phone: e.target.value })}
         />
         <Input
-          placeholder="Address"
+          placeholder={t("address")}
           value={form.address}
           maxLength={INVENTORY_SUPPLIER_ADDRESS_MAX_LENGTH}
           onChange={(e) => setForm({ ...form, address: e.target.value })}
           className="col-span-2"
         />
         <Input
-          placeholder="Notes"
+          placeholder={t("notes")}
           value={form.notes}
           maxLength={INVENTORY_SUPPLIER_NOTES_MAX_LENGTH}
           onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -882,10 +886,10 @@ function AddSupplierForm({ onClose }: { onClose: () => void }) {
           size="sm"
           disabled={!canSubmit || createMutation.isPending}
         >
-          {createMutation.isPending ? "Adding..." : "Add Supplier"}
+          {createMutation.isPending ? t("adding") : t("addSupplier")}
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={onClose}>
-          Cancel
+          {t("cancel")}
         </Button>
       </div>
       {createMutation.error && (
@@ -913,12 +917,13 @@ function EditSupplierRow({
   };
   onClose: () => void;
 }) {
+  const t = useTranslations("inventory");
   const utils = trpc.useUtils();
   const updateMutation = trpc.inventory.updateSupplier.useMutation({
     onSuccess: () => {
       utils.inventory.listSuppliers.invalidate();
       onClose();
-      toast.success("Supplier updated");
+      toast.success(t("supplierUpdated"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -1018,7 +1023,7 @@ function EditSupplierRow({
             className="h-7 w-7 p-0"
             onClick={handleSave}
             disabled={!canSave || updateMutation.isPending}
-            title="Save supplier"
+            title={t("saveSupplier")}
           >
             <Check className="h-4 w-4" />
           </Button>
@@ -1027,7 +1032,7 @@ function EditSupplierRow({
             variant="ghost"
             className="h-7 w-7 p-0"
             onClick={onClose}
-            title="Cancel"
+            title={t("cancel")}
           >
             <X className="h-4 w-4" />
           </Button>
@@ -1045,6 +1050,8 @@ function EditSupplierRow({
 // --- Main Page ---
 
 export default function InventoryPage() {
+  const t = useTranslations("inventory");
+  const locale = useLocale();
   const { data: session } = useSession();
   const formatCurrency = useCurrencyFormatter();
   const [tab, setTab] = useState<"products" | "suppliers">("products");
@@ -1091,9 +1098,9 @@ export default function InventoryPage() {
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-heading text-xl font-semibold">Inventory</h2>
+          <h2 className="font-heading text-xl font-semibold">{t("inventory")}</h2>
           <p className="text-sm text-muted-foreground">
-            Products, stock management, and suppliers
+            {t("productsStockManagementAndSuppliers")}
           </p>
         </div>
       </div>
@@ -1110,7 +1117,7 @@ export default function InventoryPage() {
           )}
         >
           <Package className="h-4 w-4" />
-          Products
+          {t("products")}
         </button>
         <button
           onClick={() => setTab("suppliers")}
@@ -1122,7 +1129,7 @@ export default function InventoryPage() {
           )}
         >
           <Truck className="h-4 w-4" />
-          Suppliers
+          {t("suppliers")}
         </button>
       </div>
 
@@ -1133,7 +1140,7 @@ export default function InventoryPage() {
             <div className="relative w-full min-w-48 flex-1 sm:max-w-sm">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search by name or SKU..."
+                placeholder={t("searchByNameOrSku")}
                 value={search}
                 maxLength={INVENTORY_PRODUCT_SEARCH_MAX_LENGTH}
                 onChange={(e) => setSearch(e.target.value)}
@@ -1147,7 +1154,7 @@ export default function InventoryPage() {
             >
               {CATEGORIES.map((cat) => (
                 <option key={cat.value} value={cat.value}>
-                  {cat.label}
+                  {t(cat.label)}
                 </option>
               ))}
             </select>
@@ -1158,7 +1165,7 @@ export default function InventoryPage() {
             >
               {ALERT_FILTERS.map((filter) => (
                 <option key={filter.value} value={filter.value}>
-                  {filter.label}
+                  {t(filter.label)}
                 </option>
               ))}
             </select>
@@ -1195,7 +1202,7 @@ export default function InventoryPage() {
               >
                 <span className="flex items-center gap-2 text-muted-foreground">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
-                  Needs attention
+                  {t("needsAttention")}
                 </span>
                 <span className="mt-1 block text-xl font-semibold">
                   {productsQuery.data.alertCounts.attention}
@@ -1209,7 +1216,7 @@ export default function InventoryPage() {
                   alertFilter === "low_stock" && "border-primary bg-primary/5"
                 )}
               >
-                <span className="text-muted-foreground">Low stock</span>
+                <span className="text-muted-foreground">{t("lowStock")}</span>
                 <span className="mt-1 block text-xl font-semibold">
                   {productsQuery.data.alertCounts.lowStock}
                 </span>
@@ -1222,7 +1229,7 @@ export default function InventoryPage() {
                   alertFilter === "expired" && "border-primary bg-primary/5"
                 )}
               >
-                <span className="text-muted-foreground">Expired</span>
+                <span className="text-muted-foreground">{t("expiredLabel")}</span>
                 <span className="mt-1 block text-xl font-semibold">
                   {productsQuery.data.alertCounts.expired}
                 </span>
@@ -1236,7 +1243,7 @@ export default function InventoryPage() {
                     "border-primary bg-primary/5"
                 )}
               >
-                <span className="text-muted-foreground">Expiring soon</span>
+                <span className="text-muted-foreground">{t("expiringSoon")}</span>
                 <span className="mt-1 block text-xl font-semibold">
                   {productsQuery.data.alertCounts.expiringSoon}
                 </span>
@@ -1247,11 +1254,11 @@ export default function InventoryPage() {
           {productsQuery.error || productsMissing ? (
             <div className="mt-4 rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
               {productsQuery.error?.message ??
-                "Unable to load inventory products. Please retry."}
+                t("productsLoadError")}
             </div>
           ) : productsQuery.isLoading ? (
             <div className="mt-6 text-center text-muted-foreground">
-              Loading...
+              {t("loading")}
             </div>
           ) : productsQuery.data && productsQuery.data.items.length > 0 ? (
             <TableScroll className="mt-4 rounded-lg border border-border">
@@ -1259,37 +1266,37 @@ export default function InventoryPage() {
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                      Name
+                      {t("name")}
                     </th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                      SKU
+                      {t("sku")}
                     </th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                      Category
+                      {t("category")}
                     </th>
                     <th className="px-4 py-3 text-right font-medium text-muted-foreground">
-                      Price / unit
+                      {t("priceUnit")}
                     </th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                      Tax
+                      {t("tax")}
                     </th>
                     <th className="px-4 py-3 text-right font-medium text-muted-foreground">
-                      Cost
+                      {t("cost")}
                     </th>
                     <th className="px-4 py-3 text-right font-medium text-muted-foreground">
-                      Stock units
+                      {t("stockUnits")}
                     </th>
                     <th className="px-4 py-3 text-right font-medium text-muted-foreground">
-                      Reorder Pt
+                      {t("reorderPt")}
                     </th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                      Lot / Expiry
+                      {t("lotExpiry")}
                     </th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                      Status
+                      {t("status")}
                     </th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                      Actions
+                      {t("actions")}
                     </th>
                   </tr>
                 </thead>
@@ -1329,7 +1336,7 @@ export default function InventoryPage() {
                           {formatCurrency(product.unitPrice)}
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">
-                          {product.taxable ? "Taxable" : "Not taxable"}
+                          {product.taxable ? t("taxable") : t("notTaxable")}
                         </td>
                         <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">
                           {product.costPrice
@@ -1347,12 +1354,14 @@ export default function InventoryPage() {
                         <td className="px-4 py-3 text-muted-foreground">
                           <span className="block">
                             {product.lotNumber
-                              ? `Lot ${product.lotNumber}`
+                              ? t("lotNumberShort", { lot: product.lotNumber })
                               : "\u2014"}
                           </span>
                           {product.expirationDate && (
                             <span className="block text-xs">
-                              Exp {formatDateOnly(product.expirationDate)}
+                              {t("expShort", {
+                                date: formatDateOnly(product.expirationDate, locale),
+                              })}
                             </span>
                           )}
                         </td>
@@ -1364,7 +1373,7 @@ export default function InventoryPage() {
                                 stock.className
                               )}
                             >
-                              {stock.label}
+                              {t(stock.label)}
                             </span>
                             {expiration && (
                               <span
@@ -1373,7 +1382,7 @@ export default function InventoryPage() {
                                   expiration.className
                                 )}
                               >
-                                {expiration.label}
+                                {t(expiration.label)}
                               </span>
                             )}
                           </div>
@@ -1386,7 +1395,7 @@ export default function InventoryPage() {
                                 variant="ghost"
                                 className="h-7 w-7 p-0"
                                 onClick={() => setEditingId(product.id)}
-                                title="Edit"
+                                title={t("edit")}
                               >
                                 <Pencil className="h-3.5 w-3.5" />
                               </Button>
@@ -1403,13 +1412,13 @@ export default function InventoryPage() {
                                 }
                                 title={
                                   product.inventoryTracked
-                                    ? "Adjust stock"
-                                    : "Start stock tracking"
+                                    ? t("adjustStock")
+                                    : t("startStockTracking")
                                 }
                                 aria-label={
                                   product.inventoryTracked
-                                    ? `Adjust stock for ${product.name}`
-                                    : `Start stock tracking for ${product.name}`
+                                    ? t("adjustStockFor", { name: product.name })
+                                    : t("startTrackingFor", { name: product.name })
                                 }
                               >
                                 <Plus className="h-3.5 w-3.5" />
@@ -1433,7 +1442,7 @@ export default function InventoryPage() {
                             </div>
                           ) : (
                             <span className="text-xs text-muted-foreground">
-                              Read-only
+                              {t("readOnly")}
                             </span>
                           )}
                         </td>
@@ -1449,17 +1458,17 @@ export default function InventoryPage() {
               icon={Package}
               title={
                 alertFilter !== "all"
-                  ? "No products match this alert filter"
+                  ? t("noProductsMatchThisAlert")
                   : search || category
-                    ? "No products match your filters"
-                    : "No products yet"
+                    ? t("noProductsMatchYourFilters")
+                    : t("noProductsYet")
               }
               description={
                 alertFilter !== "all"
-                  ? "Clear the alert filter to see all inventory items."
+                  ? t("clearTheAlertFilterTo")
                   : search || category
-                    ? "Clear the search or category filter to broaden the list."
-                    : "Add medications, supplies, food, and other inventory before dispensing or invoicing stock-backed items."
+                    ? t("clearTheSearchOrCategory")
+                    : t("addMedicationsSuppliesFoodAnd")
               }
               action={
                 canManagePricing &&
@@ -1467,7 +1476,7 @@ export default function InventoryPage() {
                 !search &&
                 !category
                   ? {
-                      label: "Add first product",
+                      label: t("addFirstProduct"),
                       onClick: () => setShowAddProduct(true),
                       icon: Plus,
                     }
@@ -1506,11 +1515,11 @@ export default function InventoryPage() {
           {suppliersQuery.error || suppliersMissing ? (
             <div className="mt-4 rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
               {suppliersQuery.error?.message ??
-                "Unable to load inventory suppliers. Please retry."}
+                t("suppliersLoadError")}
             </div>
           ) : suppliersQuery.isLoading ? (
             <div className="mt-6 text-center text-muted-foreground">
-              Loading...
+              {t("loading")}
             </div>
           ) : suppliersQuery.data && suppliersQuery.data.length > 0 ? (
             <TableScroll className="mt-4 rounded-lg border border-border">
@@ -1518,22 +1527,22 @@ export default function InventoryPage() {
                 <thead>
                   <tr className="border-b border-border bg-muted/50">
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                      Name
+                      {t("name")}
                     </th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                      Email
+                      {t("email")}
                     </th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                      Phone
+                      {t("phone")}
                     </th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                      Address
+                      {t("address")}
                     </th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                      Notes
+                      {t("notes")}
                     </th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                      Actions
+                      {t("actions")}
                     </th>
                   </tr>
                 </thead>
@@ -1582,13 +1591,13 @@ export default function InventoryPage() {
                               variant="ghost"
                               className="h-7 w-7 p-0"
                               onClick={() => setEditingSupplierId(supplier.id)}
-                              title="Edit supplier"
+                              title={t("editSupplier")}
                             >
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
                           ) : (
                             <span className="text-xs text-muted-foreground">
-                              Read-only
+                              {t("readOnly")}
                             </span>
                           )}
                         </td>
@@ -1602,12 +1611,12 @@ export default function InventoryPage() {
             <EmptyState
               className="mt-6"
               icon={Truck}
-              title="No suppliers yet"
-              description="Add supplier contact details so reorder workflows have the right vendor information at hand."
+              title={t("noSuppliersYet")}
+              description={t("addSupplierContactDetailsSo")}
               action={
                 canManageInventory
                   ? {
-                      label: "Add first supplier",
+                      label: t("addFirstSupplier"),
                       onClick: () => setShowAddSupplier(true),
                       icon: Plus,
                     }

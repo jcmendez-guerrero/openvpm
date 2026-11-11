@@ -387,6 +387,7 @@ export default function ClientDetailPage() {
 
 function CommunicationLogPanel({ clientId }: { clientId: string }) {
   const t = useTranslations("clients.detail");
+  const statusT = useTranslations("communications.status");
   const locale = useLocale();
   const {
     data: communicationSettings,
@@ -445,7 +446,7 @@ function CommunicationLogPanel({ clientId }: { clientId: string }) {
               message.channel as CommunicationChannel;
             const directionLabel =
               message.direction === "outbound" ? t("log.outbound") : t("log.inbound");
-            const statusLabel = communicationStatusLabel(message);
+            const statusLabel = communicationStatusLabel(message, statusT);
 
             return (
               <article key={message.id} className="p-4">

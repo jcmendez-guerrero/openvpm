@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -27,12 +29,8 @@ import {
   isAgentInstructionValid,
 } from "@/lib/agent/policy";
 
-const SUGGESTIONS = [
-  "Which patients are overdue for vaccinations?",
-  "Summarize today's appointments.",
-  "What's the carprofen dose for a 12 kg dog?",
-  "Pull a clinical summary for the next patient checked in.",
-];
+// Suggestion text lives in the catalog: agent.suggestions.<index>.
+const SUGGESTION_COUNT = 4;
 
 type ToolCall = { name: string; input: unknown; error?: string | null };
 type ChatMessage = {
@@ -48,6 +46,7 @@ function canRunAgentRole(role?: string | null): boolean {
 }
 
 export default function AgentPage() {
+  const t = useTranslations("agent");
   const router = useRouter();
   const { data: session, status } = useSession();
 
@@ -56,7 +55,7 @@ export default function AgentPage() {
       <div className="mx-auto max-w-3xl rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Checking agent access...
+          {t("checkingAgentAccess")}
         </div>
       </div>
     );
@@ -67,10 +66,10 @@ export default function AgentPage() {
       <div className="mx-auto max-w-3xl">
         <EmptyState
           icon={Bot}
-          title="Agent access is restricted"
-          description="Only administrators and veterinarians can run the OpenVPM Agent."
+          title={t("agentAccessIsRestricted")}
+          description={t("onlyAdministratorsAndVeterinariansCan")}
           action={{
-            label: "Back to dashboard",
+            label: t("backToDashboard"),
             onClick: () => router.push("/"),
           }}
         />
@@ -82,6 +81,7 @@ export default function AgentPage() {
 }
 
 function AgentRunner({ isAdmin }: { isAdmin: boolean }) {
+  const t = useTranslations("agent");
   const router = useRouter();
   const status = trpc.agent.status.useQuery();
   const run = trpc.agent.run.useMutation();
@@ -210,13 +210,13 @@ function AgentRunner({ isAdmin }: { isAdmin: boolean }) {
   const statusBanner = status.isLoading ? (
     <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
       <Loader2 className="h-4 w-4 animate-spin" />
-      Checking agent configuration…
+      {t("checkingAgentConfiguration")}
     </div>
   ) : status.error ? (
     <div className="mb-4 flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
       <div>
-        <p className="font-medium">Could not check agent status</p>
+        <p className="font-medium">{t("couldNotCheckAgentStatus")}</p>
         <p className="mt-1">{status.error.message}</p>
         <Button
           variant="outline"
@@ -224,7 +224,7 @@ function AgentRunner({ isAdmin }: { isAdmin: boolean }) {
           className="mt-3"
           onClick={() => void status.refetch()}
         >
-          Retry
+          {t("retry")}
         </Button>
       </div>
     </div>
@@ -232,9 +232,9 @@ function AgentRunner({ isAdmin }: { isAdmin: boolean }) {
     <div className="mb-4 flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
       <div>
-        <p className="font-medium">Agent status is unavailable</p>
+        <p className="font-medium">{t("agentStatusIsUnavailable")}</p>
         <p className="mt-1">
-          We could not confirm the agent is ready. Retry before running.
+          {t("weCouldNotConfirmThe")}
         </p>
         <Button
           variant="outline"
@@ -242,7 +242,7 @@ function AgentRunner({ isAdmin }: { isAdmin: boolean }) {
           className="mt-3"
           onClick={() => void status.refetch()}
         >
-          Retry
+          {t("retry")}
         </Button>
       </div>
     </div>
@@ -250,7 +250,7 @@ function AgentRunner({ isAdmin }: { isAdmin: boolean }) {
     <div className="mb-4 flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm">
       <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
       <div>
-        <p className="font-medium">Add a card to try AI</p>
+        <p className="font-medium">{t("addACardToTry")}</p>
         <p className="mt-1 text-muted-foreground">
           {verifiedAgentStatus?.accessMessage}
         </p>
@@ -260,11 +260,11 @@ function AgentRunner({ isAdmin }: { isAdmin: boolean }) {
             className="mt-3"
             onClick={() => router.push("/settings?tab=billing")}
           >
-            Add a card
+            {t("addACard")}
           </Button>
         ) : (
           <p className="mt-2 text-muted-foreground">
-            Ask a practice administrator to add the card.
+            {t("askAPracticeAdministratorTo")}
           </p>
         )}
       </div>
@@ -274,7 +274,7 @@ function AgentRunner({ isAdmin }: { isAdmin: boolean }) {
       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
       <p>
         {verifiedAgentStatus?.accessMessage ??
-          "OpenVPM AI is not available for this workspace."}
+          t("aiNotAvailable")}
       </p>
     </div>
   ) : !configured ? (
@@ -284,17 +284,15 @@ function AgentRunner({ isAdmin }: { isAdmin: boolean }) {
         // Hosted clinics can't fix a platform key. Keep it human; ops sees
         // the missing config through /api/health checks.
         <p>
-          The agent is not available right now. We are on it. Please check back
-          soon.
+          {t("theAgentIsNotAvailable")}
         </p>
       ) : (
         <p>
-          Configure Google Vertex AI with{" "}
-          <code className="break-all font-mono">GOOGLE_VERTEX_PROJECT</code>,{" "}
-          <code className="break-all font-mono">GOOGLE_VERTEX_LOCATION</code>,{" "}
-          and service-account credentials for Gemini, or set{" "}
-          <code className="break-all font-mono">ANTHROPIC_API_KEY</code> for an
-          explicit Claude model.
+          {t.rich("configureProviders", {
+            code: (chunks) => (
+              <code className="break-all font-mono">{chunks}</code>
+            ),
+          })}
         </p>
       )}
     </div>
@@ -308,10 +306,9 @@ function AgentRunner({ isAdmin }: { isAdmin: boolean }) {
           <Bot className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="font-heading text-2xl font-semibold">OpenVPM Agent</h1>
+          <h1 className="font-heading text-2xl font-semibold">{t("openvpmAgent")}</h1>
           <p className="text-sm text-muted-foreground">
-            Ask about your clinic. It can look things up and, with your okay, do
-            the work.
+            {t("askAboutYourClinicIt")}
           </p>
         </div>
       </div>
@@ -326,14 +323,15 @@ function AgentRunner({ isAdmin }: { isAdmin: boolean }) {
               <Sparkles className="h-6 w-6" />
             </div>
             <h2 className="mt-4 font-heading text-xl font-semibold">
-              What can I help you with?
+              {t("whatCanIHelpYou")}
             </h2>
             <p className="mt-1 max-w-md text-sm text-muted-foreground">
-              AI is built into OpenVPM. Ask a question in plain words, or start
-              with one of these.
+              {t("aiIsBuiltIntoOpenvpm")}
             </p>
             <div className="mt-6 grid w-full max-w-xl gap-2 sm:grid-cols-2">
-              {SUGGESTIONS.map((s) => (
+              {Array.from({ length: SUGGESTION_COUNT }, (_, i) =>
+                t(`suggestions.${i}`),
+              ).map((s) => (
                 <button
                   key={s}
                   type="button"
@@ -390,10 +388,10 @@ function AgentRunner({ isAdmin }: { isAdmin: boolean }) {
             disabled={!canRun || run.isPending}
             placeholder={
               canRun
-                ? "Ask the agent anything…  (Enter to send, Shift+Enter for a new line)"
+                ? t("askTheAgentAnythingEnter")
                 : needsBillingSetup
-                  ? "Add a card to try AI."
-                  : "The agent is not available right now."
+                  ? t("addACardToTry2")
+                  : t("theAgentIsNotAvailable2")
             }
             className="max-h-40 w-full resize-none bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted-foreground"
           />
@@ -406,14 +404,14 @@ function AgentRunner({ isAdmin }: { isAdmin: boolean }) {
                 disabled={!canRun || run.isPending}
                 className="h-3.5 w-3.5 rounded border-border"
               />
-              Allow writes: appointments and patient vitals
+              {t("allowWritesAppointmentsAndPatient")}
             </label>
             <Button
               type="button"
               size="icon"
               onClick={submit}
               disabled={submitDisabled}
-              aria-label="Send"
+              aria-label={t("send")}
               className="h-8 w-8 rounded-full"
             >
               {run.isPending ? (
@@ -428,8 +426,7 @@ function AgentRunner({ isAdmin }: { isAdmin: boolean }) {
           <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <p>
-              Write mode can create appointments or record patient vitals. It
-              turns off automatically after this run.
+              {t("writeModeCanCreateAppointments")}
             </p>
           </div>
         ) : null}
@@ -439,6 +436,7 @@ function AgentRunner({ isAdmin }: { isAdmin: boolean }) {
 }
 
 function MessageBubble({ message }: { message: ChatMessage }) {
+  const t = useTranslations("agent");
   const [traceOpen, setTraceOpen] = useState(false);
   const isUser = message.role === "user";
 
@@ -469,8 +467,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
                 <ChevronRight className="h-3.5 w-3.5" />
               )}
               <Wrench className="h-3.5 w-3.5" />
-              {message.toolCalls.length} tool call
-              {message.toolCalls.length === 1 ? "" : "s"}
+              {t("toolCalls", { count: message.toolCalls.length })}
             </button>
             {traceOpen ? (
               <ul className="mt-2 space-y-2">

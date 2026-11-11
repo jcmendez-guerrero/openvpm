@@ -1,3 +1,4 @@
+import en from "@/messages/en.json";
 import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
@@ -70,7 +71,7 @@ describe("onboarding import UI", () => {
     );
     expect(source).toContain("? activePreview.errors");
     expect(source).not.toContain("if (activePreview.total === 0) {");
-    expect(source).toContain("`all ${errors.length} issues`");
+    expect(source).toContain("{count, plural, one {issue report} other {all # issues}}");
     expect(source).not.toContain("clientCsv:");
     expect(source).not.toContain("function parseCSV");
     expect(source).not.toContain("row.first_name");
@@ -120,18 +121,16 @@ describe("onboarding import UI", () => {
     expect(source).toContain("csvMetaByMode[mode].sizeValid");
     expect(source).toContain("maxLength={IMPORT_CSV_MAX_BYTES}");
     expect(source).toContain("aria-invalid={tooLarge || undefined}");
-    expect(source).toContain(
-      "aria-label={`Paste ${step.label.toLowerCase()} CSV text`}",
-    );
+    expect(source).toContain("Paste {label} CSV text");
     expect(source).toContain("aria-pressed={active}");
     expect(source).toContain("`${step.mode}-csv-size-error`");
   });
 
   it("shows complete result and issue summaries", () => {
-    expect(source).toContain("result.imported.clients");
-    expect(source).toContain("result.imported.patients");
-    expect(source).toContain("result.imported.vaccinations");
-    expect(source).toContain("result.imported.soapNotes");
+    expect(source).toContain("Added {clients} clients");
+    for (const field of ["clients", "patients", "vaccinations", "soapNotes"]) {
+      expect(en.onboarding.bringData.addedRecords).toContain(`{${field}}`);
+    }
     expect(source).toContain("result.reconciled");
     expect(source).toContain("result.errors");
     expect(

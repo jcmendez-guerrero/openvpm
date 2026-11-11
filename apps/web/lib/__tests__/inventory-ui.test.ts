@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
   INVENTORY_ADJUSTMENT_QUANTITY_MIN,
@@ -25,8 +25,8 @@ import {
 } from "../inventory/policy";
 
 describe("inventory product form UX", () => {
-  const source = readFileSync("app/(dashboard)/inventory/page.tsx", "utf8");
-  const routerSource = readFileSync("server/routers/inventory.ts", "utf8");
+  const source = readTranslatedSource("app/(dashboard)/inventory/page.tsx");
+  const routerSource = readTranslatedSource("server/routers/inventory.ts");
 
   it("defines medication inventory and pricing in one dispensing unit", () => {
     expect(source).toContain("Price per unit *");
@@ -78,11 +78,12 @@ describe("inventory product form UX", () => {
     expect(source).toContain("isInventoryOptionalCurrencyAmountInputValid");
     expect(source).toContain("isInventoryNonnegativeIntegerInputValid");
     expect(source).toContain("isInventoryOptionalExpirationDateInputValid");
-    expect(source).toContain("formatDateOnly(product.expirationDate)");
+    expect(source).toContain("Exp {date}");
+    expect(source).toContain('function formatDateOnly(value: string, locale = "en-US")');
     expect(source).toContain(
       'import { formatClinicalDate } from "@/lib/records/clinical-dates"'
     );
-    expect(source).toContain('return formatClinicalDate(value, "UTC", value)');
+    expect(source).toContain('return formatClinicalDate(value, "UTC", value, locale)');
     expect(source).not.toContain("new Date(product.expirationDate)");
     expect(source).not.toContain("new Date(year, month - 1, day)");
     expect(source).not.toContain("toLocaleDateString()");

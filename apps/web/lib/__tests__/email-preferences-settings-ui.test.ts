@@ -1,12 +1,8 @@
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 
-const source = readFileSync(
-  fileURLToPath(
-    new URL("../../app/(dashboard)/settings/page.tsx", import.meta.url),
-  ),
-  "utf8",
+const source = readTranslatedSource(
+  new URL("../../app/(dashboard)/settings/page.tsx", import.meta.url),
 );
 
 describe("OpenVPM email settings UI", () => {
@@ -15,7 +11,7 @@ describe("OpenVPM email settings UI", () => {
     expect(source).toContain("Product guidance and feedback");
     expect(source).toContain("Account, security, and billing email");
     expect(source).toContain(
-      "not messages\n              your clinic sends to pet owners",
+      "not messages your clinic sends to pet owners",
     );
   });
 

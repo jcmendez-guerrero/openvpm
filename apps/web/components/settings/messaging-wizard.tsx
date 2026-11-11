@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "use-intl";
+
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
@@ -19,7 +21,6 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
   defaultMessagingSetupMode,
-  setupModeTitle,
   type MessagingSetupMode,
 } from "@/lib/messaging/setup-wizard";
 import {
@@ -62,11 +63,15 @@ type SearchNumber = {
 };
 
 /** Format a provider's raw cost (e.g. "1.00000") using its quoted currency. */
-function formatCost(cost: string, currency: string): string {
+function formatCost(
+  cost: string,
+  currency: string,
+  locale = "en-US",
+): string {
   const value = Number(cost);
   if (!Number.isFinite(value)) return `${cost} ${currency}`;
   try {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat(locale, {
       style: "currency",
       currency,
     }).format(value);
@@ -75,11 +80,12 @@ function formatCost(cost: string, currency: string): string {
   }
 }
 
-const STEPS: { id: Step; title: string }[] = [
-  { id: "choose", title: "Choose a texting number" },
-  { id: "confirm", title: "Confirm the number" },
-  { id: "registration", title: "Review and purchase" },
-  { id: "done", title: "Number ordered; registration not started" },
+// Titles are catalog keys: settings.messagingWizard.steps.<id>.
+const STEPS: { id: Step }[] = [
+  { id: "choose" },
+  { id: "confirm" },
+  { id: "registration" },
+  { id: "done" },
 ];
 
 export function MessagingWizard({
@@ -95,6 +101,7 @@ export function MessagingWizard({
   onOpenChange: (open: boolean) => void;
   onChanged: () => void;
 }) {
+  const t = useTranslations("settings.messagingWizard");
   const utils = trpc.useUtils();
   const defaultMode = useMemo(
     () => defaultMessagingSetupMode(location?.existingPhone),
@@ -137,7 +144,7 @@ export function MessagingWizard({
       setProvisionedSender(result.senderE164);
       setStep("done");
       toast.success(
-        "Number order accepted. Sending stays off until carrier approval.",
+        t("numberOrderAcceptedSendingStays"),
       );
       onChanged();
     },
@@ -168,7 +175,7 @@ export function MessagingWizard({
       });
       setEligibility(result);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Eligibility check failed");
+      toast.error(e instanceof Error ? e.message : t("eligibilityCheckFailed"));
     } finally {
       setChecking(false);
     }
@@ -188,7 +195,7 @@ export function MessagingWizard({
       setSelectedNumber(result[0] ?? null);
       setHasSearched(true);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Number search failed");
+      toast.error(e instanceof Error ? e.message : t("numberSearchFailed"));
     } finally {
       setChecking(false);
     }
@@ -240,7 +247,7 @@ export function MessagingWizard({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Set up texting"
+      aria-label={t("setUpTexting")}
       className="fixed inset-0 z-[90] overflow-y-auto bg-[linear-gradient(135deg,#f8fafc_0%,#ecfdf5_52%,#f0fdfa_100%)] p-4 text-slate-950 sm:p-6"
     >
       <div className="flex min-h-full items-center justify-center">
@@ -249,19 +256,19 @@ export function MessagingWizard({
             <div>
               <div className="inline-flex items-center gap-2 text-sm font-medium text-emerald-700">
                 <MessageSquare className="h-4 w-4" />
-                Texting setup
+                {t("textingSetup")}
               </div>
               <h2 className="mt-4 font-heading text-2xl font-bold tracking-tight text-slate-950">
-                {STEPS[currentIndex]?.title}
+                {t(`steps.${step}`)}
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
                 {location.name}
-                {location.isPrimary ? " primary location" : ""}
+                {location.isPrimary ? t("primaryLocation") : ""}
               </p>
             </div>
             <button
               type="button"
-              aria-label="Close texting setup"
+              aria-label={t("closeTextingSetup")}
               onClick={() => onOpenChange(false)}
               className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
             >
@@ -341,11 +348,11 @@ export function MessagingWizard({
               disabled={step === "choose" || provision.isPending}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
+              {t("back")}
             </Button>
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-slate-500">
-                Step {currentIndex + 1} of {STEPS.length}
+                {t("stepOf", { current: currentIndex + 1, total: STEPS.length })}
               </span>
               <Button
                 type="button"
@@ -355,7 +362,7 @@ export function MessagingWizard({
                 {checking || provision.isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                {continueLabel({ step, mode, eligibility, numbers })}
+                {t(`continue.${continueLabel({ step, mode, eligibility, numbers })}`)}
                 {step !== "done" && !checking && !provision.isPending ? (
                   <ArrowRight className="ml-2 h-4 w-4" />
                 ) : null}
@@ -377,23 +384,23 @@ function ChooseStep({
   setMode: (mode: MessagingSetupMode) => void;
   existingPhone: string | null;
 }) {
+  const t = useTranslations("settings.messagingWizard");
   return (
     <div className="space-y-4">
       <p className="text-sm leading-6 text-slate-600">
-        OpenVPM currently sets up a new local number for texting. Your
-        clinic&apos;s existing voice line stays unchanged.
+        {t("chooseIntro")}
       </p>
       <div className="w-full rounded-xl border border-slate-200 bg-slate-50 p-4 text-left">
         <div className="flex items-start gap-3">
           <ShieldCheck className="mt-0.5 h-5 w-5 text-slate-500" />
           <div>
             <p className="font-medium text-slate-950">
-              Existing-number texting is not available yet
+              {t("existingNumberTextingIsNot")}
             </p>
             <p className="mt-1 text-sm text-slate-600">
               {existingPhone
-                ? `${existingPhone} will not be ported, hosted, or changed.`
-                : "Your clinic phone line will not be ported, hosted, or changed."}
+                ? t("existingNotPorted", { phone: existingPhone })
+                : t("yourClinicPhoneLineWill")}
             </p>
           </div>
         </div>
@@ -412,10 +419,10 @@ function ChooseStep({
           <Phone className="mt-0.5 h-5 w-5 text-emerald-600" />
           <div>
             <p className="font-medium text-slate-950">
-              Get a new local texting number
+              {t("getANewLocalTexting")}
             </p>
             <p className="mt-1 text-sm text-slate-600">
-              Choose a local number for outbound texts and client replies.
+              {t("chooseALocalNumberFor")}
             </p>
           </div>
         </div>
@@ -453,12 +460,15 @@ function ConfirmStep({
   setSelectedNumber: (number: SearchNumber) => void;
   searchNumbers: () => void;
 }) {
+  const t = useTranslations("settings.messagingWizard");
+  const locale = useLocale();
   if (mode === "host") {
     return (
       <div className="space-y-5">
         <p className="text-sm leading-6 text-slate-600">
-          We will check whether {location.existingPhone ?? "this number"} can be
-          text-enabled without porting voice service.
+          {t("checkExistingIntro", {
+            phone: location.existingPhone ?? t("thisNumber"),
+          })}
         </p>
         {eligibility === null ? (
           <Button variant="outline" onClick={checkExisting} disabled={checking}>
@@ -467,26 +477,26 @@ function ConfirmStep({
             ) : (
               <Search className="mr-2 h-4 w-4" />
             )}
-            Check eligibility
+            {t("continue.checkEligibility")}
           </Button>
         ) : eligibility.eligible ? (
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
             <p className="flex items-center gap-2 text-sm font-medium text-emerald-800">
               <Check className="h-4 w-4" />
-              Eligible to text-enable
+              {t("eligibleToTextEnable")}
             </p>
             <p className="mt-2 text-sm text-emerald-700">
-              Continue to review the carrier registration step.
+              {t("continueToReviewTheCarrier")}
             </p>
           </div>
         ) : (
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
             <p className="text-sm font-medium text-amber-900">
-              This number is not eligible yet.
+              {t("thisNumberIsNotEligible")}
             </p>
             <p className="mt-2 text-sm text-amber-800">
               {eligibility.detail ??
-                "Choose a new local number instead, or update the location phone."}
+                t("notEligibleHint")}
             </p>
           </div>
         )}
@@ -497,16 +507,14 @@ function ConfirmStep({
   return (
     <div className="space-y-5">
       <p className="text-sm leading-6 text-slate-600">
-        Search for a local number. The selected number will be assigned to this
-        location. Carrier registration remains not started until you complete
-        the clinic details and{" "}
+        {t("searchIntro")}{" "}
         {hosted
-          ? "OpenVPM reviews them."
-          : "your administrator finishes provider activation."}
+          ? t("openvpmReviewsThem")
+          : t("adminFinishes")}
       </p>
       <div className="flex flex-wrap items-end gap-2">
         <label className="space-y-1.5">
-          <span className="text-xs font-medium text-slate-600">Area code</span>
+          <span className="text-xs font-medium text-slate-600">{t("areaCode")}</span>
           <Input
             value={areaCode}
             onChange={(e) =>
@@ -533,7 +541,7 @@ function ConfirmStep({
           ) : (
             <Search className="mr-2 h-4 w-4" />
           )}
-          Search numbers
+          {t("continue.searchNumbers")}
         </Button>
       </div>
       {numbers.length > 0 ? (
@@ -555,11 +563,13 @@ function ConfirmStep({
               </span>
               <span className="flex items-center gap-2">
                 <span className="text-xs text-slate-500">
-                  {formatCost(n.upfrontCost, n.currency)} today ·{" "}
-                  {formatCost(n.monthlyCost, n.currency)}/mo
+                  {t("costLine", {
+                    upfront: formatCost(n.upfrontCost, n.currency, locale),
+                    monthly: formatCost(n.monthlyCost, n.currency, locale),
+                  })}
                 </span>
                 {selectedNumber?.phoneNumber === n.phoneNumber ? (
-                  <Badge variant="success">Selected</Badge>
+                  <Badge variant="success">{t("selected")}</Badge>
                 ) : null}
               </span>
             </button>
@@ -567,9 +577,7 @@ function ConfirmStep({
         </div>
       ) : hasSearched ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          No available numbers returned a complete upfront price, monthly price,
-          and currency. Nothing can be selected or purchased; search again
-          later.
+          {t("noCompletePrices")}
         </div>
       ) : null}
     </div>
@@ -591,38 +599,48 @@ function RegistrationStep({
   chargeAcknowledged: boolean;
   setChargeAcknowledged: (checked: boolean) => void;
 }) {
+  const t = useTranslations("settings.messagingWizard");
+  const locale = useLocale();
   const number =
     mode === "host"
-      ? (location.existingPhone ?? "your number")
+      ? (location.existingPhone ?? t("yourNumberLower"))
       : selectedNumber?.phoneNumber;
 
   return (
     <div className="space-y-5">
       <div className="rounded-xl border border-slate-200 p-4">
         <p className="text-sm font-medium text-slate-950">
-          {setupModeTitle(mode)}
+          {t(`modeTitle.${mode}`)}
         </p>
         <p className="mt-1 text-sm text-slate-600">{number}</p>
       </div>
       {mode === "buy" && selectedNumber ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm font-medium text-amber-950">Provider charges</p>
+          <p className="text-sm font-medium text-amber-950">{t("providerCharges")}</p>
           <p className="mt-2 text-sm text-amber-900">
-            {formatCost(selectedNumber.upfrontCost, selectedNumber.currency)}{" "}
-            due now, then{" "}
-            {formatCost(selectedNumber.monthlyCost, selectedNumber.currency)}
-            /month for the number.
+            {t("chargesLine", {
+              upfront: formatCost(
+                selectedNumber.upfrontCost,
+                selectedNumber.currency,
+                locale,
+              ),
+              monthly: formatCost(
+                selectedNumber.monthlyCost,
+                selectedNumber.currency,
+                locale,
+              ),
+            })}
           </p>
         </div>
       ) : null}
       <div className="rounded-xl border border-teal-200 bg-teal-50 p-4">
         <p className="text-sm font-medium text-teal-950">
-          Carrier approval is required before live US texting.
+          {t("carrierApprovalIsRequiredBefore")}
         </p>
         <p className="mt-2 text-sm leading-6 text-teal-800">
           {hosted
-            ? "The selected number will be saved with sending off. After this step, complete the clinic's legal and consent details in Messaging settings; OpenVPM reviews them before any fee-bearing carrier submission."
-            : "The selected number will be saved with sending off. After this step, complete the clinic's legal and consent details in Messaging settings; your administrator must finish carrier activation before sending."}
+            ? t("theSelectedNumberWillBe")
+            : t("theSelectedNumberWillBe2")}
         </p>
       </div>
       <label className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
@@ -633,9 +651,7 @@ function RegistrationStep({
           className="mt-0.5 h-4 w-4 rounded border-amber-400"
         />
         <span>
-          I authorize the exact upfront and monthly provider charges shown above
-          for this selected number. Texting stays off until carrier approval is
-          active and an administrator enables sending.
+          {t("iAuthorizeTheExactUpfront")}
         </span>
       </label>
     </div>
@@ -649,28 +665,26 @@ function DoneStep({
   sender: string | null;
   hosted: boolean;
 }) {
+  const t = useTranslations("settings.messagingWizard");
   return (
     <div className="space-y-5">
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
         <p className="flex items-center gap-2 text-sm font-medium text-emerald-900">
           <Check className="h-4 w-4" />
-          Number order accepted; sending remains off
+          {t("orderAccepted")}
         </p>
         <p className="mt-2 text-sm leading-6 text-emerald-800">
-          {sender ?? "Your number"} is saved while the provider finishes any
-          activation work. Carrier registration has not been submitted yet, and
-          SMS sending stays off until approval is active and an admin turns it
-          on.
+          {t("savedWhileActivating", { sender: sender ?? t("yourNumber") })}
         </p>
       </div>
       <div className="rounded-xl border border-slate-200 p-4">
         <p className="text-sm font-medium text-slate-950">
-          Next: carrier approval
+          {t("nextCarrierApproval")}
         </p>
         <p className="mt-2 text-sm leading-6 text-slate-600">
           {hosted
-            ? "Complete the US carrier registration form in Messaging settings. OpenVPM will review and submit it. Hosted sending remains off until the clinic and one location are explicitly approved for the pilot; after approval, validate through a current consented client workflow."
-            : "Complete the US carrier registration form in Messaging settings. Your administrator must finish provider activation before enabling sending; after approval, validate through a current consented client workflow."}
+            ? t("completeTheUsCarrierRegistration")
+            : t("completeTheUsCarrierRegistration2")}
         </p>
       </div>
     </div>
@@ -688,14 +702,15 @@ function continueLabel({
   eligibility: { eligible: boolean; detail?: string } | null;
   numbers: SearchNumber[];
 }) {
-  if (step === "choose") return "Continue";
+  // Returns a key under settings.messagingWizard.continue.
+  if (step === "choose") return "continue";
   if (step === "confirm" && mode === "host" && eligibility === null) {
-    return "Check eligibility";
+    return "checkEligibility";
   }
   if (step === "confirm" && mode === "buy" && numbers.length === 0) {
-    return "Search numbers";
+    return "searchNumbers";
   }
-  if (step === "registration") return "Purchase number and start setup";
-  if (step === "done") return "Done";
-  return "Continue";
+  if (step === "registration") return "purchase";
+  if (step === "done") return "done";
+  return "continue";
 }

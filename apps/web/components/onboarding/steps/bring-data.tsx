@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "use-intl";
+
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
@@ -33,10 +35,9 @@ import {
   isValidMigrationSource,
   MIGRATION_SOURCES,
   MIGRATION_STEPS,
-  migrationSourceExportHint,
-  migrationSourceName,
   type MigrationImportMode,
 } from "@/lib/import/sources";
+import { useMigrationCopy } from "@/lib/import/use-migration-copy";
 import { getOnboardingIntentOption } from "@/lib/onboarding/intent";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -71,8 +72,6 @@ type ImportResponse = {
   errors: string[];
 };
 
-const IMPORT_CSV_SIZE_MESSAGE = "CSV imports must be 5 MB or less.";
-
 const textareaClass =
   "w-full resize-y rounded-md border border-input bg-background p-3 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
@@ -83,15 +82,6 @@ function importMap<T>(create: () => T): Record<MigrationImportMode, T> {
   return Object.fromEntries(
     MIGRATION_STEPS.map(({ mode }) => [mode, create()]),
   ) as Record<MigrationImportMode, T>;
-}
-
-function migrationModeLabels(modes: readonly MigrationImportMode[]): string {
-  return modes
-    .map(
-      (mode) =>
-        MIGRATION_STEPS.find((step) => step.mode === mode)?.label ?? mode,
-    )
-    .join(", ");
 }
 
 function readFileText(file: File): Promise<string> {
@@ -131,6 +121,9 @@ function downloadIssueReport(errors: string[], fileName: string) {
  * dependency order and gets its own server preview before an explicit commit.
  */
 export function BringDataStep({ register, state, setState }: StepProps) {
+  const t = useTranslations("onboarding.bringData");
+  const copy = useMigrationCopy();
+  const locale = useLocale();
   const pathway = getOnboardingIntentOption(state.onboardingIntent);
   const utils = trpc.useUtils();
   const importClientsCsv = trpc.data.importClientsCsv.useMutation();
@@ -277,7 +270,7 @@ export function BringDataStep({ register, state, setState }: StepProps) {
 
     if (file.size > IMPORT_CSV_MAX_BYTES) {
       clearPickedFile();
-      toast.error(IMPORT_CSV_SIZE_MESSAGE);
+      toast.error(t("csvTooLarge"));
       return;
     }
 
@@ -286,12 +279,12 @@ export function BringDataStep({ register, state, setState }: StepProps) {
       if (fileReadVersionRef.current[mode] !== readVersion) return;
       if (!text.trim()) {
         clearPickedFile();
-        toast.error("CSV file is empty.");
+        toast.error(t("csvFileIsEmpty"));
         return;
       }
       if (!isImportCsvSizeValid(text)) {
         clearPickedFile();
-        toast.error(IMPORT_CSV_SIZE_MESSAGE);
+        toast.error(t("csvTooLarge"));
         return;
       }
       setCsvByMode((current) => ({ ...current, [mode]: text }));
@@ -304,7 +297,7 @@ export function BringDataStep({ register, state, setState }: StepProps) {
     } catch {
       if (fileReadVersionRef.current[mode] !== readVersion) return;
       finishFileRead();
-      toast.error("Could not read that file. Try again.");
+      toast.error(t("couldNotReadThatFile"));
     }
   }
 
@@ -374,14 +367,12 @@ export function BringDataStep({ register, state, setState }: StepProps) {
     ) as OnboardingImportSelections;
     const nextMode = nextOnboardingImportMode(selectedByMode, nextCommitted);
     if (nextMode) {
-      const currentLabel = MIGRATION_STEPS.find(
-        (step) => step.mode === mode,
-      )!.label;
-      const nextLabel = MIGRATION_STEPS.find(
-        (step) => step.mode === nextMode,
-      )!.shortLabel;
       setImportRecoveryMessage(
-        `${currentLabel} complete (${completedChanges} changes). Check the ${nextLabel} file next.`,
+        t("stageComplete", {
+          current: copy.stepLabel(mode),
+          count: completedChanges,
+          next: copy.stepShortLabel(nextMode),
+        }),
       );
       return;
     }
@@ -392,13 +383,15 @@ export function BringDataStep({ register, state, setState }: StepProps) {
     const changeCount = onboardingImportChangeCount(summary);
     toast.success(
       changeCount > 0
-        ? `${changeCount.toLocaleString()} clinic record changes completed`
-        : "Import review complete",
+        ? t("changesCompleted", { count: changeCount.toLocaleString(locale) })
+        : t("importReviewComplete"),
     );
   }
 
-  const csvSizeErrors = MIGRATION_STEPS.flatMap(({ mode, label }) =>
-    csvMetaByMode[mode].sizeValid ? [] : [`${label} CSV must be 5 MB or less.`],
+  const csvSizeErrors = MIGRATION_STEPS.flatMap(({ mode }) =>
+    csvMetaByMode[mode].sizeValid
+      ? []
+      : [t("stepCsvTooLarge", { label: copy.stepLabel(mode) })],
   );
   const hasImportCsvSizeError = csvSizeErrors.length > 0;
   const selectedByMode = Object.fromEntries(
@@ -416,16 +409,19 @@ export function BringDataStep({ register, state, setState }: StepProps) {
   const previewReady = Object.values(previewByMode).some(Boolean);
   const continueLabel =
     choice !== "import" || !hasImportCsv || result
-      ? "Continue"
+      ? t("continue")
       : !activeStep
-        ? "Finish import review"
+        ? t("finishImportReview")
         : !activePreview
-          ? `Check ${activeStep.shortLabel} file`
+          ? t("checkFile", { short: copy.stepShortLabel(activeStep.mode) })
           : previewChangeCount > 0
-            ? `Import ${previewChangeCount.toLocaleString()} ${activeStep.shortLabel} ${previewChangeCount === 1 ? "change" : "changes"}`
+            ? t("importChanges", {
+                count: previewChangeCount,
+                short: copy.stepShortLabel(activeStep.mode),
+              })
             : activePreview.total === 0
-              ? `Skip ${activeStep.shortLabel} file`
-              : `Confirm no ${activeStep.shortLabel} changes`;
+              ? t("skipFile", { short: copy.stepShortLabel(activeStep.mode) })
+              : t("confirmNoChanges", { short: copy.stepShortLabel(activeStep.mode) });
 
   const currentSummary = summarizeOnboardingImports(committedByMode);
   const hasImportedRows =
@@ -453,7 +449,7 @@ export function BringDataStep({ register, state, setState }: StepProps) {
         if (!hasImportCsv) return true;
         if (result) return true;
         if (hasImportCsvSizeError) {
-          toast.error(csvSizeErrors.join(" ") || IMPORT_CSV_SIZE_MESSAGE);
+          toast.error(csvSizeErrors.join(" ") || t("csvTooLarge"));
           return false;
         }
         if (!activeMode || !activeStep) return true;
@@ -477,7 +473,7 @@ export function BringDataStep({ register, state, setState }: StepProps) {
               typeof response.total !== "number" ||
               typeof response.willInsert !== "number"
             ) {
-              throw new Error("The import preview response was incomplete.");
+              throw new Error(t("theImportPreviewResponseWas"));
             }
             setPreviewByMode((current) => ({
               ...current,
@@ -493,7 +489,7 @@ export function BringDataStep({ register, state, setState }: StepProps) {
               },
             }));
             toast.success(
-              `${activeStep.label} checked. Review the plan before importing.`,
+              t("stepChecked", { label: copy.stepLabel(activeStep.mode) }),
             );
           } catch (error) {
             if (importReviewVersionRef.current !== reviewVersion) return false;
@@ -504,7 +500,7 @@ export function BringDataStep({ register, state, setState }: StepProps) {
             setImportRecoveryMessage(
               error instanceof Error && error.message.trim()
                 ? error.message
-                : `The ${activeStep.shortLabel} file was not checked. Check your connection and try again.`,
+                : t("fileNotChecked", { short: copy.stepShortLabel(activeStep.mode) }),
             );
           }
           return false;
@@ -520,7 +516,7 @@ export function BringDataStep({ register, state, setState }: StepProps) {
           });
           if (importReviewVersionRef.current !== reviewVersion) return false;
           if (response.dryRun === true) {
-            throw new Error("The import commit response was incomplete.");
+            throw new Error(t("theImportCommitResponseWas"));
           }
           await finishStage(activeMode, {
             imported: response.imported ?? 0,
@@ -538,11 +534,11 @@ export function BringDataStep({ register, state, setState }: StepProps) {
               [activeMode]: undefined,
             }));
             setImportRecoveryMessage(
-              `Nothing was imported from the ${activeStep.shortLabel} file because its preview expired or clinic records changed. Check the same file again. Earlier completed stages are safe.`,
+              t("previewExpired", { short: copy.stepShortLabel(activeStep.mode) }),
             );
           } else {
             setImportRecoveryMessage(
-              `We could not confirm the ${activeStep.shortLabel} import response. Retry the same import. It is safe and will not add the rows twice. Earlier completed stages are safe.`,
+              t("commitUnconfirmed", { short: copy.stepShortLabel(activeStep.mode) }),
             );
           }
         }
@@ -574,20 +570,20 @@ export function BringDataStep({ register, state, setState }: StepProps) {
     utils,
   ]);
 
-  const selectedMigrationSourceName = migrationSourceName(migrationSource);
+  const selectedMigrationSourceName = copy.sourceName(migrationSource);
   const selectedMigrationSourceHint =
-    migrationSourceExportHint(migrationSource);
+    copy.sourceExportHint(migrationSource);
   const isCustomMigrationSource = !MIGRATION_SOURCES.some(
     (source) => source.id === migrationSource,
   );
   const pathwayIntro =
     pathway.value === "alongside"
-      ? "Start small: bring a few real records over while your current PIMS stays in place."
+      ? t("startSmallBringAFew")
       : pathway.value === "replace"
-        ? "Move in stages: check owners, pets, vaccines, and visit notes before your team changes live workflows."
+        ? t("moveInStagesCheckOwners")
         : pathway.value === "self_host"
-          ? "The same import and export tools work in hosted and self-hosted OpenVPM."
-          : "Keep the sample clinic as long as you need, or try an import when you are ready.";
+          ? t("theSameImportAndExport")
+          : t("keepTheSampleClinicAs");
 
   return (
     <div className="space-y-4">
@@ -599,8 +595,8 @@ export function BringDataStep({ register, state, setState }: StepProps) {
         <ChoiceCard
           active={choice === "import"}
           icon={<FileSpreadsheet className="h-5 w-5" />}
-          title="Import from a file"
-          subtitle="Bring clients, pets, vaccine history, and visit notes."
+          title={t("importFromAFile")}
+          subtitle={t("importSubtitle")}
           onClick={() => {
             if (
               importInputsBusy ||
@@ -621,34 +617,30 @@ export function BringDataStep({ register, state, setState }: StepProps) {
             <div className="space-y-1 text-xs text-slate-500">
               {knownCompletedModes.length > 0 ? (
                 <p className="rounded-md border border-emerald-200 bg-emerald-50 p-3 font-medium text-emerald-900">
-                  Already reviewed: {migrationModeLabels(knownCompletedModes)}.
-                  Reselect only the files you still need to finish.{" "}
+                  {t("alreadyReviewed", {
+                    labels: knownCompletedModes.map(copy.stepLabel).join(", "),
+                  })}{" "}
                   {migrationSourceLocked
-                    ? `This migration will keep using ${selectedMigrationSourceName} so saved owner and patient IDs stay linked.`
-                    : "No clinic records changed, so you can still choose a different source."}
+                    ? t("sourceLocked", { source: selectedMigrationSourceName })
+                    : t("noClinicRecordsChangedSo")}
                 </p>
               ) : state.hasImportedData ? (
                 <p className="rounded-md border border-emerald-200 bg-emerald-50 p-3 font-medium text-emerald-900">
-                  Earlier import changes are already saved. If you are unsure
-                  which file finished, reselecting it is safe because duplicate
-                  rows are skipped.
+                  {t("earlierImportChangesAreAlready")}
                 </p>
               ) : null}
               <p>
-                Add any files you have. OpenVPM checks each one in order. No
-                records import until you review that file's plan.
+                {t("addAnyFilesYouHave")}
               </p>
               <p>
-                Keep the same source for all four files so owner and patient IDs
-                stay linked. Rows with issues are shown before you confirm.
+                {t("keepTheSameSourceFor")}
               </p>
               <p>
-                Completed stages stay saved. Unfinished files stay only in this
-                setup, so reselect them if you leave and return.
+                {t("completedStagesStaySavedUnfinished")}
               </p>
             </div>
             <label className="block space-y-1.5 text-sm font-medium text-slate-700">
-              <span>Which system are you moving from?</span>
+              <span>{t("whichSystemAreYouMoving")}</span>
               <select
                 value={migrationSource}
                 disabled={importInputsBusy || migrationSourceLocked}
@@ -675,7 +667,7 @@ export function BringDataStep({ register, state, setState }: StepProps) {
                 ) : null}
                 {MIGRATION_SOURCES.map((source) => (
                   <option key={source.id} value={source.id}>
-                    {source.name}
+                    {copy.sourceName(source.id)}
                   </option>
                 ))}
               </select>
@@ -715,7 +707,7 @@ export function BringDataStep({ register, state, setState }: StepProps) {
             >
               <summary className="flex cursor-pointer list-none items-center justify-between gap-3 p-3 text-sm font-medium text-slate-800">
                 <span>
-                  Also bring vaccine and visit history
+                  {t("alsoBringVaccineAndVisit")}
                   <span className="ml-1 font-normal text-slate-500">
                     (optional)
                   </span>
@@ -724,10 +716,7 @@ export function BringDataStep({ register, state, setState }: StepProps) {
               </summary>
               <div className="space-y-4 border-t border-slate-200 p-3">
                 <p className="text-xs text-slate-500">
-                  History attaches only to a safely matched real patient. Use
-                  the same patient ID from the pet file whenever possible.
-                  Existing OpenVPM pets can also match by owner email or client
-                  ID plus patient name.
+                  {t("historyAttachesOnlyToA")}
                 </p>
                 {MIGRATION_STEPS.slice(2).map((step, index) => (
                   <ImportFileFields
@@ -756,41 +745,32 @@ export function BringDataStep({ register, state, setState }: StepProps) {
               <div className="space-y-3" aria-live="polite">
                 <div>
                   <p className="text-sm font-medium text-slate-800">
-                    Dry-run preview
+                    {t("dryRunPreview")}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
-                    No data in this preview has been imported yet. Review the
-                    planned changes and every issue before you confirm.
+                    {t("noDataInThisPreview")}
                   </p>
                   <p className="mt-1 text-xs font-medium text-amber-800">
-                    Start with a small representative sample. A confirmed import
-                    has no one-click rollback.
+                    {t("startWithASmallRepresentative")}
                   </p>
                 </div>
                 <CsvPreviewCard mode={activeMode} preview={activePreview} />
                 {previewChangeCount > 0 && activePreview.errors.length > 0 ? (
                   <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                    {previewChangeCount.toLocaleString()} valid changes can
-                    import. Review{" "}
-                    {activePreview.errors.length.toLocaleString()}{" "}
-                    {activePreview.errors.length === 1 ? "issue" : "issues"}.
-                    Some affected rows may be skipped or imported without an
-                    optional field. Edit the file above to fix them, or import
-                    the valid changes now.
+                    {t("validChangesWithIssues", {
+                      count: previewChangeCount.toLocaleString(locale),
+                      issues: activePreview.errors.length,
+                    })}
                   </p>
                 ) : null}
                 {previewChangeCount === 0 && activePreview.total === 0 ? (
                   <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                    Nothing in this file can be imported yet. Edit the file to
-                    fix the listed issues, or use Skip file to continue without
-                    it.
+                    {t("nothingInThisFileCan")}
                   </p>
                 ) : null}
                 {previewChangeCount === 0 && activePreview.total > 0 ? (
                   <p className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
-                    These rows are already present or cannot be matched. Confirm
-                    the reviewed no-change plan to continue, or edit the file
-                    above.
+                    {t("theseRowsAreAlreadyPresent")}
                   </p>
                 ) : null}
               </div>
@@ -802,7 +782,7 @@ export function BringDataStep({ register, state, setState }: StepProps) {
                 role="status"
               >
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Reading the selected file
+                {t("readingTheSelectedFile")}
               </p>
             ) : importing ? (
               <p
@@ -810,7 +790,7 @@ export function BringDataStep({ register, state, setState }: StepProps) {
                 role="status"
               >
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                {previewReady ? "Importing your data" : "Checking your data"}
+                {previewReady ? t("importingYourData") : t("checkingYourData")}
               </p>
             ) : null}
 
@@ -844,8 +824,8 @@ export function BringDataStep({ register, state, setState }: StepProps) {
         <ChoiceCard
           active={choice === "api"}
           icon={<PlugZap className="h-5 w-5" />}
-          title="Connect later by API"
-          subtitle="Move data in from another system whenever you want."
+          title={t("connectLaterByApi")}
+          subtitle={t("apiSubtitle")}
           onClick={() => {
             if (importInputsBusy || lastCommittedIndex >= 0 || result) return;
             invalidatePendingFileReads();
@@ -859,14 +839,13 @@ export function BringDataStep({ register, state, setState }: StepProps) {
         {choice === "api" ? (
           <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-4 text-sm text-slate-600">
             <p>
-              Your data stays yours, and you can connect by API on your own
-              schedule. Find your keys and import tools in settings.
+              {t("yourDataStaysYoursAnd")}
             </p>
             <Link
               href="/settings?tab=data"
               className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-emerald-700 hover:underline"
             >
-              Open settings
+              {t("openSettings")}
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -875,11 +854,11 @@ export function BringDataStep({ register, state, setState }: StepProps) {
         <ChoiceCard
           active={choice === "keep"}
           icon={<Sparkles className="h-5 w-5" />}
-          title="Keep the sample data for now"
+          title={t("keepTheSampleDataFor")}
           subtitle={
             state.hasImportedData
-              ? "Real data is saved, so sample records will be removed when setup finishes."
-              : "Explore with the example pets we set up for you."
+              ? t("realDataIsSavedSo")
+              : t("exploreWithTheExamplePets")
           }
           onClick={() => {
             if (
@@ -925,6 +904,8 @@ function ImportFileFields({
   onPickFile: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onChangeCsv: (value: string) => void;
 }) {
+  const t = useTranslations("onboarding.bringData");
+  const copy = useMigrationCopy();
   const [showPasteEditor, setShowPasteEditor] = useState(false);
   useEffect(() => {
     if (fileName) setShowPasteEditor(false);
@@ -935,21 +916,27 @@ function ImportFileFields({
     <div className="space-y-1.5 rounded-md border border-slate-200 bg-white p-3">
       <div className="flex items-center justify-between gap-3">
         <span className="text-sm font-medium text-slate-700">
-          {stepNumber}. {step.label}
+          {stepNumber}. {copy.stepLabel(step.mode)}
         </span>
         <span className="text-[11px] text-slate-400">CSV</span>
       </div>
-      <p className="text-xs text-slate-500">Columns: {step.columnHint}</p>
+      <p className="text-xs text-slate-500">
+        {t("columns", { hint: copy.stepColumnHint(step.mode) })}
+      </p>
       <input
         type="file"
         disabled={locked}
         accept=".csv,text/csv"
         onChange={onPickFile}
         className={fileInputClass}
-        aria-label={`Choose a ${step.label.toLowerCase()} CSV file`}
+        aria-label={t("chooseCsvFile", {
+          label: copy.stepLabel(step.mode).toLowerCase(),
+        })}
       />
       {fileName ? (
-        <p className="text-xs text-emerald-700">Loaded {fileName}</p>
+        <p className="text-xs text-emerald-700">
+          {t("loadedFile", { name: fileName })}
+        </p>
       ) : null}
       {!locked ? (
         <button
@@ -959,10 +946,10 @@ function ImportFileFields({
           aria-expanded={showPasteEditor}
         >
           {showPasteEditor
-            ? "Hide CSV text"
+            ? t("hideCsvText")
             : fileName
-              ? "Review or edit file text"
-              : "Paste CSV text instead"}
+              ? t("reviewOrEditFileText")
+              : t("pasteCsvTextInstead")}
         </button>
       ) : null}
       {showPasteEditor ? (
@@ -973,7 +960,9 @@ function ImportFileFields({
           value={csv}
           disabled={locked}
           maxLength={IMPORT_CSV_MAX_BYTES}
-          aria-label={`Paste ${step.label.toLowerCase()} CSV text`}
+          aria-label={t("pasteCsvText", {
+            label: copy.stepLabel(step.mode).toLowerCase(),
+          })}
           aria-invalid={tooLarge || undefined}
           aria-describedby={tooLarge ? errorId : undefined}
           onChange={(event) => onChangeCsv(event.target.value)}
@@ -982,7 +971,7 @@ function ImportFileFields({
       ) : null}
       {tooLarge ? (
         <p id={errorId} className="text-xs text-red-700">
-          {step.label} CSV must be 5 MB or less.
+          {t("stepCsvTooLarge", { label: copy.stepLabel(step.mode) })}
         </p>
       ) : null}
     </div>
@@ -996,6 +985,8 @@ function CsvPreviewCard({
   mode: MigrationImportMode;
   preview: CsvPreview;
 }) {
+  const t = useTranslations("onboarding.bringData");
+  const copy = useMigrationCopy();
   const step = MIGRATION_STEPS.find((candidate) => candidate.mode === mode)!;
   const unmatched =
     mode === "patients"
@@ -1021,31 +1012,31 @@ function CsvPreviewCard({
           )}
         >
           {needsAttention
-            ? "Ready with issues to review"
+            ? t("readyWithIssuesToReview")
             : preview.willInsert + (preview.willReconcile ?? 0) > 0
-              ? "Ready"
-              : "No changes needed"}
+              ? t("ready")
+              : t("noChangesNeeded")}
         </span>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <ImportStat label="Valid rows parsed" value={preview.total} />
-        <ImportStat label="Will import" value={preview.willInsert} />
+        <ImportStat label={t("validRowsParsed")} value={preview.total} />
+        <ImportStat label={t("willImport")} value={preview.willInsert} />
         {(preview.willReconcile ?? 0) > 0 ? (
           <ImportStat
-            label="IDs to connect"
+            label={t("idsToConnect")}
             value={preview.willReconcile ?? 0}
           />
         ) : null}
         {typeof preview.duplicates === "number" ? (
-          <ImportStat label="Duplicates" value={preview.duplicates} />
+          <ImportStat label={t("duplicates")} value={preview.duplicates} />
         ) : null}
         {typeof unmatched === "number" ? (
           <ImportStat
-            label={step.unmatchedLabel ?? "Unmatched"}
+            label={copy.stepUnmatchedLabel(step.mode) ?? t("unmatched")}
             value={unmatched}
           />
         ) : null}
-        <ImportStat label="Issues" value={preview.errors.length} />
+        <ImportStat label={t("issues")} value={preview.errors.length} />
       </div>
       {preview.errors.length > 0 ? (
         <ImportIssues
@@ -1058,6 +1049,7 @@ function CsvPreviewCard({
 }
 
 function ImportResultCard({ result }: { result: OnboardingImportSummary }) {
+  const t = useTranslations("onboarding.bringData");
   const changeCount = onboardingImportChangeCount(result);
   const hasIssues = result.errors.length > 0;
   return (
@@ -1071,12 +1063,12 @@ function ImportResultCard({ result }: { result: OnboardingImportSummary }) {
       aria-live="polite"
     >
       <p className="font-medium">
-        {hasIssues ? "Review completed with issues. " : ""}
+        {hasIssues ? t("reviewCompletedWithIssues") : ""}
         {changeCount > 0
-          ? `Added ${result.imported.clients} clients, ${result.imported.patients} pets, ${result.imported.vaccinations} vaccine records, and ${result.imported.soapNotes} visit notes.`
-          : "Review complete. No new records were needed."}
+          ? t("addedRecords", result.imported)
+          : t("reviewCompleteNoNewRecords")}
         {result.reconciled > 0
-          ? ` Connected ${result.reconciled} existing record IDs.`
+          ? t("connectedIds", { count: result.reconciled })
           : ""}
       </p>
       {result.errors.length > 0 ? (
@@ -1091,12 +1083,12 @@ function ImportResultCard({ result }: { result: OnboardingImportSummary }) {
             rel="noreferrer"
             className="mt-3 inline-flex items-center gap-1 font-medium text-amber-950 underline underline-offset-2"
           >
-            Fix skipped records in Settings, then Data
+            {t("fixSkippedRecordsInSettings")}
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </>
       ) : null}
-      <p className="mt-2">Press Continue when you are ready.</p>
+      <p className="mt-2">{t("pressContinueWhenYouAre")}</p>
     </div>
   );
 }
@@ -1108,6 +1100,7 @@ function ImportIssues({
   errors: string[];
   fileName: string;
 }) {
+  const t = useTranslations("onboarding.bringData");
   const visibleErrors = errors.slice(0, 5);
   return (
     <div className="mt-3 text-xs text-amber-800">
@@ -1122,8 +1115,7 @@ function ImportIssues({
           className="mt-2 font-medium text-amber-900 underline underline-offset-2"
           onClick={() => downloadIssueReport(errors, fileName)}
         >
-          Download{" "}
-          {errors.length === 1 ? "issue report" : `all ${errors.length} issues`}
+          {t("downloadIssues", { count: errors.length })}
         </button>
       ) : null}
     </div>
@@ -1131,11 +1123,12 @@ function ImportIssues({
 }
 
 function ImportStat({ label, value }: { label: string; value: number }) {
+  const locale = useLocale();
   return (
     <div className="rounded bg-slate-100 px-2 py-1.5">
       <p className="text-[11px] text-slate-500">{label}</p>
       <p className="text-sm font-semibold text-slate-900">
-        {value.toLocaleString()}
+        {value.toLocaleString(locale)}
       </p>
     </div>
   );

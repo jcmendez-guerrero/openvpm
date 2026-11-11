@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import en from "@/messages/en.json";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
   AGENT_INSTRUCTION_MAX_LENGTH,
@@ -6,9 +7,9 @@ import {
 } from "../agent/policy";
 
 describe("agent UI states", () => {
-  const source = readFileSync("app/(dashboard)/agent/page.tsx", "utf8");
-  const routerSource = readFileSync("server/routers/agent.ts", "utf8");
-  const apiRouteSource = readFileSync("app/api/v1/agent/route.ts", "utf8");
+  const source = readTranslatedSource("app/(dashboard)/agent/page.tsx");
+  const routerSource = readTranslatedSource("server/routers/agent.ts");
+  const apiRouteSource = readTranslatedSource("app/api/v1/agent/route.ts");
 
   it("fails closed until agent status is loaded and configured", () => {
     expect(source).toContain(
@@ -60,8 +61,9 @@ describe("agent UI states", () => {
     // admins keep them because they can actually act on them.
     expect(source).toContain("verifiedAgentStatus?.hosted ? (");
     expect(source.indexOf("verifiedAgentStatus?.hosted ? (")).toBeLessThan(
-      source.indexOf("GOOGLE_VERTEX_PROJECT"),
+      source.indexOf('t.rich("configureProviders"'),
     );
+    expect(en.agent.configureProviders).toContain("GOOGLE_VERTEX_PROJECT");
     expect(source.indexOf(": status.error ? (")).toBeLessThan(
       source.indexOf(": statusMissing ? ("),
     );

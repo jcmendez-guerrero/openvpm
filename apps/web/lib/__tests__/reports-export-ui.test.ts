@@ -1,9 +1,9 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("reports export UI", () => {
-  const source = readFileSync("app/(dashboard)/reports/page.tsx", "utf8");
-  const routerSource = readFileSync("server/routers/reports.ts", "utf8");
+  const source = readTranslatedSource("app/(dashboard)/reports/page.tsx");
+  const routerSource = readTranslatedSource("server/routers/reports.ts");
 
   it("keeps CSV export reachable for empty services reports", () => {
     const servicesBlock = source.slice(
@@ -148,7 +148,7 @@ describe("reports export UI", () => {
       source.indexOf("function InventoryTab"),
       source.indexOf("export default function ReportsPage")
     );
-    const apiDocs = readFileSync("app/api-docs/page.tsx", "utf8");
+    const apiDocs = readTranslatedSource("app/api-docs/page.tsx");
 
     expect(inventoryBlock).toContain("data.expired.length");
     expect(inventoryBlock).toContain("data.expiringSoon.length");

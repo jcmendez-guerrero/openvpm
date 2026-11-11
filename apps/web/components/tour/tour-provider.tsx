@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { useTranslations } from "use-intl";
 import { trpc } from "@/lib/trpc";
 import type { GuideId } from "@/lib/welcome/cards";
 import { markGuideCompleted } from "@/lib/welcome/local-state";
@@ -71,6 +72,7 @@ interface ActiveRun {
 }
 
 export function TourProvider({ children }: { children: React.ReactNode }) {
+  const tourT = useTranslations("tour");
   const router = useRouter();
   const pathname = usePathname();
   const { data: session, status } = useSession();
@@ -160,18 +162,18 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
           agentConfigured:
             ctx.agentConfigured ??
             Boolean(agentStatus.data?.configured && agentStatus.data?.canUseAi),
-        });
+        }, tourT);
         prefetchSteps(steps);
         setRun({ recipe, steps, index: 0 });
         persist("in_progress", steps[0]!.id);
         return;
       }
-      const steps = buildGuideSteps(recipe, ctx);
+      const steps = buildGuideSteps(recipe, ctx, tourT);
       if (steps.length === 0) return;
       prefetchSteps(steps);
       setRun({ recipe, steps, index: 0 });
     },
-    [isAdmin, persist, prefetchSteps, welcomeCtx.data, agentStatus.data],
+    [isAdmin, persist, prefetchSteps, welcomeCtx.data, agentStatus.data, tourT],
   );
 
   // Start ONLY on an explicit ?tour=start deep-link. Onboarding is opt-in: a

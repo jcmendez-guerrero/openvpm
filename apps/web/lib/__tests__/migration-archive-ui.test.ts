@@ -28,7 +28,7 @@ describe("imported history workspace", () => {
     expect(page).toContain('role="tablist"');
     expect(page).toContain('role="tab"');
     expect(page).toContain("aria-selected={section === item.id}");
-    expect(page).toContain("Search ${activeSection.label.toLowerCase()}");
+    expect(page).toContain("Search {section}");
     expect(page).toContain("Previous");
     expect(page).toContain("Next");
     expect(page).toContain("href={`/patients/${item.patientId}`}");
@@ -68,7 +68,9 @@ describe("imported history workspace", () => {
     expect(checklist).toContain("never paste names, contact information");
     expect(checklist).toContain('href="/clients"');
     expect(checklist).toContain('href="/patients"');
-    expect(checklist).toContain("OpenVPM remains responsible for the bulk reconciliation queue");
+    expect(en.migration.reviewChecklist.steps.exceptions.detail).toContain(
+      "OpenVPM remains responsible for the bulk reconciliation queue",
+    );
     expect(checklist).toContain("never releases");
     expect(checklist).toContain('role="progressbar"');
   });

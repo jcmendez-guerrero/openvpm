@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import {
   useDeferredValue,
   useEffect,
@@ -37,6 +39,7 @@ export function TemplateCatalogPicker({
   onSelect: (item: TemplateCatalogItem | null) => void;
   formatPrice: (price: string) => string;
 }) {
+  const t = useTranslations("templates.catalogPicker");
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [highlight, setHighlight] = useState(0);
@@ -174,7 +177,7 @@ export function TemplateCatalogPicker({
             {query ? (
               <button
                 type="button"
-                aria-label="Clear search"
+                aria-label={t("clearSearch")}
                 className="rounded p-2 text-muted-foreground hover:bg-accent"
                 onClick={() => {
                   setQuery("");
@@ -214,7 +217,7 @@ export function TemplateCatalogPicker({
               </div>
             ) : catalogQuery.error ? (
               <div role="alert" className="px-3 py-6 text-sm text-destructive">
-                Catalog search failed. Edit the query to retry.
+                {t("catalogSearchFailedEditThe")}
               </div>
             ) : results.length === 0 ? (
               <p className="px-3 py-6 text-center text-sm text-muted-foreground">
@@ -250,7 +253,7 @@ export function TemplateCatalogPicker({
                     </span>
                     <span className="block truncate text-xs text-muted-foreground">
                       {[item.code, item.category].filter(Boolean).join(" · ") ||
-                        "No code or category"}
+                        t("noCodeOrCategory")}
                     </span>
                   </span>
                   <span className="shrink-0 tabular-nums text-muted-foreground">

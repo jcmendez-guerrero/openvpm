@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MessageSquare, Check, Loader2 } from "lucide-react";
@@ -21,6 +23,7 @@ export function SetUpTextingStep({
 }: {
   register: (h: StepHandle) => void;
 }) {
+  const t = useTranslations("onboarding.texting");
   const status = trpc.messaging.getStatus.useQuery(undefined, { retry: false });
   const [wizardOpen, setWizardOpen] = useState(false);
 
@@ -80,16 +83,16 @@ export function SetUpTextingStep({
   const statusDetail = (() => {
     if (!messaging) return null;
     if (isFailed) {
-      return "Number setup did not finish. Reconcile the saved provider setup in Messaging settings; the system will not buy another number automatically.";
+      return t("detail.failed");
     }
     if (messaging.registrationStatus === "not_started" && hasSender) {
-      return "Number order accepted. Carrier registration has not been submitted; complete the clinic details in Messaging settings.";
+      return t("detail.notSubmitted");
     }
     if (messaging.registrationStatus === "pending") {
-      return "Carrier registration is under review. Sending remains off until approval.";
+      return t("detail.pending");
     }
     if (messaging.registrationStatus === "active" && !messaging.enabled) {
-      return "Carrier registration is approved. An admin still needs to enable sending in Messaging settings.";
+      return t("detail.approvedNotEnabled");
     }
     if (
       messaging.registrationStatus === "active" &&
@@ -97,19 +100,19 @@ export function SetUpTextingStep({
       messaging.launchEligible === false
     ) {
       return hosted
-        ? "Carrier registration is approved, but outbound texting remains off until OpenVPM approves this clinic location for the controlled pilot."
-        : "Carrier registration is approved, but outbound texting remains off until your administrator enables this clinic location.";
+        ? t("carrierRegistrationIsApprovedBut")
+        : t("carrierRegistrationIsApprovedBut2");
     }
-    if (isActive) return "Texting is active.";
+    if (isActive) return t("detail.active");
     if (messaging.registrationStatus === "action_required") {
-      return "Carrier registration needs more clinic information. Review the request in Messaging settings.";
+      return t("detail.actionRequired");
     }
     if (messaging.registrationStatus === "suspended") {
       return hosted
-        ? "Texting is suspended. Review Messaging settings and contact OpenVPM support."
-        : "Texting is suspended. Review Messaging settings and contact your administrator.";
+        ? t("textingIsSuspendedReviewMessaging")
+        : t("textingIsSuspendedReviewMessaging2");
     }
-    return "Texting is not ready yet. Review Messaging settings before sending.";
+    return t("detail.notReady");
   })();
 
   return (
@@ -117,49 +120,40 @@ export function SetUpTextingStep({
       <p className="text-sm leading-6 text-slate-600">
         {!setupCapabilityKnown ? (
           <>
-            Texting setup is optional. We are checking whether new-number setup
-            is available for this clinic. Email appointment reminders remain
-            available, so you can continue and return to texting later.
+            {t("textingSetupIsOptionalWe")}
           </>
         ) : setupDisabled ? (
           hosted ? (
             <>
               {hasAnyNumber
-                ? "Your clinic has an existing texting setup to review, but new-number setup is not currently available. "
-                : "Texting setup is currently a controlled clinic pilot and is not available for this clinic yet. "}
-              Email appointment reminders remain available, so you can continue
-              without new texting setup. Review{" "}
+                ? t("yourClinicHasAnExisting")
+                : t("textingSetupIsCurrentlyA")}
+              {t("pilot.remindersReview")}{" "}
               <Link
                 href="/settings?tab=messaging"
                 className="font-medium text-emerald-700 underline underline-offset-2"
               >
-                Messaging settings
+                {t("messagingSettings")}
               </Link>{" "}
-              or{" "}
+              {t("pilot.or")}{" "}
               <a
                 href="mailto:support@openvpm.com?subject=OpenVPM%20texting%20pilot"
                 className="font-medium text-emerald-700 underline underline-offset-2"
               >
-                contact OpenVPM support
+                {t("contactOpenvpmSupport")}
               </a>{" "}
               {hasAnyNumber
-                ? " for help with the existing setup."
-                : " when your clinic is ready to join the pilot."}
+                ? t("pilot.forExisting")
+                : t("pilot.whenReady")}
             </>
           ) : (
             <>
-              Texting number setup is disabled in this deployment. Email
-              appointment reminders remain available, so you can continue
-              without texting. Ask your deployment administrator to configure
-              the provider and enable provisioning before setup.
+              {t("textingNumberSetupIsDisabled")}
             </>
           )
         ) : (
           <>
-            Text your clients about appointments, reminders, and results, and
-            let them text you back. OpenVPM can set up a new local texting
-            number; your existing clinic voice line stays unchanged. This is
-            optional, so skip it and set it up later if you like.
+            {t("intro")}
           </>
         )}
       </p>
@@ -173,54 +167,53 @@ export function SetUpTextingStep({
             {status.isLoading ? (
               <p className="flex items-center gap-2 text-sm text-slate-500">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Checking your texting setup…
+                {t("checkingYourTextingSetup")}
               </p>
             ) : status.error ? (
               <div className="space-y-1">
                 <p className="text-sm font-medium text-slate-900">
-                  Unable to check texting setup
+                  {t("unableToCheckTextingSetup")}
                 </p>
                 <p className="text-xs text-slate-500">
-                  Retry this step before starting or changing setup.
+                  {t("retryThisStepBeforeStarting")}
                 </p>
               </div>
             ) : setupUnavailable ? (
               <div className="space-y-1">
                 <p className="text-sm font-medium text-slate-900">
                   {hosted
-                    ? "Texting setup is in a controlled pilot"
-                    : "Texting number setup is disabled"}
+                    ? t("textingSetupIsInA")
+                    : t("textingNumberSetupIsDisabled2")}
                 </p>
                 <p className="text-xs text-slate-500">
                   {hosted
-                    ? "Email appointment reminders remain available while OpenVPM approves clinics for texting setup."
-                    : "Email appointment reminders remain available while your administrator configures texting."}
+                    ? t("emailAppointmentRemindersRemainAvailable")
+                    : t("emailAppointmentRemindersRemainAvailable2")}
                 </p>
               </div>
             ) : setupDisabled && !messaging ? (
               <div className="space-y-1">
                 <p className="text-sm font-medium text-slate-900">
-                  New-number setup is unavailable
+                  {t("newNumberSetupIsUnavailable")}
                 </p>
                 <p className="text-xs text-slate-500">
-                  Review the clinic&apos;s existing texting setup in Messaging
-                  settings.
+                  {t("reviewExisting")}
                 </p>
               </div>
             ) : messaging ? (
               <div className="space-y-1">
                 <p className="text-sm font-medium text-slate-900">
-                  {messaging.senderE164 ?? "Texting setup needs attention"}
+                  {messaging.senderE164 ?? t("textingSetupNeedsAttention")}
                 </p>
                 <p className="text-xs text-slate-500">{statusDetail}</p>
               </div>
             ) : (
               <div className="space-y-1">
                 <p className="text-sm font-medium text-slate-900">
-                  Texting is not set up yet
+                  {t("textingIsNotSetUp")}
                 </p>
                 <p className="text-xs text-slate-500">
-                  Set up a number for {location?.name ?? "your clinic"}.
+                  {t("setUpNumberFor", { name: location?.name ?? t("yourClinic") })}
                 </p>
               </div>
             )}
@@ -230,7 +223,7 @@ export function SetUpTextingStep({
               <Button asChild type="button" variant="outline" size="sm">
                 <Link href="/settings?tab=messaging">
                   {isConfigured ? <Check className="mr-1.5 h-4 w-4" /> : null}
-                  Messaging settings
+                  {t("messagingSettings")}
                 </Link>
               </Button>
             ) : setupAvailable ? (
@@ -240,7 +233,7 @@ export function SetUpTextingStep({
                 size="sm"
                 onClick={() => setWizardOpen(true)}
               >
-                Set up texting
+                {t("setUpTexting")}
               </Button>
             ) : null
           ) : null}

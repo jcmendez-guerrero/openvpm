@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
   explicitJurisdictionState,
@@ -42,11 +42,8 @@ describe("clinic jurisdiction evidence", () => {
   });
 
   it("keeps registration low-friction while blocking silent jurisdiction defaults", () => {
-    const source = readFileSync("app/(auth)/register/register-form.tsx", "utf8");
-    const settingsSource = readFileSync(
-      "app/(dashboard)/settings/page.tsx",
-      "utf8",
-    );
+    const source = readTranslatedSource("app/(auth)/register/register-form.tsx");
+    const settingsSource = readTranslatedSource("app/(dashboard)/settings/page.tsx");
     expect(source).toContain('label="Clinic country"');
     expect(source).toContain(
       '<option value="">Choose your clinic country</option>',

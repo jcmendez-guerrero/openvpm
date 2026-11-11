@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -65,10 +67,11 @@ type DateRange = { startDate: string; endDate: string };
 type ReportPdfCell = string | number | null | undefined;
 
 const tabs: { key: Tab; label: string; icon: React.ElementType }[] = [
-  { key: "revenue", label: "Net collections", icon: DollarSign },
-  { key: "appointments", label: "Appointments", icon: CalendarCheck },
-  { key: "services", label: "Services", icon: BarChart3 },
-  { key: "inventory", label: "Inventory", icon: Package },
+  // Labels are catalog keys under reports.page.
+  { key: "revenue", label: "tabs.revenue", icon: DollarSign },
+  { key: "appointments", label: "tabs.appointments", icon: CalendarCheck },
+  { key: "services", label: "tabs.services", icon: BarChart3 },
+  { key: "inventory", label: "tabs.inventory", icon: Package },
 ];
 
 function canViewReportsRole(role?: string | null): boolean {
@@ -179,15 +182,16 @@ function ReportExportButtons({
   onCsv: () => void;
   onPdf: () => void;
 }) {
+  const t = useTranslations("reports.page");
   return (
     <div className="flex flex-wrap justify-end gap-2">
       <Button variant="outline" size="sm" onClick={onCsv} className="gap-2">
         <Download className="h-4 w-4" />
-        Export CSV
+        {t("exportCsv")}
       </Button>
       <Button variant="outline" size="sm" onClick={onPdf} className="gap-2">
         <Download className="h-4 w-4" />
-        Export PDF
+        {t("exportPdf")}
       </Button>
     </div>
   );
@@ -200,25 +204,27 @@ function ReportError({
   message: string;
   onRetry: () => void;
 }) {
+  const t = useTranslations("reports.page");
   return (
     <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-8 text-center">
       <AlertTriangle className="mx-auto h-8 w-8 text-destructive" />
-      <p className="mt-3 font-medium">Could not load report</p>
+      <p className="mt-3 font-medium">{t("couldNotLoadReport")}</p>
       <p className="mt-1 text-sm text-muted-foreground">{message}</p>
       <Button variant="outline" size="sm" onClick={onRetry} className="mt-4">
-        Retry
+        {t("retry")}
       </Button>
     </div>
   );
 }
 
 function ReportMissingData({ onRetry }: { onRetry: () => void }) {
+  const t = useTranslations("reports.page");
   return (
     <EmptyState
       icon={AlertTriangle}
-      title="Could not load report data"
-      description="The report request finished without returning data. Try loading it again."
-      action={{ label: "Retry", onClick: onRetry }}
+      title={t("couldNotLoadReportData")}
+      description={t("theReportRequestFinishedWithout")}
+      action={{ label: t("retry"), onClick: onRetry }}
       className="border-destructive/30 bg-destructive/5"
     />
   );
@@ -235,6 +241,7 @@ function DateRangeControls({
   timeZone?: string | null;
   validationMessage?: string | null;
 }) {
+  const t = useTranslations("reports.page");
   const setPreset = (preset: ReportDatePreset) => {
     onChange(reportPresetDateRange(preset, new Date(), timeZone));
   };
@@ -245,7 +252,7 @@ function DateRangeControls({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-xs font-medium text-muted-foreground">
-            Start
+            {t("start")}
             <Input
               type="date"
               value={value.startDate}
@@ -258,7 +265,7 @@ function DateRangeControls({
             />
           </label>
           <label className="text-xs font-medium text-muted-foreground">
-            End
+            {t("end")}
             <Input
               type="date"
               value={value.endDate}
@@ -277,24 +284,24 @@ function DateRangeControls({
             size="sm"
             onClick={() => setPreset("last30")}
           >
-            Last 30 Days
+            {t("last30Days")}
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setPreset("month")}
           >
-            Month to Date
+            {t("monthToDate")}
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => setPreset("lastMonth")}
           >
-            Last Month
+            {t("lastMonth")}
           </Button>
           <Button variant="outline" size="sm" onClick={() => setPreset("year")}>
-            Year to Date
+            {t("yearToDate")}
           </Button>
         </div>
       </div>
@@ -311,16 +318,18 @@ function DateRangeControls({
 }
 
 function ReportDateRangeInvalid({ message }: { message: string }) {
+  const t = useTranslations("reports.page");
   return (
     <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-8 text-center">
       <AlertTriangle className="mx-auto h-8 w-8 text-destructive" />
-      <p className="mt-3 font-medium">Choose a valid report date range</p>
+      <p className="mt-3 font-medium">{t("chooseAValidReportDate")}</p>
       <p className="mt-1 text-sm text-muted-foreground">{message}</p>
     </div>
   );
 }
 
 function RevenueTab({ dateRange }: { dateRange: DateRange }) {
+  const t = useTranslations("reports.page");
   const formatCurrency = useCurrencyFormatter();
   const { data, isLoading, isError, error, refetch } =
     trpc.reports.revenue.useQuery(dateRange);
@@ -341,9 +350,9 @@ function RevenueTab({ dateRange }: { dateRange: DateRange }) {
       : null;
   const rangeSubtitle =
     diff !== null && diff !== 0
-      ? `${diff > 0 ? "+" : ""}${diff}% vs previous period`
+      ? t("vsPrevious", { change: `${diff > 0 ? "+" : ""}${diff}` })
       : diff === null && data.total > 0
-        ? "New collections this period"
+        ? t("newCollectionsThisPeriod")
         : undefined;
   const revenueRows = [
     [
@@ -366,29 +375,32 @@ function RevenueTab({ dateRange }: { dateRange: DateRange }) {
   const exportRevenuePdf = () =>
     void downloadReportPdf({
       filename: reportFilename("revenue", data.range, "pdf"),
-      title: "Net Collections Report",
-      subtitle: `${data.range.startDate} to ${data.range.endDate}`,
-      columns: ["Metric", "Period", "Amount"],
+      title: t("netCollectionsReport"),
+      subtitle: t("rangeTo", {
+        start: data.range.startDate,
+        end: data.range.endDate,
+      }),
+      columns: [t("pdf.metric"), t("pdf.period"), t("pdf.amount")],
       rows: revenueRows.map(([metric, period, amount]) => [
         metric,
         period,
         formatCurrency(Number(amount)),
       ]),
-      emptyMessage: "No collections for this period.",
+      emptyMessage: t("noCollectionsForThisPeriod2"),
     });
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted-foreground">Payments less refunds, by date received. Credits and write-offs are excluded.</p>
+      <p className="text-sm text-muted-foreground">{t("paymentsLessRefundsByDate")}</p>
       <div className="grid gap-4 sm:grid-cols-2">
         <KpiCard
-          title="Selected Range"
+          title={t("selectedRange")}
           value={formatCurrency(data.total)}
           subtitle={rangeSubtitle}
           icon={DollarSign}
         />
         <KpiCard
-          title="Previous Period"
+          title={t("previousPeriod")}
           value={formatCurrency(data.previousTotal)}
           icon={TrendingUp}
         />
@@ -397,7 +409,7 @@ function RevenueTab({ dateRange }: { dateRange: DateRange }) {
       <div className="rounded-lg border border-border bg-card p-5">
         <div className="mb-4 flex items-center justify-between gap-3">
           <h3 className="text-sm font-medium text-muted-foreground">
-            Daily Net Collections
+            {t("dailyNetCollections")}
           </h3>
           <ReportExportButtons
             onCsv={exportRevenue}
@@ -413,8 +425,8 @@ function RevenueTab({ dateRange }: { dateRange: DateRange }) {
           <EmptyState
             className="border-0 bg-transparent py-12"
             icon={DollarSign}
-            title="No collections for this period"
-            description="Payments and refunds appear on the date received. Credits and write-offs are not cash collections."
+            title={t("noCollectionsForThisPeriod")}
+            description={t("paymentsAndRefundsAppearOn")}
           />
         )}
       </div>
@@ -423,6 +435,7 @@ function RevenueTab({ dateRange }: { dateRange: DateRange }) {
 }
 
 function AppointmentsTab({ dateRange }: { dateRange: DateRange }) {
+  const t = useTranslations("reports.page");
   const { data, isLoading, isError, error, refetch } =
     trpc.reports.appointments.useQuery(dateRange);
 
@@ -460,16 +473,19 @@ function AppointmentsTab({ dateRange }: { dateRange: DateRange }) {
   const exportAppointmentsPdf = () =>
     void downloadReportPdf({
       filename: reportFilename("appointments", data.range, "pdf"),
-      title: "Appointments Report",
-      subtitle: `${data.range.startDate} to ${data.range.endDate}`,
+      title: t("appointmentsReport"),
+      subtitle: t("rangeTo", {
+        start: data.range.startDate,
+        end: data.range.endDate,
+      }),
       columns: [
-        "Section",
-        "Doctor",
-        "Total",
-        "Completed",
-        "No-shows",
-        "Cancelled",
-        "Fill Rate",
+        t("section"),
+        t("doctor"),
+        t("total"),
+        t("completed"),
+        t("noShows2"),
+        t("cancelled"),
+        t("fillRate"),
       ],
       rows: appointmentRows.map((row) => [
         row[0],
@@ -480,7 +496,7 @@ function AppointmentsTab({ dateRange }: { dateRange: DateRange }) {
         row[5],
         `${row[6]}%`,
       ]),
-      emptyMessage: "No appointment data for this period.",
+      emptyMessage: t("noAppointmentDataForThis"),
     });
 
   return (
@@ -490,15 +506,15 @@ function AppointmentsTab({ dateRange }: { dateRange: DateRange }) {
         onPdf={exportAppointmentsPdf}
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard title="Total" value={String(data.total)} icon={CalendarCheck} />
+        <KpiCard title={t("total")} value={String(data.total)} icon={CalendarCheck} />
         <KpiCard
-          title="Completed"
+          title={t("completed")}
           value={String(data.completed)}
           icon={CheckCircle}
         />
-        <KpiCard title="No-Shows" value={String(data.noShows)} icon={UserX} />
+        <KpiCard title={t("noShows")} value={String(data.noShows)} icon={UserX} />
         <KpiCard
-          title="Cancellations"
+          title={t("cancellations")}
           value={String(data.cancelled)}
           icon={XCircle}
         />
@@ -508,7 +524,7 @@ function AppointmentsTab({ dateRange }: { dateRange: DateRange }) {
       <div className="rounded-lg border border-border bg-card p-5">
         <div className="mb-2 flex items-center justify-between">
           <h3 className="text-sm font-medium text-muted-foreground">
-            Fill Rate
+            {t("fillRate")}
           </h3>
           <span className="text-lg font-semibold">{data.fillRate}%</span>
         </div>
@@ -524,16 +540,16 @@ function AppointmentsTab({ dateRange }: { dateRange: DateRange }) {
       {data.byDoctor.length > 0 ? (
         <div className="rounded-lg border border-border bg-card p-5">
           <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-            Doctor Breakdown
+            {t("doctorBreakdown")}
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="pb-2 font-medium">Doctor</th>
-                  <th className="pb-2 font-medium text-right">Total</th>
-                  <th className="pb-2 font-medium text-right">Completed</th>
-                  <th className="pb-2 font-medium text-right">Completion Rate</th>
+                  <th className="pb-2 font-medium">{t("doctor")}</th>
+                  <th className="pb-2 font-medium text-right">{t("total")}</th>
+                  <th className="pb-2 font-medium text-right">{t("completed")}</th>
+                  <th className="pb-2 font-medium text-right">{t("completionRate")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -557,8 +573,8 @@ function AppointmentsTab({ dateRange }: { dateRange: DateRange }) {
       ) : (
         <EmptyState
           icon={CalendarCheck}
-          title="No doctor breakdown available"
-          description="Appointments will be grouped by assigned doctor for the selected date range."
+          title={t("noDoctorBreakdownAvailable")}
+          description={t("appointmentsWillBeGroupedBy")}
         />
       )}
     </div>
@@ -566,6 +582,7 @@ function AppointmentsTab({ dateRange }: { dateRange: DateRange }) {
 }
 
 function ServicesTab({ dateRange }: { dateRange: DateRange }) {
+  const t = useTranslations("reports.page");
   const formatCurrency = useCurrencyFormatter();
   const { data, isLoading, isError, error, refetch } =
     trpc.reports.topServices.useQuery(dateRange);
@@ -589,15 +606,18 @@ function ServicesTab({ dateRange }: { dateRange: DateRange }) {
   const exportServicesPdf = () =>
     void downloadReportPdf({
       filename: reportFilename("services", data.range, "pdf"),
-      title: "Services Report",
-      subtitle: `${data.range.startDate} to ${data.range.endDate}`,
-      columns: ["Service", "Count", "Billed charges"],
+      title: t("servicesReport"),
+      subtitle: t("rangeTo", {
+        start: data.range.startDate,
+        end: data.range.endDate,
+      }),
+      columns: [t("service"), t("count"), t("billedCharges")],
       rows: serviceRows.map(([name, count, revenue]) => [
         name,
         count,
         formatCurrency(Number(revenue)),
       ]),
-      emptyMessage: "No billed service items were found for the selected range.",
+      emptyMessage: t("noBilledServiceItemsWere"),
     });
 
   if (data.items.length === 0) {
@@ -609,8 +629,8 @@ function ServicesTab({ dateRange }: { dateRange: DateRange }) {
         />
         <EmptyState
           icon={BarChart3}
-          title="No service data available"
-          description="No billed service items were found for the selected range."
+          title={t("noServiceDataAvailable")}
+          description={t("noBilledServiceItemsWere")}
         />
       </div>
     );
@@ -621,7 +641,7 @@ function ServicesTab({ dateRange }: { dateRange: DateRange }) {
       <div className="rounded-lg border border-border bg-card p-5">
         <div className="mb-4 flex items-center justify-between gap-3">
           <h3 className="text-sm font-medium text-muted-foreground">
-            Top 10 Services by Count
+            {t("top10ServicesByCount")}
           </h3>
           <ReportExportButtons
             onCsv={exportServices}
@@ -633,15 +653,15 @@ function ServicesTab({ dateRange }: { dateRange: DateRange }) {
 
       <div className="rounded-lg border border-border bg-card p-5">
         <h3 className="mb-4 text-sm font-medium text-muted-foreground">
-          Service Details
+          {t("serviceDetails")}
         </h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="pb-2 font-medium">Service</th>
-                <th className="pb-2 font-medium text-right">Count</th>
-                <th className="pb-2 font-medium text-right">Billed charges</th>
+                <th className="pb-2 font-medium">{t("service")}</th>
+                <th className="pb-2 font-medium text-right">{t("count")}</th>
+                <th className="pb-2 font-medium text-right">{t("billedCharges")}</th>
               </tr>
             </thead>
             <tbody>
@@ -661,6 +681,7 @@ function ServicesTab({ dateRange }: { dateRange: DateRange }) {
 }
 
 function InventoryTab() {
+  const t = useTranslations("reports.page");
   const { data, isLoading, isError, error, refetch } =
     trpc.reports.inventoryAlerts.useQuery();
 
@@ -708,17 +729,17 @@ function InventoryTab() {
   const exportInventoryPdf = () =>
     void downloadReportPdf({
       filename: reportFilename("inventory", undefined, "pdf"),
-      title: "Inventory Alerts Report",
+      title: t("inventoryAlertsReport"),
       columns: [
-        "Section",
-        "Product",
-        "SKU",
-        "Stock",
-        "Reorder Point",
-        "Expiration",
+        t("section"),
+        t("product"),
+        t("sku"),
+        t("stock"),
+        t("reorderPoint"),
+        t("expiration"),
       ],
       rows: inventoryRows,
-      emptyMessage: "No low stock, expired, or expiring products detected.",
+      emptyMessage: t("noLowStockExpiredOr"),
     });
 
   if (!hasAlerts) {
@@ -730,8 +751,8 @@ function InventoryTab() {
         />
         <EmptyState
           icon={CheckCircle}
-          title="All stock levels OK"
-          description="No low stock, expired, or expiring products detected."
+          title={t("allStockLevelsOk")}
+          description={t("noLowStockExpiredOr")}
         />
       </div>
     );
@@ -756,10 +777,10 @@ function InventoryTab() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-amber-200 text-left text-amber-700 dark:border-amber-800 dark:text-amber-400">
-                  <th className="pb-2 font-medium">Product</th>
-                  <th className="pb-2 font-medium">SKU</th>
-                  <th className="pb-2 font-medium text-right">Stock</th>
-                  <th className="pb-2 font-medium text-right">Reorder Point</th>
+                  <th className="pb-2 font-medium">{t("product")}</th>
+                  <th className="pb-2 font-medium">{t("sku")}</th>
+                  <th className="pb-2 font-medium text-right">{t("stock")}</th>
+                  <th className="pb-2 font-medium text-right">{t("reorderPoint")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -793,10 +814,10 @@ function InventoryTab() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-red-200 text-left text-red-700 dark:border-red-800 dark:text-red-400">
-                  <th className="pb-2 font-medium">Product</th>
-                  <th className="pb-2 font-medium">SKU</th>
-                  <th className="pb-2 font-medium text-right">Stock</th>
-                  <th className="pb-2 font-medium text-right">Expiration Date</th>
+                  <th className="pb-2 font-medium">{t("product")}</th>
+                  <th className="pb-2 font-medium">{t("sku")}</th>
+                  <th className="pb-2 font-medium text-right">{t("stock")}</th>
+                  <th className="pb-2 font-medium text-right">{t("expirationDate")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -830,10 +851,10 @@ function InventoryTab() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-orange-200 text-left text-orange-700 dark:border-orange-800 dark:text-orange-400">
-                  <th className="pb-2 font-medium">Product</th>
-                  <th className="pb-2 font-medium">SKU</th>
-                  <th className="pb-2 font-medium text-right">Stock</th>
-                  <th className="pb-2 font-medium text-right">Expiration Date</th>
+                  <th className="pb-2 font-medium">{t("product")}</th>
+                  <th className="pb-2 font-medium">{t("sku")}</th>
+                  <th className="pb-2 font-medium text-right">{t("stock")}</th>
+                  <th className="pb-2 font-medium text-right">{t("expirationDate")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -858,6 +879,7 @@ function InventoryTab() {
 }
 
 export default function ReportsPage() {
+  const t = useTranslations("reports.page");
   const router = useRouter();
   const { data: session, status } = useSession();
 
@@ -866,7 +888,7 @@ export default function ReportsPage() {
       <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Checking report access...
+          {t("checkingReportAccess")}
         </div>
       </div>
     );
@@ -876,10 +898,10 @@ export default function ReportsPage() {
     return (
       <EmptyState
         icon={BarChart3}
-        title="Reports are restricted"
-        description="Only administrators and veterinarians can view practice reports."
+        title={t("reportsAreRestricted")}
+        description={t("onlyAdministratorsAndVeterinariansCan")}
         action={{
-          label: "Back to dashboard",
+          label: t("backToDashboard"),
           onClick: () => router.push("/"),
         }}
       />
@@ -890,6 +912,7 @@ export default function ReportsPage() {
 }
 
 function ReportsDashboard() {
+  const t = useTranslations("reports.page");
   const [activeTab, setActiveTab] = useState<Tab>("revenue");
   const [dateRange, setDateRange] = useState<DateRange | null>(null);
   const settingsQuery = trpc.reports.settings.useQuery();
@@ -925,9 +948,9 @@ function ReportsDashboard() {
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-heading text-xl font-semibold">Reports</h2>
+          <h2 className="font-heading text-xl font-semibold">{t("reports")}</h2>
           <p className="text-sm text-muted-foreground">
-            Practice analytics and insights
+            {t("practiceAnalyticsAndInsights")}
           </p>
         </div>
       </div>
@@ -959,7 +982,7 @@ function ReportsDashboard() {
               )}
             >
               <Icon className="h-4 w-4" />
-              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="hidden sm:inline">{t(tab.label)}</span>
             </Button>
           );
         })}

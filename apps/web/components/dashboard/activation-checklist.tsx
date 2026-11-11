@@ -44,6 +44,7 @@ const JOURNEY_STEPS = ["intent", "basics", "branding", "team", "data", "agent", 
  */
 export function ActivationChecklist() {
   const t = useTranslations("dashboard.checklist");
+  const profileT = useTranslations("onboarding.profile");
   const { start } = useTour();
   const { openJourney } = useOnboardingJourney();
   const [hidden, setHidden] = useState(false);
@@ -303,8 +304,8 @@ export function ActivationChecklist() {
     ) ?? standardMilestones[0]!;
   const firstWin: Milestone = {
     ...firstWinBase,
-    label: pathway.firstWin,
-    hint: pathway.firstWinHint,
+    label: profileT(`intents.${pathway.value}.firstWin`),
+    hint: profileT(`intents.${pathway.value}.firstWinHint`),
   };
   const milestones = [
     firstWin,
@@ -386,7 +387,7 @@ export function ActivationChecklist() {
               {t("title", { practice: practiceName })}
             </p>
             <p className="text-xs text-zinc-400">
-              {pathway.shortLabel} · {t("progress", { done: doneCount, total })}
+              {profileT(`intents.${pathway.value}.shortLabel`)} · {t("progress", { done: doneCount, total })}
             </p>
           </div>
         </div>

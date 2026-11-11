@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("browser fetch timeouts", () => {

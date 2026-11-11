@@ -13,46 +13,53 @@ export type CommunicationStatusInput = {
   reminderOutcome?: string | null;
 };
 
-const communicationStatusLabels: Record<CommunicationStatus, string> = {
+// English text per status key; the UI passes a translator for `communications.status`.
+const communicationStatusText = {
   pending: "Pending",
   sent: "Sent",
   delivered: "Delivered",
   read: "Read",
   failed: "Failed",
-};
+  deliveryUnknown: "Delivery unknown",
+  readByClinic: "Read by clinic",
+  unread: "Unread",
+  readByClient: "Read by client",
+  deliveredToPortal: "Delivered to portal",
+} as const;
+export type CommunicationStatusKey = keyof typeof communicationStatusText;
 const unreadInboundStatuses = new Set(["pending", "sent", "delivered"]);
 
-export function communicationStatusLabel(
-  input: CommunicationStatusInput
-): string {
+function communicationStatusKey(
+  input: CommunicationStatusInput,
+): CommunicationStatusKey | null {
   const status = input.status?.trim();
-  if (!status) return "";
+  if (!status) return null;
 
   // The provider never confirmed this send; it may have been delivered.
   if (status === "pending" && input.reminderOutcome === "outcome_unknown") {
-    return "Delivery unknown";
+    return "deliveryUnknown";
   }
 
   if (input.direction === "inbound") {
-    if (input.readAt || status === "read") return "Read by clinic";
-    if (unreadInboundStatuses.has(status)) return "Unread";
+    if (input.readAt || status === "read") return "readByClinic";
+    if (unreadInboundStatuses.has(status)) return "unread";
   }
 
-  if (
-    input.direction === "outbound" &&
-    input.channel === "portal" &&
-    status === "read"
-  ) {
-    return "Read by client";
+  if (input.direction === "outbound" && input.channel === "portal") {
+    if (status === "read") return "readByClient";
+    if (status === "delivered") return "deliveredToPortal";
   }
 
-  if (
-    input.direction === "outbound" &&
-    input.channel === "portal" &&
-    status === "delivered"
-  ) {
-    return "Delivered to portal";
-  }
+  return ["pending", "sent", "delivered", "read", "failed"].includes(status)
+    ? (status as CommunicationStatus)
+    : null;
+}
 
-  return communicationStatusLabels[status as CommunicationStatus] ?? status;
+export function communicationStatusLabel(
+  input: CommunicationStatusInput,
+  t?: (key: CommunicationStatusKey) => string,
+): string {
+  const key = communicationStatusKey(input);
+  if (!key) return input.status?.trim() ?? "";
+  return t ? t(key) : communicationStatusText[key];
 }

@@ -1,11 +1,8 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("template catalog picker UI", () => {
-  const source = readFileSync(
-    "components/templates/catalog-picker.tsx",
-    "utf8",
-  );
+  const source = readTranslatedSource("components/templates/catalog-picker.tsx");
 
   it("supports query editing, clearing, and bounded server re-search", () => {
     expect(source).toContain("trpc.templates.searchCatalog.useQuery");

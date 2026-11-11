@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import en from "@/messages/en.json";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
   isMessagingAreaCodeInputValid,
@@ -10,22 +11,12 @@ import {
 } from "../messaging/policy";
 
 describe("messaging settings UI", () => {
-  const tabSource = readFileSync(
-    "components/settings/messaging-tab.tsx",
-    "utf8",
-  );
-  const wizardSource = readFileSync(
-    "components/settings/messaging-wizard.tsx",
-    "utf8",
-  );
-  const registrationSource = readFileSync(
-    "components/settings/messaging-registration-form.tsx",
-    "utf8",
-  );
-  const routerSource = readFileSync("server/routers/messaging.ts", "utf8");
-  const onboardingSource = readFileSync(
+  const tabSource = readTranslatedSource("components/settings/messaging-tab.tsx");
+  const wizardSource = readTranslatedSource("components/settings/messaging-wizard.tsx");
+  const registrationSource = readTranslatedSource("components/settings/messaging-registration-form.tsx");
+  const routerSource = readTranslatedSource("server/routers/messaging.ts");
+  const onboardingSource = readTranslatedSource(
     "components/onboarding/steps/set-up-texting.tsx",
-    "utf8",
   );
 
   it("keeps messaging phone policy aligned across settings and router", () => {
@@ -81,10 +72,10 @@ describe("messaging settings UI", () => {
     expect(tabSource).toContain("data.launch.setupAvailable");
     expect(tabSource).toContain("Texting is a controlled clinic pilot");
     expect(tabSource).toContain(
-      "OpenVPM will not\n            search for or purchase a number",
+      "OpenVPM will not search for or purchase a number",
     );
     expect(tabSource).toContain(
-      "Email appointment reminders remain\n            available",
+      "Email appointment reminders remain available",
     );
     expect(tabSource).toContain(
       "{data.launch.setupAvailable ? (\n        <MessagingWizard",
@@ -149,7 +140,7 @@ describe("messaging settings UI", () => {
     expect(tabSource).toContain("setAppointmentReminderSettings");
     expect(tabSource).toContain("Off by default");
     expect(tabSource).toContain("confirmReminderCatchUp");
-    expect(tabSource).toContain('!confirmReminderCatchUp("expand", leadHours)');
+    expect(tabSource).toContain('!confirmReminderCatchUp("expand", leadHours, t)');
     expect(tabSource).toContain(
       "Enabling reminders or increasing this window may send reminders for",
     );
@@ -198,7 +189,10 @@ describe("messaging settings UI", () => {
     expect(wizardSource).toContain("upfrontCost");
     expect(wizardSource).toContain("monthlyCost");
     expect(wizardSource).toContain("currency");
-    expect(wizardSource).toContain("Purchase number and start setup");
+    expect(wizardSource).toContain('return "purchase"');
+    expect(en.settings.messagingWizard.continue.purchase).toBe(
+      "Purchase number and start setup",
+    );
     expect(tabSource).toContain("Reconcile provider setup");
     expect(tabSource).toContain('action: "resume"');
     expect(onboardingSource).not.toContain(
