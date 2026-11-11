@@ -1608,3 +1608,38 @@ describe("dedicated OpenVPM signup billing", () => {
     expect(mocks.sendWelcomeEmail).toHaveBeenCalledWith(expect.objectContaining({ billingRequired: true }));
   });
 });
+
+describe("auth router saves the language picked before sign-in", () => {
+  const register = (caller: ReturnType<typeof callerWithDb>) =>
+    caller.register({
+      email: "owner@example.com",
+      password: "password123",
+      practiceName: "Neighborhood Veterinary",
+      country: "US",
+    });
+  const ownerRow = (insertValues: { mock: { calls: unknown[][] } }) =>
+    insertValues.mock.calls
+      .map((call) => call[0] as Record<string, unknown>)
+      .find((row) => row.role === "admin" && "passwordHash" in row);
+
+  it.each([
+    ["es", "es"],
+    [null, null],
+  ] as const)("registration stores choice %s as %s", async (choice, saved) => {
+    const { db, insertValues } = createRegistrationDb();
+    await register(callerWithDb(db, { languageChoice: choice } as never));
+    expect(ownerRow(insertValues)).toMatchObject({ language: saved });
+  });
+
+  it("invite acceptance stores a choice and leaves the account unset without one", async () => {
+    mocks.consumeAuthToken.mockResolvedValue({ userId: "user-2", email: "invitee@example.com" });
+    const token = "a".repeat(64);
+    const chosen = createAuthUpdateDb({ returningRows: [[{ id: "user-2", email: "invitee@example.com" }]] });
+    await callerWithDb(chosen.db, { languageChoice: "es" } as never).acceptInvite({ token, password: "password123" });
+    expect((chosen.updateSet.mock.calls as unknown[][])[0]?.[0]).toMatchObject({ language: "es" });
+
+    const none = createAuthUpdateDb({ returningRows: [[{ id: "user-2", email: "invitee@example.com" }]] });
+    await callerWithDb(none.db).acceptInvite({ token, password: "password123" });
+    expect((none.updateSet.mock.calls as unknown[][])[0]?.[0]).not.toHaveProperty("language");
+  });
+});

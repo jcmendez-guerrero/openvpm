@@ -113,16 +113,16 @@ description: "Task list for the Spanish Language Version"
 
 ### Tests for User Story 2
 
-- [ ] T037 [P] [US2] Write `e2e/spanish-auth.spec.ts`: `Accept-Language: es-MX` → Spanish `/login` with `<html lang="es">`; switch to English and back; `fr` → English; register with Spanish selected → new account lands in a Spanish workspace
-- [ ] T038 [P] [US2] Write `apps/web/server/__tests__/register-language.test.ts`: registration and invite acceptance save the `NEXT_LOCALE` cookie value into `users.language` when supported, otherwise null
+- [ ] T037 [P] [US2] Write `e2e/spanish-auth.spec.ts`: `Accept-Language: es-MX` → Spanish `/login` with `<html lang="es">`; switch to English and back; `fr` → English; register with Spanish selected → new account lands in a Spanish workspace — *Done note: written, not run yet: it needs the app with a database and `LANGUAGE_SELECTION_ENABLED=true`; it skips itself while the flag is off. The /login switch both ways and the Spanish screens were checked by hand in the browser*
+- [X] T038 [P] [US2] Write `apps/web/server/__tests__/register-language.test.ts`: registration and invite acceptance save the `NEXT_LOCALE` cookie value into `users.language` when supported, otherwise null — *Done note: the tests live in `apps/web/server/__tests__/auth-router.test.ts` ("saves the language picked before sign-in"), which already mocks everything registration needs. An invite with no choice leaves `users.language` unset (null for a new invitee)*
 
 ### Implementation for User Story 2
 
-- [ ] T039 [US2] Add `LanguageSwitch` to the auth pages under `apps/web/app/(auth)/` (shared layout if one exists, otherwise each page header)
-- [ ] T040 [P] [US2] Translate `apps/web/app/(auth)/login/`, `register/`, `start/`, `demo-start/` (namespace `auth`), including user-facing validation messages from `apps/web/lib/auth-input-policy.ts` and `apps/web/lib/auth-password-policy.ts`
-- [ ] T041 [P] [US2] Translate `apps/web/app/(auth)/forgot-password/`, `reset-password/`, `verify-email/`, `accept-invite/` (namespace `auth`)
-- [ ] T042 [US2] Save the cookie language into `users.language` on registration and invite acceptance in the server code behind `apps/web/app/(auth)/register/` and `accept-invite/` (e.g. `apps/web/server/routers/auth.ts`). **Security review**: auth/session change — label the PR security-sensitive and use the security-owner review path in `docs/repository-governance.md`.
-- [ ] T043 [P] [US2] Translate the root error and not-found pages `apps/web/app/error.tsx`, `apps/web/app/global-error.tsx`, `apps/web/app/not-found.tsx` (namespace `errors`)
+- [X] T039 [US2] Add `LanguageSwitch` to the auth pages under `apps/web/app/(auth)/` (shared layout if one exists, otherwise each page header) — *Done note: new `app/(auth)/layout.tsx`; the switch sits in a bar above the page, since a fixed corner switch covered the registration header on phones*
+- [X] T040 [P] [US2] Translate `apps/web/app/(auth)/login/`, `register/`, `start/`, `demo-start/` (namespace `auth`), including user-facing validation messages from `apps/web/lib/auth-input-policy.ts` and `apps/web/lib/auth-password-policy.ts` — *Done note: the two policy files have no user-facing text; the login and registration messages that use their limits are in the catalog. `/start` and `/demo-start` reuse components translated in US1. Sign-in rate-limit text is rebuilt in the page from `loginRetryAfterSeconds`; `lib/login-error-message.ts` stays the English source*
+- [X] T041 [P] [US2] Translate `apps/web/app/(auth)/forgot-password/`, `reset-password/`, `verify-email/`, `accept-invite/` (namespace `auth`)
+- [X] T042 [US2] Save the cookie language into `users.language` on registration and invite acceptance in the server code behind `apps/web/app/(auth)/register/` and `accept-invite/` (e.g. `apps/web/server/routers/auth.ts`). **Security review**: auth/session change — label the PR security-sensitive and use the security-owner review path in `docs/repository-governance.md`. — *Done note: the tRPC context exposes `languageChoice` (the cookie, only while the flag is on); `register` saves it on the new owner and `acceptInvite` saves it when present. Security review still needed on the PR*
+- [X] T043 [P] [US2] Translate the root error and not-found pages `apps/web/app/error.tsx`, `apps/web/app/global-error.tsx`, `apps/web/app/not-found.tsx` (namespace `errors`) — *Done note: namespace `errorPages`, not `errors`, which is the flat server-message map. `global-error` renders outside the root layout and its language provider, so it keeps English through `AppErrorBody`. `NotFoundView` became a client component so it can translate*
 
 **Checkpoint**: T037–T038 pass; US1 and US2 together form the MVP.
 

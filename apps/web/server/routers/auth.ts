@@ -452,6 +452,7 @@ export const authRouter = createRouter({
               role: "admin",
               practiceId: createdPractice.id,
               locationId: createdLocation.id,
+              language: ctx.languageChoice ?? null,
             })
             .returning();
 
@@ -933,6 +934,8 @@ export const authRouter = createRouter({
           passwordHash,
           emailVerifiedAt: new Date(),
           sessionVersion: bumpSessionVersion(),
+          // Keep the invitee's choice from the invite page; no choice leaves it unset.
+          ...(ctx.languageChoice ? { language: ctx.languageChoice } : {}),
         })
         .where(and(eq(users.id, result.userId), isNull(users.deletedAt)))
         .returning({ id: users.id, email: users.email });

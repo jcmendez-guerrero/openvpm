@@ -18,7 +18,11 @@ import {
   trustedProxyNotForwarding,
 } from "@/lib/request-ip";
 import { knownDeviceCookieFromHeader } from "@/lib/known-device";
-import type { Language } from "@/i18n/config";
+import {
+  isLanguageSelectionEnabled,
+  languageCookieFromHeader,
+  type Language,
+} from "@/i18n/config";
 import { getClinicDefaultLanguage } from "@/i18n/clinic-default-cache";
 import {
   resolveRequestLanguage,
@@ -77,6 +81,12 @@ export type TRPCContext = {
    * formatter; it never affects authorization or data access.
    */
   language?: Language;
+  /**
+   * Language the visitor picked with the switch (cookie), or null. Saved into
+   * a new account at registration or invite acceptance; null while the
+   * release flag is off.
+   */
+  languageChoice?: Language | null;
   ip?: string | null;
   portalSessionToken?: string | null;
   /**
@@ -216,10 +226,14 @@ export async function createTRPCContext(opts?: {
     practiceId: session?.user?.practiceId,
     loadClinicDefault: getClinicDefaultLanguage,
   });
+  const languageChoice = isLanguageSelectionEnabled()
+    ? (languageCookieFromHeader(opts?.req?.headers.get("cookie")) ?? null)
+    : null;
   return {
     db,
     session,
     language,
+    languageChoice,
     ip: clientIp(opts?.req),
     portalSessionToken: portalSessionTokenFromCookie(
       opts?.req?.headers.get("cookie"),

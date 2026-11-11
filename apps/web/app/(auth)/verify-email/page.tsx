@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -18,6 +20,7 @@ function VerifyEmailInner() {
 }
 
 function ConfirmToken({ token }: { token: string }) {
+  const t = useTranslations("auth.verifyEmail");
   const [status, setStatus] = useState<"verifying" | "ok" | "error">("verifying");
   const ran = useRef(false);
 
@@ -38,32 +41,32 @@ function ConfirmToken({ token }: { token: string }) {
       {status === "verifying" && (
         <p className="mt-3 flex items-center justify-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Verifying your email…
+          {t("verifying")}
         </p>
       )}
       {status === "ok" && (
         <>
           <p className="mt-3 text-sm text-foreground">
-            Email confirmed. You can return to your workspace.
+            {t("confirmed")}
           </p>
           <Link
             href="/"
             className="mt-6 inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
-            Open OpenVPM
+            {t("open")}
           </Link>
         </>
       )}
       {status === "error" && (
         <>
           <p className="mt-3 text-sm text-destructive">
-            This verification link is invalid or has expired.
+            {t("invalid")}
           </p>
           <Link
             href="/"
             className="mt-6 inline-block text-sm text-primary hover:underline"
           >
-            Open OpenVPM to resend
+            {t("openToResend")}
           </Link>
         </>
       )}
@@ -72,6 +75,7 @@ function ConfirmToken({ token }: { token: string }) {
 }
 
 function VerificationRecovery() {
+  const t = useTranslations("auth.verifyEmail");
   return (
     <Shell>
       <div className="mt-4 flex justify-center">
@@ -80,20 +84,19 @@ function VerificationRecovery() {
         </span>
       </div>
       <h2 className="mt-4 font-heading text-lg font-semibold text-foreground">
-        Confirm your email
+        {t("title")}
       </h2>
       <p className="mt-2 text-sm text-muted-foreground">
-        Sign in to OpenVPM and use the verification banner to send a new link
-        securely. Any unexpired verification link will work.
+        {t("recovery")}
       </p>
       <Link
         href="/"
         className="mt-6 inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
       >
-        Open OpenVPM
+        {t("open")}
       </Link>
       <p className="mt-4 text-xs text-muted-foreground">
-        If you&apos;re signed out, OpenVPM will ask you to sign in first.
+        {t("signedOut")}
       </p>
     </Shell>
   );
