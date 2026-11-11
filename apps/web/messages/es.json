@@ -2748,5 +2748,73 @@
     "choosePath": {
       "buildMyFirstDay": "Armar mi primer día"
     }
+  },
+  "welcome": {
+    "polaroid": {
+      "done": "Listo"
+    },
+    "vignettes": {
+      "today": "Hoy",
+      "biscuitWellness": "Biscuit · Control de bienestar",
+      "here": "Aquí",
+      "lunaVaccines": "Luna · Vacunas",
+      "openSlot": "Horario libre",
+      "nextVisitTuesday900": "Próxima visita: martes 9:00",
+      "requestANewVisitAny": "Solicite una nueva visita cuando quiera",
+      "yourCalendar": "Su calendario",
+      "biscuitWellness900": "Biscuit · Control de bienestar · 9:00",
+      "biscuit": "Biscuit",
+      "exampleTodaySScheduleWith": "Ejemplo: la agenda de hoy con Biscuit registrado a las 9:00",
+      "exampleAPetParentS": "Ejemplo: el portal de un propietario con visitas y facturas",
+      "exampleTheClinicScheduleInside": "Ejemplo: la agenda de la clínica dentro de su propia aplicación de calendario"
+    },
+    "surface": {
+      "openvpm": "OpenVPM",
+      "welcomeToOpenvpm": "Bienvenido a OpenVPM",
+      "skipTheWelcome": "Saltar la bienvenida"
+    },
+    "copy": {
+      "headlineAdmin": "¡Bienvenido a OpenVPM, {practice}!",
+      "headlineStaff": "¡Bienvenido, {name}!",
+      "headlineFallback": "¡Bienvenido a OpenVPM!",
+      "yourClinic": "su clínica",
+      "subline": "Esto es lo que OpenVPM puede hacer hoy por su clínica. Elija una tarjeta y se lo mostramos en más o menos un minuto.",
+      "skip": "Saltar por ahora",
+      "reopenHint": "Puede volver cuando quiera desde Guías en la barra lateral.",
+      "setupInstead": "Mejor configurar mi clínica",
+      "allDone": {
+        "title": "¡Las probó todas!",
+        "body": "Esas eran todas las guías. ¿Listo para hacer suyo OpenVPM? Agregue su logo, su equipo y sus clientes reales.",
+        "accept": "Hacerlo mío",
+        "later": "Más tarde"
+      }
+    },
+    "cards": {
+      "ask-ai": {
+        "caption": "Pregúntele a la IA sobre una mascota",
+        "sub": "Deje de buscar en las fichas. Solo pregunte.",
+        "chip": "Más o menos 1 minuto"
+      },
+      "your-day": {
+        "caption": "Vea su día de un vistazo",
+        "sub": "Todas las visitas y todas las mascotas en una pantalla.",
+        "chip": "Más o menos 2 minutos"
+      },
+      "client-portal": {
+        "caption": "Dé a sus clientes su propio portal",
+        "sub": "Los propietarios ven visitas y facturas sin llamarlo.",
+        "chip": "Más o menos 1 minuto"
+      },
+      "calendar-feed": {
+        "caption": "Vea su agenda en su propio calendario",
+        "sub": "El día de su clínica, directamente en Google, Apple u Outlook.",
+        "chip": "Más o menos 1 minuto"
+      }
+    },
+    "ai": {
+      "question": "¿Qué mascotas tienen vacunas atrasadas?",
+      "answer": "Biscuit tiene la vacuna DHPP atrasada por 5 días.",
+      "label": "Ejemplo: usted pregunta \"{question}\" y la IA responde \"{answer}\""
+    }
   }
 }

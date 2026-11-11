@@ -1,9 +1,10 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { PawPrint, X } from "lucide-react";
 import type { GuideContext } from "@/components/tour/guide-recipes";
 import type { WelcomeCardId } from "@/lib/welcome/cards";
-import { WELCOME_COPY } from "./welcome-copy";
 import { PolaroidCard, type WelcomeVariant } from "./polaroid-card";
 import { AiVignette } from "./vignettes/ai-vignette";
 import {
@@ -48,11 +49,13 @@ export function WelcomeSurface({
   onSkip: () => void;
   onSetupInstead: () => void;
 }) {
+  const t = useTranslations("welcome.surface");
+  const tc = useTranslations("welcome.copy");
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Welcome to OpenVPM"
+      aria-label={t("welcomeToOpenvpm")}
       className="fixed inset-0 z-[80] overflow-y-auto"
       style={{
         background:
@@ -62,7 +65,7 @@ export function WelcomeSurface({
       <button
         type="button"
         onClick={onSkip}
-        aria-label="Skip the welcome"
+        aria-label={t("skipTheWelcome")}
         className="absolute right-4 top-4 rounded-full p-2 text-slate-500 transition-colors hover:bg-white/70 hover:text-slate-800"
       >
         <X className="h-5 w-5" />
@@ -72,14 +75,14 @@ export function WelcomeSurface({
         <div className="flex items-center gap-2 text-emerald-700">
           <PawPrint className="h-5 w-5" aria-hidden="true" />
           <span className="text-sm font-semibold uppercase tracking-wide">
-            OpenVPM
+            {t("openvpm")}
           </span>
         </div>
         <h1 className="mt-3 font-heading text-3xl font-bold text-slate-900 sm:text-4xl">
           {headline}
         </h1>
         <p className="mt-3 max-w-xl text-base leading-7 text-slate-600">
-          {WELCOME_COPY.subline}
+          {tc("subline")}
         </p>
 
         <div className="mt-10 flex flex-wrap items-start justify-center gap-6">
@@ -136,16 +139,16 @@ export function WelcomeSurface({
             onClick={onSkip}
             className="text-sm font-medium text-slate-600 underline-offset-4 hover:underline"
           >
-            {WELCOME_COPY.skip}
+            {tc("skip")}
           </button>
-          <p className="text-xs text-slate-500">{WELCOME_COPY.reopenHint}</p>
+          <p className="text-xs text-slate-500">{tc("reopenHint")}</p>
           {showSetupLink ? (
             <button
               type="button"
               onClick={onSetupInstead}
               className="mt-2 text-sm font-semibold text-primary underline-offset-4 hover:underline"
             >
-              {WELCOME_COPY.setupInstead}
+              {tc("setupInstead")}
             </button>
           ) : null}
         </div>
