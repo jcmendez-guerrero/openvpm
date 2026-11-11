@@ -18,6 +18,12 @@ import {
   trustedProxyNotForwarding,
 } from "@/lib/request-ip";
 import { knownDeviceCookieFromHeader } from "@/lib/known-device";
+import type { Language } from "@/i18n/config";
+import { getClinicDefaultLanguage } from "@/i18n/clinic-default-cache";
+import {
+  resolveRequestLanguage,
+  translateServerMessage,
+} from "@/i18n/server-errors";
 import { sessionVersionIsCurrent } from "@/lib/session-version";
 import { externallyVisibleRequestOrigin } from "@/lib/request-origin";
 import { practices, users } from "@openpims/db";
@@ -66,6 +72,11 @@ interface AppSession extends Session {
 export type TRPCContext = {
   db: Database;
   session: AppSession | null;
+  /**
+   * Language for user-facing error messages. Read only by the error
+   * formatter; it never affects authorization or data access.
+   */
+  language?: Language;
   ip?: string | null;
   portalSessionToken?: string | null;
   /**
@@ -199,9 +210,16 @@ export async function createTRPCContext(opts?: {
     ? null
     : ((await getServerSession(authOptions)) as AppSession | null);
   const session = await activeSessionOrNull(db, rawSession);
+  const language = await resolveRequestLanguage({
+    cookieHeader: opts?.req?.headers.get("cookie"),
+    acceptLanguage: opts?.req?.headers.get("accept-language"),
+    practiceId: session?.user?.practiceId,
+    loadClinicDefault: getClinicDefaultLanguage,
+  });
   return {
     db,
     session,
+    language,
     ip: clientIp(opts?.req),
     portalSessionToken: portalSessionTokenFromCookie(
       opts?.req?.headers.get("cookie"),
@@ -221,9 +239,12 @@ export async function createTRPCContext(opts?: {
 
 const t = initTRPC.context<TRPCContext>().create({
   transformer: superjson,
-  errorFormatter({ shape, error }) {
+  errorFormatter({ shape, error, ctx }) {
     return {
       ...shape,
+      message: ctx?.language
+        ? translateServerMessage(shape.message, ctx.language)
+        : shape.message,
       data: {
         ...shape.data,
         zodError:

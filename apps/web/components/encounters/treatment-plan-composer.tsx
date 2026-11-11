@@ -394,7 +394,8 @@ export function TreatmentPlanComposer({
     } catch (error) {
       const message = error instanceof Error ? error.message : t("saveFailed");
       toast.error(message);
-      if (/changed in another session/i.test(message)) {
+      // Match the code, not the text: server messages follow the staff language.
+      if ((error as { data?: { code?: string } } | null)?.data?.code === "CONFLICT") {
         await planQuery.refetch();
       }
     }

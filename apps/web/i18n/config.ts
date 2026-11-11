@@ -25,3 +25,15 @@ export const LANGUAGE_SELECTION_ENABLED_ENV = "LANGUAGE_SELECTION_ENABLED";
 export function isLanguageSelectionEnabled(): boolean {
   return envFlagEnabled(LANGUAGE_SELECTION_ENABLED_ENV);
 }
+
+/** The language cookie from a raw Cookie header, only if it names a supported language. */
+export function languageCookieFromHeader(cookieHeader: string | null | undefined): Language | undefined {
+  if (!cookieHeader) return undefined;
+  for (const part of cookieHeader.split(";")) {
+    const separator = part.indexOf("=");
+    if (separator < 0 || part.slice(0, separator).trim() !== LANGUAGE_COOKIE) continue;
+    const value = part.slice(separator + 1).trim();
+    return isSupportedLanguage(value) ? value : undefined;
+  }
+  return undefined;
+}

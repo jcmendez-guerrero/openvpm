@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
+import { IntlProvider, useTranslations } from "use-intl";
 import { createTRPCClient, httpBatchLink, TRPCClientError } from "@trpc/client";
 import superjson from "superjson";
 import { z } from "zod";
@@ -25,6 +26,8 @@ import {
 } from "../lib/offline/workspace";
 import type { EncryptedDeviceVault } from "../lib/offline/encrypted-vault";
 import { prepareOfflineShell } from "./prepare-shell";
+import { OFFLINE_MESSAGES } from "./messages.generated";
+import { DEFAULT_LANGUAGE, languageCookieFromHeader, type Language } from "../i18n/config";
 
 const api = createTRPCClient<AppRouter>({
   links: [
@@ -37,24 +40,24 @@ const api = createTRPCClient<AppRouter>({
     }),
   ],
 });
-const labels = {
-  subjective: "Subjective",
-  objective: "Objective",
-  assessment: "Assessment",
-  plan: "Plan",
-};
+type OfflineT = ReturnType<typeof useTranslations<"offline">>;
+// The release flag is fixed at build time; while it is off the shell stays English.
+function shellLanguage(): Language {
+  if (process.env.LANGUAGE_SELECTION_ENABLED?.trim() !== "true") return DEFAULT_LANGUAGE;
+  return languageCookieFromHeader(document.cookie) ?? DEFAULT_LANGUAGE;
+}
 const inputClass =
   "mt-1 block w-full rounded-md border border-input bg-background p-3";
-function errorText(error: unknown) {
+function errorText(error: unknown, t: OfflineT) {
   if (authFailure(error))
-    return "Sign in as the workspace owner to continue. Your encrypted device copy has been kept.";
+    return t("errors.signIn");
   if (error instanceof TRPCClientError && !error.data)
-    return "OpenVPM could not be reached. Your saved device copy is still here. Reconnect and try again.";
+    return t("errors.unreachable");
   if (error instanceof z.ZodError)
-    return "The device copy could not be updated. Keep each SOAP section under 10,000 characters and keep this page open.";
+    return t("errors.tooLong");
   return error instanceof Error
     ? error.message
-    : "Unable to complete this action. Your saved device copy has been kept.";
+    : t("errors.generic");
 }
 function authFailure(error: unknown) {
   return (
@@ -74,6 +77,13 @@ function selectedTarget() {
 }
 
 function OfflineApp() {
+  const t = useTranslations("offline");
+  const labels = {
+    subjective: t("labels.subjective"),
+    objective: t("labels.objective"),
+    assessment: t("labels.assessment"),
+    plan: t("labels.plan"),
+  };
   const online = useOnlineStatus();
   const [target, setTarget] = useState(selectedTarget);
   const [exists, setExists] = useState<boolean | null>(null);
@@ -105,7 +115,7 @@ function OfflineApp() {
     void workspaceExists()
       .then(setExists)
       .catch((error) => {
-        setMessage(errorText(error));
+        setMessage(errorText(error, t));
         setExists(false);
       });
   }, []);
@@ -132,9 +142,7 @@ function OfflineApp() {
       if (!offlineAccessValid(value.identity)) {
         await lock(true);
         if (active)
-          setMessage(
-            "Reconnect and sign in to renew offline access. Your encrypted notes are still on this device.",
-          );
+          setMessage(t("errors.renew"));
         return;
       }
       if (!navigator.onLine) return;
@@ -146,16 +154,12 @@ function OfflineApp() {
           !sameIdentity(current.current.identity, identity)
         ) {
           await lock(true);
-          setMessage(
-            "The signed-in account changed. Sign in as the workspace owner to continue.",
-          );
+          setMessage(t("errors.accountChanged"));
         }
       } catch (error) {
         if (active && authFailure(error)) {
           await lock(true);
-          setMessage(
-            "Sign in again before opening this workspace. Your encrypted copy is still saved.",
-          );
+          setMessage(t("errors.signInAgain"));
         }
       }
     };
@@ -180,7 +184,7 @@ function OfflineApp() {
   async function persist(value: OfflineWorkspace) {
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
-    if (!vault.current) throw new Error("Unlock the workspace first.");
+    if (!vault.current) throw new Error(t("errors.unlockFirst"));
     const write = ++version.current;
     setDisk("saving");
     try {
@@ -220,7 +224,7 @@ function OfflineApp() {
     try {
       await work();
     } catch (error) {
-      setMessage(errorText(error));
+      setMessage(errorText(error, t));
     } finally {
       busyRef.current = false;
       setBusy(false);
@@ -236,7 +240,7 @@ function OfflineApp() {
     }
     if (current.current && !sameIdentity(current.current.identity, identity)) {
       await lock(true);
-      throw new Error("Sign in as the person who prepared this workspace.");
+      throw new Error(t("errors.wrongPerson"));
     }
     return identity;
   }
@@ -254,20 +258,16 @@ function OfflineApp() {
         !opened.value ||
         !offlineAccessValid(opened.value.identity)
       )
-        throw new Error(
-          "Connect and sign in to OpenVPM to open this workspace.",
-        );
+        throw new Error(t("errors.connectToOpen"));
     }
     if (
       opened.value &&
       identity &&
       !sameIdentity(opened.value.identity, identity)
     )
-      throw new Error("Sign in as the person who prepared this workspace.");
+      throw new Error(t("errors.wrongPerson"));
     if (!opened.value && (!identity || !identity.enabled))
-      throw new Error(
-        "Offline workspace preparation is not enabled. Existing saved workspaces can still be recovered.",
-      );
+      throw new Error(t("errors.notEnabled"));
     const value = opened.value
       ? { ...opened.value, identity: identity ?? opened.value.identity }
       : { version: 1 as const, identity: identity!, charts: [] };
@@ -275,20 +275,18 @@ function OfflineApp() {
     await commit(value);
     setExists(true);
     setSelected(value.charts[0]?.key ?? null);
-    setNotice(
-      "Workspace unlocked. Visit notes are saved to OpenVPM only when you choose Save draft online.",
-    );
+    setNotice(t("notice.unlocked"));
   }
   async function prepare(patientId: string, appointmentId?: string) {
     const identity = await verifiedIdentity();
-    await prepareOfflineShell();
+    await prepareOfflineShell(t);
     setShellReady(true);
     const result = await api.offline.prepareChart.query({
       patientId,
       appointmentId,
     });
     if (!sameIdentity(identity, result.identity) || !current.current)
-      throw new Error("Account changed. Lock and reopen the workspace.");
+      throw new Error(t("errors.accountSwitched"));
     const next = addPreparedChart(
       current.current,
       result.chart,
@@ -296,9 +294,7 @@ function OfflineApp() {
     );
     await commit(next);
     setSelected(next.charts.at(-1)!.key);
-    setNotice(
-      "Chart saved for offline use. Bookmark this workspace before you disconnect.",
-    );
+    setNotice(t("notice.prepared"));
   }
   function edit(field: (typeof SOAP_FIELDS)[number], html: string) {
     const value = current.current;
@@ -327,7 +323,7 @@ function OfflineApp() {
     setNotice(null);
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
-      void persist(next).catch((error) => setMessage(errorText(error)));
+      void persist(next).catch((error) => setMessage(errorText(error, t)));
     }, 300);
   }
   async function sync() {
@@ -359,19 +355,15 @@ function OfflineApp() {
     });
     setNotice(
       result.outcome === "saved"
-        ? "Draft saved to OpenVPM. Review and sign it in the online visit editor."
-        : "The server visit changed. Your local text has been kept for comparison; nothing was overwritten.",
+        ? t("notice.draftSaved")
+        : t("notice.serverChanged"),
     );
   }
   async function removeChart(item: OfflineChart) {
     if (!current.current || chartHasChanges(item))
-      throw new Error(
-        "Save or resolve this local note before removing its chart.",
-      );
+      throw new Error(t("errors.saveBeforeRemove"));
     if (
-      !window.confirm(
-        "Remove this chart from this device? Its online record will stay unchanged.",
-      )
+      !window.confirm(t("confirm.remove"))
     )
       return;
     const next = {
@@ -387,17 +379,13 @@ function OfflineApp() {
         (field) => `${labels[field]}\n${soapSectionText(item.sections[field])}`,
       ).join("\n\n"),
     );
-    setNotice(
-      "Local SOAP text copied. Review it in the online visit editor before resolving the device copy.",
-    );
+    setNotice(t("notice.copied"));
   }
   async function resolveConflict(item: OfflineChart) {
     if (!current.current || !item.conflict) return;
     await verifiedIdentity();
     if (
-      !window.confirm(
-        "Only continue after copying and reviewing your local text in the online visit editor. Remove this resolved device copy?",
-      )
+      !window.confirm(t("confirm.resolve"))
     )
       return;
     const next = {
@@ -416,14 +404,14 @@ function OfflineApp() {
             <a href="/" className="font-heading text-lg font-semibold">
               OpenVPM
             </a>
-            <p className="text-sm text-muted-foreground">Offline workspace</p>
+            <p className="text-sm text-muted-foreground">{t("header.workspace")}</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <span role="status" className="text-sm">
-              {online ? "Network connected" : "Offline"}
+              {online ? t("header.connected") : t("header.offline")}
             </span>
             <a className="text-sm underline" href="/login">
-              Sign in online
+              {t("header.signIn")}
             </a>
             {workspace ? (
               <Button
@@ -431,7 +419,7 @@ function OfflineApp() {
                 disabled={busy}
                 onClick={() => void action(() => lock())}
               >
-                Lock workspace
+                {t("header.lock")}
               </Button>
             ) : null}
           </div>
@@ -461,13 +449,11 @@ function OfflineApp() {
           <section className="mx-auto max-w-xl rounded-xl border bg-background p-6">
             <h1 className="font-heading text-2xl font-semibold">
               {exists
-                ? "Unlock your saved charts"
-                : "Take your charts with you"}
+                ? t("unlock.titleExisting")
+                : t("unlock.titleNew")}
             </h1>
             <p className="mt-3 text-sm text-muted-foreground">
-              Choose charts while connected, then reopen this workspace and keep
-              writing when your connection drops. Charts and visit notes stay
-              encrypted on this device.
+              {t("unlock.intro")}
             </p>
             <form
               className="mt-6 space-y-4"
@@ -477,7 +463,7 @@ function OfflineApp() {
               }}
             >
               <label className="block text-sm font-medium">
-                Workspace passphrase
+                {t("unlock.passphrase")}
                 <input
                   className={inputClass}
                   type="password"
@@ -490,7 +476,7 @@ function OfflineApp() {
               </label>
               {!exists ? (
                 <label className="block text-sm font-medium">
-                  Confirm passphrase
+                  {t("unlock.confirm")}
                   <input
                     className={inputClass}
                     type="password"
@@ -503,10 +489,7 @@ function OfflineApp() {
                 </label>
               ) : null}
               <p className="text-sm text-muted-foreground">
-                Use at least 12 characters, separate from your OpenVPM password.
-                Use a trusted device and keep this passphrase safe; it cannot be
-                reset. Clearing browser data removes unsaved device notes.
-                Offline access must be renewed by signing in every 24 hours.
+                {t("unlock.rules")}
               </p>
               <Button
                 type="submit"
@@ -518,10 +501,10 @@ function OfflineApp() {
                 }
               >
                 {busy
-                  ? "Opening workspace..."
+                  ? t("unlock.opening")
                   : exists
-                    ? "Unlock workspace"
-                    : "Create encrypted workspace"}
+                    ? t("unlock.unlock")
+                    : t("unlock.create")}
               </Button>
             </form>
           </section>
@@ -533,29 +516,30 @@ function OfflineApp() {
                   {workspace.identity.practiceName}
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  Prepared by {workspace.identity.userName} · Offline access
-                  until{" "}
-                  {new Date(workspace.identity.expiresAt).toLocaleString()}
+                  {t("workspace.preparedBy", {
+                    name: workspace.identity.userName,
+                    until: new Date(workspace.identity.expiresAt).toLocaleString(),
+                  })}
                 </p>
               </div>
               <p role="status" className="text-sm">
                 {disk === "saving"
-                  ? "Saving encrypted device copy..."
+                  ? t("disk.saving")
                   : disk === "saved"
-                    ? "Encrypted device copy saved"
+                    ? t("disk.saved")
                     : disk === "error"
-                      ? "Device copy needs attention"
-                      : "Workspace open"}
+                      ? t("disk.error")
+                      : t("disk.idle")}
               </p>
             </div>
             {target ? (
               <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-background p-4">
                 <div>
                   <h2 className="font-semibold">
-                    Selected {target.appointmentId ? "visit" : "chart"}
+                    {target.appointmentId ? t("target.visit") : t("target.chart")}
                   </h2>
                   <p className="text-sm text-muted-foreground">
-                    Save a fresh chart snapshot before disconnecting.
+                    {t("target.hint")}
                   </p>
                 </div>
                 <Button
@@ -566,20 +550,19 @@ function OfflineApp() {
                     )
                   }
                 >
-                  {busy ? "Working..." : "Prepare selected chart"}
+                  {busy ? t("target.working") : t("target.prepare")}
                 </Button>
               </section>
             ) : null}
             {!shellReady && workspace.charts.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Open a patient or active visit online and choose “Make available
-                offline” to add a chart here.
+                {t("empty.howToAdd")}
               </p>
             ) : null}
             <div className="grid gap-4 md:grid-cols-[240px_minmax(0,1fr)]">
-              <nav aria-label="Saved charts" className="space-y-2">
+              <nav aria-label={t("list.label")} className="space-y-2">
                 <h2 className="mb-3 font-semibold">
-                  Saved charts ({workspace.charts.length})
+                  {t("list.title", { count: workspace.charts.length })}
                 </h2>
                 {workspace.charts.map((item) => (
                   <button
@@ -594,9 +577,11 @@ function OfflineApp() {
                     </span>
                     <span className="block text-xs text-muted-foreground">
                       {item.snapshot.visit
-                        ? `Visit · ${new Date(item.snapshot.visit.startTime).toLocaleDateString()}`
-                        : "Chart summary"}
-                      {chartHasChanges(item) ? " · Local note" : ""}
+                        ? t("list.visit", {
+                            date: new Date(item.snapshot.visit.startTime).toLocaleDateString(),
+                          })
+                        : t("list.summary")}
+                      {chartHasChanges(item) ? ` · ${t("list.localNote")}` : ""}
                     </span>
                   </button>
                 ))}
@@ -620,7 +605,7 @@ function OfflineApp() {
                         </p>
                         {chart.snapshot.patient.dob ? (
                           <p className="text-sm">
-                            Born {chart.snapshot.patient.dob}
+                            {t("chart.born", { dob: chart.snapshot.patient.dob })}
                           </p>
                         ) : null}
                       </div>
@@ -628,16 +613,15 @@ function OfflineApp() {
                         className="text-sm underline"
                         href={`/patients/${chart.snapshot.patient.id}`}
                       >
-                        Open live chart
+                        {t("chart.openLive")}
                       </a>
                     </div>
                     <p className="mt-3 text-xs text-muted-foreground">
-                      Snapshot from{" "}
-                      {new Date(chart.snapshot.capturedAt).toLocaleString()}.
-                      Recent notes and active allergies only; online changes are
-                      not reflected until refreshed.
+                      {t("chart.snapshot", {
+                        date: new Date(chart.snapshot.capturedAt).toLocaleString(),
+                      })}
                     </p>
-                    <h3 className="mt-4 font-semibold">Allergies</h3>
+                    <h3 className="mt-4 font-semibold">{t("chart.allergies")}</h3>
                     {chart.snapshot.allergies.length ? (
                       <ul className="mt-2 space-y-2">
                         {chart.snapshot.allergies.map((allergy, i) => (
@@ -655,26 +639,24 @@ function OfflineApp() {
                       </ul>
                     ) : (
                       <p className="text-sm text-muted-foreground">
-                        No allergies recorded in this snapshot.
+                        {t("chart.noAllergies")}
                       </p>
                     )}
                   </section>
                   {chart.snapshot.visit ? (
                     <section className="space-y-4 rounded-xl border bg-background p-5">
                       <h2 className="font-heading text-lg font-semibold">
-                        Visit note
+                        {t("visit.title")}
                       </h2>
                       <p className="text-sm text-muted-foreground">
-                        Keep writing offline. Save the draft when connected,
-                        then review and sign it in the online visit editor.
+                        {t("visit.intro")}
                       </p>
                       {chart.pending && !chart.conflict ? (
                         <p
                           role="status"
                           className="rounded-md border p-3 text-sm"
                         >
-                          Save not yet confirmed. Retry the same request before
-                          editing; it may already have reached OpenVPM.
+                          {t("visit.pending")}
                         </p>
                       ) : null}
                       {SOAP_FIELDS.map((field) => (
@@ -700,17 +682,15 @@ function OfflineApp() {
                         >
                           <h3 className="font-semibold">
                             {chart.conflict.kind === "already_finalized"
-                              ? "This visit was signed online"
-                              : "A newer draft is on the server"}
+                              ? t("visit.signedOnline")
+                              : t("visit.newerDraft")}
                           </h3>
                           <p className="text-sm">
-                            Your local text is unchanged. Compare it below, copy
-                            anything needed, and resolve the difference in the
-                            online visit editor.
+                            {t("visit.conflictHelp")}
                           </p>
                           <details>
                             <summary className="cursor-pointer font-medium">
-                              Show server note
+                              {t("visit.showServer")}
                             </summary>
                             {SOAP_FIELDS.map((field) => (
                               <div key={field} className="mt-3">
@@ -731,7 +711,7 @@ function OfflineApp() {
                                 void action(() => copyLocal(chart))
                               }
                             >
-                              Copy local SOAP text
+                              {t("visit.copyLocal")}
                             </Button>
                             <Button
                               variant="outline"
@@ -740,7 +720,7 @@ function OfflineApp() {
                                 void action(() => resolveConflict(chart))
                               }
                             >
-                              Remove resolved device copy
+                              {t("visit.removeResolved")}
                             </Button>
                           </div>
                         </div>
@@ -757,30 +737,29 @@ function OfflineApp() {
                           onClick={() => void action(sync)}
                         >
                           {busy
-                            ? "Saving..."
+                            ? t("visit.saving")
                             : chart.conflict
-                              ? "Review conflict online"
+                              ? t("visit.reviewConflict")
                               : chart.pending
-                                ? "Retry draft save"
-                                : "Save draft online"}
+                                ? t("visit.retry")
+                                : t("visit.save")}
                         </Button>
                         <a
                           className="text-sm underline"
                           href={`/records/new-soap/${chart.snapshot.patient.id}?appointmentId=${chart.snapshot.visit.appointmentId}`}
                         >
-                          Review online visit
+                          {t("visit.reviewOnline")}
                         </a>
                       </div>
                     </section>
                   ) : (
                     <p className="rounded-lg border bg-background p-4 text-sm">
-                      To write an offline visit note, start the visit online and
-                      choose “Make available offline” in its SOAP editor.
+                      {t("visit.howToStart")}
                     </p>
                   )}
                   <section className="rounded-xl border bg-background p-5">
                     <h2 className="mb-3 font-heading text-lg font-semibold">
-                      Recent chart notes
+                      {t("notes.title")}
                     </h2>
                     {chart.snapshot.notes.length ? (
                       chart.snapshot.notes.map((note, i) => (
@@ -799,13 +778,13 @@ function OfflineApp() {
                       ))
                     ) : (
                       <p className="text-sm text-muted-foreground">
-                        No recent chart notes in this snapshot.
+                        {t("notes.empty")}
                       </p>
                     )}
                   </section>
                   <section className="rounded-xl border bg-background p-5">
                     <h2 className="mb-3 font-heading text-lg font-semibold">
-                      Recent signed visit notes
+                      {t("soapHistory.title")}
                     </h2>
                     {chart.snapshot.soapHistory.map((note, i) => (
                       <details key={i} className="mb-3">
@@ -824,7 +803,7 @@ function OfflineApp() {
                     ))}
                     {!chart.snapshot.soapHistory.length ? (
                       <p className="text-sm text-muted-foreground">
-                        No signed visit notes in this snapshot.
+                        {t("soapHistory.empty")}
                       </p>
                     ) : null}
                   </section>
@@ -846,25 +825,24 @@ function OfflineApp() {
                         )
                       }
                     >
-                      Refresh chart snapshot
+                      {t("actions.refresh")}
                     </Button>
                     <Button
                       variant="outline"
                       disabled={busy || chartHasChanges(chart)}
                       onClick={() => void action(() => removeChart(chart))}
                     >
-                      Remove saved chart
+                      {t("actions.remove")}
                     </Button>
                   </div>
                 </article>
               ) : (
                 <section className="rounded-xl border bg-background p-6">
                   <h2 className="font-semibold">
-                    Your saved charts will appear here
+                    {t("none.title")}
                   </h2>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Prepare the charts you need while connected. This workspace
-                    does not download the entire practice.
+                    {t("none.body")}
                   </p>
                 </section>
               )}
@@ -876,4 +854,10 @@ function OfflineApp() {
   );
 }
 
-createRoot(document.getElementById("offline-root")!).render(<OfflineApp />);
+const language = shellLanguage();
+document.documentElement.lang = language;
+createRoot(document.getElementById("offline-root")!).render(
+  <IntlProvider locale={language} messages={OFFLINE_MESSAGES[language]}>
+    <OfflineApp />
+  </IntlProvider>,
+);
