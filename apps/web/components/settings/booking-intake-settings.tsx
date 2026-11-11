@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import {
   PREVISIT_INTAKE_FIELD_DEFINITIONS,
   type PrevisitIntakeFieldKey,
@@ -17,6 +19,7 @@ export function BookingIntakeSettings({
   onChange,
   disabled = false,
 }: BookingIntakeSettingsProps) {
+  const t = useTranslations("settings.bookingIntake");
   const selectedFieldKeySet = new Set(selectedFieldKeys);
 
   function updateField(fieldKey: PrevisitIntakeFieldKey, checked: boolean) {
@@ -41,17 +44,15 @@ export function BookingIntakeSettings({
           id="booking-intake-settings-heading"
           className="text-sm font-semibold text-gray-900"
         >
-          Pre-visit intake fields
+          {t("preVisitIntakeFields")}
         </h3>
         <p className="mt-1 text-sm text-gray-500">
-          Selected fields appear on the public appointment request. Responses
-          remain owner-reported and do not overwrite saved client or patient
-          information.
+          {t("selectedFieldsAppearOnThe")}
         </p>
       </div>
 
       <fieldset className="space-y-3" disabled={disabled}>
-        <legend className="sr-only">Public appointment request fields</legend>
+        <legend className="sr-only">{t("publicAppointmentRequestFields")}</legend>
         {PREVISIT_INTAKE_FIELD_DEFINITIONS.map((field) => {
           const inputId = `booking-intake-${field.key}`;
 
@@ -79,8 +80,7 @@ export function BookingIntakeSettings({
       </fieldset>
 
       <p className="text-sm text-gray-500">
-        All fields are optional. Leave every field unchecked to hide this
-        section from the public request form.
+        {t("allFieldsAreOptionalLeave")}
       </p>
     </section>
   );

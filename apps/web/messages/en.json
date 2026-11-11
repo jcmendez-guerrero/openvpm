@@ -332,6 +332,29 @@
       "defaultLanguage": "Default language",
       "defaultLanguageHelp": "Used for staff and clients who haven't chosen a language.",
       "defaultLanguageSaved": "Default language updated"
+    },
+    "importIssues": {
+      "importIssuesToReview": "Import issues to review",
+      "checkTheCsvFile": "Check the CSV file",
+      "fixTheFileLevelIssues": "Fix the file-level issues and check the CSV again before downloading rows."
+    },
+    "bookingIntake": {
+      "preVisitIntakeFields": "Pre-visit intake fields",
+      "selectedFieldsAppearOnThe": "Selected fields appear on the public appointment request. Responses remain owner-reported and do not overwrite saved client or patient information.",
+      "allFieldsAreOptionalLeave": "All fields are optional. Leave every field unchecked to hide this section from the public request form.",
+      "publicAppointmentRequestFields": "Public appointment request fields"
+    },
+    "ambulatory": {
+      "aFieldFirstPatientWorkflow": "A field-first patient workflow with direct visit start, one-page clinical entry, large-animal measurements, and compact closeout. Existing clinic workflows stay unchanged until this is enabled.",
+      "enableAmbulatoryWorkspace": "Enable ambulatory workspace",
+      "addsStartFieldVisitTo": "Adds “Start field visit” to active patient charts. Scheduled clinic workflows remain unchanged.",
+      "ambulatoryWorkspace": "Ambulatory workspace",
+      "measurements": "Measurements",
+      "kilogramsCelsius": "Kilograms / Celsius",
+      "poundsFahrenheit": "Pounds / Fahrenheit",
+      "bodyConditionScale": "Body condition scale",
+      "compactCloseout": "Compact closeout",
+      "ambulatoryWorkspaceSettingsSaved": "Ambulatory workspace settings saved"
     }
   },
   "clients": {
@@ -2694,6 +2717,36 @@
       "removeItem": "Remove {name}",
       "patientFallback": "Patient",
       "revisionDownloaded": "Discharge revision {revision} downloaded"
+    }
+  },
+  "onboarding": {
+    "migrationHelp": {
+      "requestSaved": "Request saved",
+      "migrationReviewRequested": "Migration review requested",
+      "wantUsToReviewThe": "Want us to review the export first?",
+      "weWillContactYourClinic": "We will contact your clinic admin with a private transfer and review plan. Keep the files where they are until then.",
+      "requestAHandsOnReview": "Request a hands-on review before importing. Do not email patient files or use an Anyone-with-the-link folder. We will contact your clinic admin with a private transfer plan.",
+      "requestReview": "Request a private migration review"
+    },
+    "allSet": {
+      "thisIsYourClinicIn": "This is your clinic in OpenVPM. Ready to run it for real?",
+      "startMyFreeTrial": "Start my free trial",
+      "bookTheFirstAppointment": "Book the first appointment",
+      "addTheFirstRealClient": "Add the first real client",
+      "yourReviewedRecordsAreSaved": "Your reviewed records are saved. Start with one real appointment, then decide what deserves a larger rollout.",
+      "yourClinicBasicsAreSaved": "Your clinic basics are saved. Start with one real client and visit while your current PIMS stays safely in place."
+    },
+    "addCard": {
+      "unlimitedStaffIncludedBilledOnly": "Unlimited staff included. Billed only after your free trial.",
+      "paymentsAreHandledSecurelyBy": "Payments are handled securely by Stripe. Cancel anytime.",
+      "aCardIsAlreadyOn": "A card is already on file. You are all set.",
+      "chooseBillingPlan": "Choose billing plan",
+      "openvpmCloud": "OpenVPM Cloud",
+      "billingIsConnectedReviewYour": "Billing is connected. Review your trial end date and manage or cancel your subscription in Plan & Billing.",
+      "addPaymentDetailsSecurelyThrough": "Add payment details securely through Stripe. If your trial is already running, checkout preserves its original end date."
+    },
+    "choosePath": {
+      "buildMyFirstDay": "Build my first day"
     }
   }
 }

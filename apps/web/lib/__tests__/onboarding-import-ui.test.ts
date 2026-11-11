@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
   IMPORT_CSV_MAX_BYTES,
@@ -8,22 +8,10 @@ import {
 import { MIGRATION_STEPS } from "../import/sources";
 
 describe("onboarding import UI", () => {
-  const source = readFileSync(
-    "components/onboarding/steps/bring-data.tsx",
-    "utf8",
-  );
-  const journeySource = readFileSync(
-    "components/onboarding/journey-overlay.tsx",
-    "utf8",
-  );
-  const journeyPlanSource = readFileSync(
-    "lib/onboarding/journey-plan.ts",
-    "utf8",
-  );
-  const migrationHelpSource = readFileSync(
-    "components/onboarding/migration-help-request.tsx",
-    "utf8",
-  );
+  const source = readTranslatedSource("components/onboarding/steps/bring-data.tsx");
+  const journeySource = readTranslatedSource("components/onboarding/journey-overlay.tsx");
+  const journeyPlanSource = readTranslatedSource("lib/onboarding/journey-plan.ts");
+  const migrationHelpSource = readTranslatedSource("components/onboarding/migration-help-request.tsx");
 
   it("offers the complete four-stage clinic migration in safe order", () => {
     expect(MIGRATION_STEPS.map((step) => step.mode)).toEqual([

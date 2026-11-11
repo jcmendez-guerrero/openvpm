@@ -332,6 +332,29 @@
       "defaultLanguage": "Idioma predeterminado",
       "defaultLanguageHelp": "Se usa para el personal y los clientes que no han elegido un idioma.",
       "defaultLanguageSaved": "Idioma predeterminado actualizado"
+    },
+    "importIssues": {
+      "importIssuesToReview": "Problemas de importación para revisar",
+      "checkTheCsvFile": "Revisar el archivo CSV",
+      "fixTheFileLevelIssues": "Corrija los problemas del archivo y vuelva a revisar el CSV antes de descargar las filas."
+    },
+    "bookingIntake": {
+      "preVisitIntakeFields": "Campos de admisión previos a la visita",
+      "selectedFieldsAppearOnThe": "Los campos seleccionados aparecen en la solicitud pública de cita. Las respuestas las informa el propietario y no sobrescriben los datos guardados del cliente o del paciente.",
+      "allFieldsAreOptionalLeave": "Todos los campos son opcionales. Deje todos sin marcar para ocultar esta sección del formulario público de solicitud.",
+      "publicAppointmentRequestFields": "Campos de la solicitud pública de cita"
+    },
+    "ambulatory": {
+      "aFieldFirstPatientWorkflow": "Un flujo de trabajo centrado en el campo: inicio directo de la visita, registro clínico en una sola página, mediciones para animales grandes y cierre compacto. Los flujos actuales de la clínica no cambian hasta activarlo.",
+      "enableAmbulatoryWorkspace": "Activar espacio de trabajo a domicilio",
+      "addsStartFieldVisitTo": "Agrega “Iniciar visita a domicilio” a las fichas de pacientes activos. Los flujos programados de la clínica no cambian.",
+      "ambulatoryWorkspace": "Espacio de trabajo a domicilio",
+      "measurements": "Mediciones",
+      "kilogramsCelsius": "Kilogramos / Celsius",
+      "poundsFahrenheit": "Libras / Fahrenheit",
+      "bodyConditionScale": "Escala de condición corporal",
+      "compactCloseout": "Cierre compacto",
+      "ambulatoryWorkspaceSettingsSaved": "Configuración del espacio de trabajo a domicilio guardada"
     }
   },
   "clients": {
@@ -2694,6 +2717,36 @@
       "removeItem": "Quitar {name}",
       "patientFallback": "Paciente",
       "revisionDownloaded": "Revisión {revision} del alta descargada"
+    }
+  },
+  "onboarding": {
+    "migrationHelp": {
+      "requestSaved": "Solicitud guardada",
+      "migrationReviewRequested": "Revisión de migración solicitada",
+      "wantUsToReviewThe": "¿Quiere que revisemos primero la exportación?",
+      "weWillContactYourClinic": "Contactaremos al administrador de su clínica con un plan privado de transferencia y revisión. Mientras tanto, deje los archivos donde están.",
+      "requestAHandsOnReview": "Solicite una revisión guiada antes de importar. No envíe archivos de pacientes por correo ni use una carpeta compartida con cualquiera que tenga el enlace. Contactaremos al administrador de su clínica con un plan privado de transferencia.",
+      "requestReview": "Solicitar una revisión privada de la migración"
+    },
+    "allSet": {
+      "thisIsYourClinicIn": "Esta es su clínica en OpenVPM. ¿Lista para usarla de verdad?",
+      "startMyFreeTrial": "Empezar mi prueba gratuita",
+      "bookTheFirstAppointment": "Agendar la primera cita",
+      "addTheFirstRealClient": "Agregar el primer cliente real",
+      "yourReviewedRecordsAreSaved": "Sus registros revisados están guardados. Empiece con una cita real y luego decida qué merece un despliegue más amplio.",
+      "yourClinicBasicsAreSaved": "Los datos básicos de su clínica están guardados. Empiece con un cliente y una visita reales mientras su sistema actual sigue funcionando con seguridad."
+    },
+    "addCard": {
+      "unlimitedStaffIncludedBilledOnly": "Personal ilimitado incluido. Se cobra solo después de su prueba gratuita.",
+      "paymentsAreHandledSecurelyBy": "Stripe procesa los pagos de forma segura. Cancele cuando quiera.",
+      "aCardIsAlreadyOn": "Ya hay una tarjeta registrada. Todo listo.",
+      "chooseBillingPlan": "Elegir plan de facturación",
+      "openvpmCloud": "OpenVPM Cloud",
+      "billingIsConnectedReviewYour": "La facturación está conectada. Revise la fecha de fin de su prueba y administre o cancele su suscripción en Plan y facturación.",
+      "addPaymentDetailsSecurelyThrough": "Agregue los datos de pago de forma segura con Stripe. Si su prueba ya está en curso, el pago mantiene su fecha de fin original."
+    },
+    "choosePath": {
+      "buildMyFirstDay": "Armar mi primer día"
     }
   }
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useEffect } from "react";
 import Link from "next/link";
 import { CreditCard, ShieldCheck } from "lucide-react";
@@ -18,6 +20,7 @@ export function AddACardStep({
 }: {
   register: (h: StepHandle) => void;
 }) {
+  const t = useTranslations("onboarding.addCard");
   const subscription = trpc.subscription.get.useQuery(undefined, {
     retry: false,
   });
@@ -37,13 +40,13 @@ export function AddACardStep({
     <div className="space-y-5">
       <p className="text-sm leading-6 text-slate-600">
         {alreadyHasCard
-          ? "Billing is connected. Review your trial end date and manage or cancel your subscription in Plan & Billing."
-          : "Add payment details securely through Stripe. If your trial is already running, checkout preserves its original end date."}
+          ? t("billingIsConnectedReviewYour")
+          : t("addPaymentDetailsSecurelyThrough")}
       </p>
 
       <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
         <div className="flex items-start justify-between gap-4">
-          <span className="text-sm text-slate-600">OpenVPM Cloud</span>
+          <span className="text-sm text-slate-600">{t("openvpmCloud")}</span>
           <div className="text-right">
             <p className="font-heading text-lg font-bold text-slate-900">
               ${unitPrice}
@@ -55,24 +58,24 @@ export function AddACardStep({
           </div>
         </div>
         <p className="mt-1 text-xs text-slate-500">
-          Unlimited staff included. Billed only after your free trial.
+          {t("unlimitedStaffIncludedBilledOnly")}
         </p>
       </div>
 
       <div className="flex items-center gap-2 text-xs text-slate-500">
         <ShieldCheck className="h-4 w-4 text-emerald-600" />
-        Payments are handled securely by Stripe. Cancel anytime.
+        {t("paymentsAreHandledSecurelyBy")}
       </div>
 
       {alreadyHasCard ? (
         <p className="text-sm font-medium text-emerald-700">
-          A card is already on file. You are all set.
+          {t("aCardIsAlreadyOn")}
         </p>
       ) : (
         <Button asChild type="button" variant="outline">
           <Link href="/settings?tab=billing">
             <CreditCard className="mr-2 h-4 w-4" />
-            Choose billing plan
+            {t("chooseBillingPlan")}
           </Link>
         </Button>
       )}

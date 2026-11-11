@@ -1,12 +1,9 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import { PREVISIT_INTAKE_FIELD_DEFINITIONS } from "../booking/previsit-intake";
 
 describe("booking intake settings field picker", () => {
-  const source = readFileSync(
-    "components/settings/booking-intake-settings.tsx",
-    "utf8",
-  );
+  const source = readTranslatedSource("components/settings/booking-intake-settings.tsx");
 
   it("renders the shared catalog with accessible checkbox labels", () => {
     expect(source).toContain(

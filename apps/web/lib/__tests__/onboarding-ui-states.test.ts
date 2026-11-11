@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
   AGENT_INSTRUCTION_MAX_LENGTH,
@@ -10,42 +10,18 @@ import {
 } from "../settings-policy";
 
 describe("onboarding UI states", () => {
-  const onboardingPage = readFileSync(
-    "app/(dashboard)/onboarding/page.tsx",
-    "utf8",
-  );
-  const practiceBasics = readFileSync(
-    "components/onboarding/steps/practice-basics.tsx",
-    "utf8",
-  );
-  const branding = readFileSync(
-    "components/onboarding/steps/branding.tsx",
-    "utf8",
-  );
-  const tryAgent = readFileSync(
-    "components/onboarding/steps/try-agent.tsx",
-    "utf8",
-  );
-  const inviteTeam = readFileSync(
-    "components/onboarding/steps/invite-team.tsx",
-    "utf8",
-  );
-  const choosePath = readFileSync(
-    "components/onboarding/steps/choose-path.tsx",
-    "utf8",
-  );
-  const clinicIntentBuilder = readFileSync(
-    "components/onboarding/clinic-intent-builder.tsx",
-    "utf8",
-  );
-  const onboardingIntent = readFileSync("lib/onboarding/intent.ts", "utf8");
-  const journeyOverlay = readFileSync(
-    "components/onboarding/journey-overlay.tsx",
-    "utf8",
-  );
-  const journeyPlan = readFileSync("lib/onboarding/journey-plan.ts", "utf8");
-  const settingsRouter = readFileSync("server/routers/settings.ts", "utf8");
-  const dataRouter = readFileSync("server/routers/data.ts", "utf8");
+  const onboardingPage = readTranslatedSource("app/(dashboard)/onboarding/page.tsx");
+  const practiceBasics = readTranslatedSource("components/onboarding/steps/practice-basics.tsx");
+  const branding = readTranslatedSource("components/onboarding/steps/branding.tsx");
+  const tryAgent = readTranslatedSource("components/onboarding/steps/try-agent.tsx");
+  const inviteTeam = readTranslatedSource("components/onboarding/steps/invite-team.tsx");
+  const choosePath = readTranslatedSource("components/onboarding/steps/choose-path.tsx");
+  const clinicIntentBuilder = readTranslatedSource("components/onboarding/clinic-intent-builder.tsx");
+  const onboardingIntent = readTranslatedSource("lib/onboarding/intent.ts");
+  const journeyOverlay = readTranslatedSource("components/onboarding/journey-overlay.tsx");
+  const journeyPlan = readTranslatedSource("lib/onboarding/journey-plan.ts");
+  const settingsRouter = readTranslatedSource("server/routers/settings.ts");
+  const dataRouter = readTranslatedSource("server/routers/data.ts");
 
   it("retires the standalone onboarding page as a redirect to the dashboard", () => {
     // The static "Your OpenVPM workspace is ready" page was replaced by the

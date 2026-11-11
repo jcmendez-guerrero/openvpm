@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useMemo } from "react";
 import { Download } from "lucide-react";
 import { toast } from "sonner";
@@ -7,13 +9,14 @@ import { Button } from "@/components/ui/button";
 import { rowIssuesCsv, summarizeRowIssues } from "@/lib/csv/import";
 
 export function ImportRowIssues({ errors, csv }: { errors: string[]; csv: string }) {
+  const t = useTranslations("settings.importIssues");
   const summary = useMemo(() => summarizeRowIssues(errors), [errors]);
   if (!errors.length) return null;
 
   function download() {
     const report = rowIssuesCsv(csv, errors);
     if (!report) {
-      toast.error("Fix the file-level issues and check the CSV again before downloading rows.");
+      toast.error(t("fixTheFileLevelIssues"));
       return;
     }
     const url = URL.createObjectURL(new Blob(["\uFEFF", report], { type: "text/csv;charset=utf-8" }));
@@ -27,10 +30,10 @@ export function ImportRowIssues({ errors, csv }: { errors: string[]; csv: string
   }
 
   return (
-    <section aria-label="Import issues to review" className="mt-4 rounded-lg border border-amber-200 bg-amber-50/40 p-4 dark:border-amber-900 dark:bg-amber-950/10">
+    <section aria-label={t("importIssuesToReview")} className="mt-4 rounded-lg border border-amber-200 bg-amber-50/40 p-4 dark:border-amber-900 dark:bg-amber-950/10">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h4 className="text-sm font-semibold">
-          {summary.affectedRows ? `${summary.affectedRows} data row${summary.affectedRows === 1 ? "" : "s"} to review` : "Check the CSV file"}
+          {summary.affectedRows ? `${summary.affectedRows} data row${summary.affectedRows === 1 ? "" : "s"} to review` : t("checkTheCsvFile")}
         </h4>
         {summary.affectedRows > 0 ? (
           <Button type="button" variant="outline" size="sm" onClick={download} className="min-h-11">
