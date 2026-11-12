@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "use-intl";
+
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -23,23 +25,8 @@ const statusStyles: Record<string, string> = {
   estimate: "bg-purple-100 text-purple-700",
 };
 
-function formatDate(
-  d: string | Date | null,
-  country?: string | null,
-  timeZone?: string | null,
-): string {
-  return formatPortalDate(d, country, timeZone);
-}
-
-function formatCurrency(
-  amount: string | number | null,
-  currency: string = "usd",
-  country?: string | null,
-): string {
-  return formatCurrencyBase(amount, currency, country);
-}
-
 function PayButton({ invoiceId }: { invoiceId: string }) {
+  const t = useTranslations("portal.invoices");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,11 +41,11 @@ function PayButton({ invoiceId }: { invoiceId: string }) {
       });
       const data = await res.json();
       if (!res.ok || !isSafePortalCheckoutRedirectUrl(data.url)) {
-        throw new Error(data.error ?? "Unable to start payment");
+        throw new Error(data.error ?? t("unableToStartPayment"));
       }
       window.location.href = data.url;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to start payment");
+      setError(err instanceof Error ? err.message : t("unableToStartPayment"));
       setLoading(false);
     }
   };
@@ -71,9 +58,9 @@ function PayButton({ invoiceId }: { invoiceId: string }) {
         className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 sm:w-auto"
       >
         <CreditCard className="h-4 w-4" aria-hidden="true" />
-        {loading ? "Opening secure checkout..." : "Pay securely online"}
+        {loading ? t("openingSecureCheckout") : t("paySecurelyOnline")}
       </button>
-      <span className="text-xs text-gray-500">Powered by Stripe</span>
+      <span className="text-xs text-gray-500">{t("poweredByStripe")}</span>
       {error && (
         <span role="alert" className="text-xs text-red-600">
           {error}
@@ -84,15 +71,23 @@ function PayButton({ invoiceId }: { invoiceId: string }) {
 }
 
 function PaymentUnavailable() {
+  const t = useTranslations("portal.invoices");
   return (
     <p className="text-sm text-gray-600">
-      Online payment is temporarily unavailable. Please contact the clinic to
-      pay.
+      {t("onlinePaymentIsTemporarilyUnavailable")}
     </p>
   );
 }
 
 export default function InvoicesPage() {
+  const t = useTranslations("portal.invoices");
+  const locale = useLocale();
+  const formatDate = (d: string | Date | null, country?: string | null, timeZone?: string | null) =>
+    formatPortalDate(d, country, timeZone, locale);
+  const formatCurrency = (amount: string | number | null, currency = "usd", country?: string | null) =>
+    formatCurrencyBase(amount, currency, country, locale);
+  const statusLabel = (status: string) =>
+    t.has(`status.${status}`) ? t(`status.${status}` as never) : status;
   const searchParams = useSearchParams();
   const returnedInvoiceId = searchParams.get("invoice");
   const paymentBanner = portalPaymentBanner(
@@ -116,8 +111,8 @@ export default function InvoicesPage() {
         <EmptyState
           className="py-12"
           icon={AlertCircle}
-          title="Unable to load invoices"
-          description="Please refresh this page or contact your clinic if the portal link has expired."
+          title={t("unableToLoadInvoices")}
+          description={t("pleaseRefreshThisPageOr")}
         />
       </div>
     );
@@ -142,10 +137,10 @@ export default function InvoicesPage() {
             d="M15.75 19.5L8.25 12l7.5-7.5"
           />
         </svg>
-        Back to portal
+        {t("backToPortal")}
       </Link>
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-8">Invoices</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-8">{t("invoices")}</h1>
 
       {paymentBanner && (
         <div
@@ -163,8 +158,8 @@ export default function InvoicesPage() {
         <EmptyState
           className="py-12"
           icon={Receipt}
-          title="No invoices yet"
-          description="Invoices and estimates from your clinic will appear here."
+          title={t("noInvoicesYet")}
+          description={t("invoicesAndEstimatesFromYour")}
         />
       ) : (
         <>
@@ -203,7 +198,7 @@ export default function InvoicesPage() {
                         statusStyles[status] || "bg-gray-100 text-gray-600"
                       }`}
                     >
-                      {status}
+                      {statusLabel(status)}
                     </span>
                   </div>
                   {inv.patientName && (
@@ -239,7 +234,7 @@ export default function InvoicesPage() {
                   </div>
                   {inv.dueDate && (
                     <p className="text-xs text-gray-400 mt-1">
-                      Due: {formatDate(inv.dueDate, inv.country, inv.timezone)}
+                      {t("due", { date: formatDate(inv.dueDate, inv.country, inv.timezone) })}
                     </p>
                   )}
                   {canPay && (
@@ -262,13 +257,13 @@ export default function InvoicesPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-500">
-                  <th className="pb-2 pr-4 font-medium">Date</th>
-                  <th className="pb-2 pr-4 font-medium">Patient</th>
-                  <th className="pb-2 pr-4 font-medium text-right">Total</th>
-                  <th className="pb-2 pr-4 font-medium text-right">Paid</th>
-                  <th className="pb-2 font-medium text-right">Balance</th>
-                  <th className="pb-2 pl-6 pr-4 font-medium">Status</th>
-                  <th className="pb-2 pr-4 font-medium">Due Date</th>
+                  <th className="pb-2 pr-4 font-medium">{t("date")}</th>
+                  <th className="pb-2 pr-4 font-medium">{t("patient")}</th>
+                  <th className="pb-2 pr-4 font-medium text-right">{t("total")}</th>
+                  <th className="pb-2 pr-4 font-medium text-right">{t("paid")}</th>
+                  <th className="pb-2 font-medium text-right">{t("balance")}</th>
+                  <th className="pb-2 pl-6 pr-4 font-medium">{t("status")}</th>
+                  <th className="pb-2 pr-4 font-medium">{t("dueDate")}</th>
                   <th className="pb-2 font-medium" />
                 </tr>
               </thead>
@@ -327,7 +322,7 @@ export default function InvoicesPage() {
                             statusStyles[status] || "bg-gray-100 text-gray-600"
                           }`}
                         >
-                          {status}
+                          {statusLabel(status)}
                         </span>
                       </td>
                       <td className="py-3 pr-4 text-gray-500">

@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
 import { useTranslations } from "use-intl";
+import { ClientLanguageSelect } from "@/components/clients/client-language-select";
+import type { Language } from "@/i18n/config";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,6 +109,7 @@ function NewClientForm({ firstClinicDay }: { firstClinicDay: boolean }) {
     zip: "",
   });
   const [smsConsent, setSmsConsent] = useState(false);
+  const [preferredLanguage, setPreferredLanguage] = useState<Language | null>(null);
   const [preferredContactMethod, setPreferredContactMethod] =
     useState<ClientContactMethod>("phone");
   const [error, setError] = useState<string | null>(null);
@@ -174,6 +177,7 @@ function NewClientForm({ firstClinicDay }: { firstClinicDay: boolean }) {
       state: form.state.trim() || undefined,
       zip: form.zip.trim() || undefined,
       preferredContactMethod,
+      preferredLanguage,
       smsConsent,
     });
   };
@@ -274,6 +278,8 @@ function NewClientForm({ firstClinicDay }: { firstClinicDay: boolean }) {
             />
           </div>
         </div>
+
+        <ClientLanguageSelect value={preferredLanguage} onChange={setPreferredLanguage} />
 
         <div className="rounded-md border border-border p-3">
           <label

@@ -1,4 +1,6 @@
 import { sendSms, type SmsDispatchResult } from "@/lib/sms-dispatch";
+import type { Language } from "@/i18n/config";
+import { getTranslatorFor } from "@/i18n/messages";
 
 export {
   prepareCampaignSmsBody,
@@ -42,12 +44,18 @@ export async function sendAppointmentReminderSms(data: {
   sourceId?: string;
   idempotencyKey?: string;
   reminderClaimToken?: string;
+  /** The client's language; defaults to English. */
+  language?: Language;
 }): Promise<SmsDispatchResult> {
-  const phoneInfo = data.practicePhone
-    ? `Call ${data.practicePhone} to reschedule.`
-    : "Contact us to reschedule.";
-
-  const body = `Reminder: ${data.patientName} has an appointment on ${data.appointmentDate} at ${data.appointmentTime}. ${phoneInfo}`;
+  const t = getTranslatorFor(data.language ?? "en");
+  const body = t("sms.appointmentReminder", {
+    patient: data.patientName,
+    date: data.appointmentDate,
+    time: data.appointmentTime,
+    contact: data.practicePhone
+      ? t("sms.callToReschedule", { phone: data.practicePhone })
+      : t("sms.contactToReschedule"),
+  });
 
   const result = await sendSms({
     to: data.to,
@@ -80,12 +88,17 @@ export async function sendVaccinationReminderSms(data: {
   communicationId?: string;
   sourceId?: string;
   idempotencyKey?: string;
+  /** The client's language; defaults to English. */
+  language?: Language;
 }): Promise<SmsDispatchResult> {
-  const phoneInfo = data.practicePhone
-    ? `Call ${data.practicePhone} to schedule.`
-    : "Contact us to schedule.";
-
-  const body = `${data.patientName} is due for their ${data.vaccineName} vaccination. ${phoneInfo}`;
+  const t = getTranslatorFor(data.language ?? "en");
+  const body = t("sms.vaccinationReminder", {
+    patient: data.patientName,
+    vaccine: data.vaccineName,
+    contact: data.practicePhone
+      ? t("sms.callToSchedule", { phone: data.practicePhone })
+      : t("sms.contactToSchedule"),
+  });
 
   const result = await sendSms({
     to: data.to,
@@ -118,13 +131,20 @@ export async function sendCareReminderSms(data: {
   communicationId: string;
   sourceId: string;
   idempotencyKey: string;
+  /** The client's language; defaults to English. */
+  language?: Language;
 }): Promise<SmsDispatchResult> {
-  const contact = data.practicePhone
-    ? `Call ${data.practicePhone} with questions.`
-    : "Contact us with questions.";
+  const t = getTranslatorFor(data.language ?? "en");
   return sendSms({
     to: data.to,
-    body: `Reminder for ${data.patientName}: ${data.reminderTitle}. Reminder date: ${data.dueDate}. ${contact}`,
+    body: t("sms.careReminder", {
+      patient: data.patientName,
+      title: data.reminderTitle,
+      date: data.dueDate,
+      contact: data.practicePhone
+        ? t("sms.callWithQuestions", { phone: data.practicePhone })
+        : t("sms.contactWithQuestions"),
+    }),
     practiceId: data.practiceId,
     locationId: data.locationId,
     clientId: data.clientId,

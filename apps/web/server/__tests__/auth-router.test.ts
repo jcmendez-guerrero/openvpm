@@ -735,6 +735,7 @@ describe("auth router input validation", () => {
       to: "owner@example.com",
       name: "Dr Owner",
       verifyUrl: "http://localhost:3000/verify-email?token=token-123",
+      language: "en",
       db,
     });
     expect(mocks.sendOptionalPlatformEmail).toHaveBeenCalledWith({
@@ -1249,6 +1250,7 @@ describe("authenticated verification resend", () => {
       to: "admin@example.com",
       name: "Admin",
       verifyUrl: "http://localhost:3000/verify-email?token=token-123",
+      language: "en",
       db,
     });
   });

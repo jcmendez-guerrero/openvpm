@@ -52,6 +52,18 @@ environment.
   be unit-tested without a database.
 - **E2E tests** (Playwright): `pnpm test:e2e`.
 
+## Translating OpenVPM
+
+OpenVPM ships in English and Spanish. All user-facing text lives in
+`apps/web/messages/<language>.json`; never hard-code it in a component.
+
+- Read [docs/I18N.md](docs/I18N.md) for the catalog rules, how the active
+  language is chosen, and how to add a language.
+- Use the [Spanish glossary](docs/i18n/glossary-es.md) for veterinary and
+  billing terms.
+- Run `pnpm i18n:check` before you open a PR. It fails when a catalog is
+  missing keys or a placeholder differs from English.
+
 ## Code Style
 
 - TypeScript strict mode

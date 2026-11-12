@@ -2503,6 +2503,7 @@ export const billingRouter = createRouter({
           clientFirstName: clients.firstName,
           clientLastName: clients.lastName,
           clientEmail: clients.email,
+          clientPreferredLanguage: clients.preferredLanguage,
           patientName: patients.name,
         })
         .from(invoices)

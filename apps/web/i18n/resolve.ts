@@ -60,3 +60,9 @@ export function parseAcceptLanguage(header: Value): Language | undefined {
     .map((entry) => entry.language)
     .find(isSupportedLanguage);
 }
+
+/** /portal pages that run on a portal session; /portal/access/<token> is the sign-in step. */
+export function isPortalSessionPath(path: string | null): boolean {
+  if (!path) return false;
+  return (path === "/portal" || path.startsWith("/portal/")) && !path.startsWith("/portal/access/");
+}

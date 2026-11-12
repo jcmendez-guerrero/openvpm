@@ -1,5 +1,15 @@
 "use client";
 
+import { useLocale, useTranslations } from "use-intl";
+
+/** English errors from /api/treatment-plan/[token] → `treatmentPlan.apiErrors` keys. */
+const PLAN_API_ERRORS: Record<string, string> = {
+  "Decide every line using a valid quantity": "decideEveryLine",
+  "These decisions do not match the saved response": "decisionsMismatch",
+};
+import { useApplyTokenPageLanguage } from "@/components/common/token-page-language";
+import { formatCurrency } from "@/lib/locale/format";
+
 import { useEffect, useState } from "react";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 
@@ -36,14 +46,12 @@ type ViewState =
   | { kind: "complete" }
   | { kind: "ready"; plan: PendingPlan };
 
-function money(value: string, currency: string): string {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency,
-  }).format(Number(value));
-}
 
 export function TreatmentPlanDecisionClient({ token }: { token: string }) {
+  const t = useTranslations("treatmentPlan");
+  const applyLanguage = useApplyTokenPageLanguage();
+  const locale = useLocale();
+  const money = (value: string, currency: string) => formatCurrency(value, currency, undefined, locale);
   const [state, setState] = useState<ViewState>({ kind: "loading" });
   const [decisions, setDecisions] = useState<Record<string, Decision>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -59,7 +67,7 @@ export function TreatmentPlanDecisionClient({ token }: { token: string }) {
           return;
         }
         if (!response.ok) {
-          setState({ kind: "error", message: "The plan could not be loaded." });
+          setState({ kind: "error", message: t("thePlanCouldNotBe") });
           return;
         }
         const data = (await response.json()) as
@@ -68,6 +76,7 @@ export function TreatmentPlanDecisionClient({ token }: { token: string }) {
               status: "awaiting_signature" | "completed";
               signUrl: string | null;
             };
+        applyLanguage(data);
         if (data.status === "awaiting_signature" && data.signUrl) {
           window.location.assign(data.signUrl);
           return;
@@ -96,7 +105,7 @@ export function TreatmentPlanDecisionClient({ token }: { token: string }) {
       })
       .catch(() => {
         if (!cancelled) {
-          setState({ kind: "error", message: "The plan could not be loaded." });
+          setState({ kind: "error", message: t("thePlanCouldNotBe") });
         }
       });
     return () => {
@@ -118,7 +127,7 @@ export function TreatmentPlanDecisionClient({ token }: { token: string }) {
         <AlertCircle className="h-8 w-8 text-amber-500" />
         <p className="text-sm text-gray-600">
           {state.kind === "expired"
-            ? "This link is no longer available. Ask the clinic for a new link."
+            ? t("thisLinkIsNoLonger")
             : state.message}
         </p>
       </div>
@@ -129,9 +138,9 @@ export function TreatmentPlanDecisionClient({ token }: { token: string }) {
     return (
       <div className="flex flex-col items-center gap-3 py-20 text-center">
         <CheckCircle2 className="h-10 w-10 text-teal-600" />
-        <h1 className="text-lg font-semibold text-gray-900">Plan signed</h1>
+        <h1 className="text-lg font-semibold text-gray-900">{t("planSigned")}</h1>
         <p className="text-sm text-gray-600">
-          The clinic has your decisions and signed document.
+          {t("theClinicHasYourDecisions")}
         </p>
       </div>
     );
@@ -178,12 +187,15 @@ export function TreatmentPlanDecisionClient({ token }: { token: string }) {
         signUrl?: string;
       } | null;
       if (!response.ok || !data?.signUrl) {
-        setSubmitError(data?.error ?? "Decisions could not be saved.");
+        const key = data?.error ? PLAN_API_ERRORS[data.error] : undefined;
+        setSubmitError(
+          key ? t(`apiErrors.${key}`) : t("decisionsCouldNotBeSaved"),
+        );
         return;
       }
       window.location.assign(data.signUrl);
     } catch {
-      setSubmitError("Decisions could not be saved. Check your connection.");
+      setSubmitError(t("saveFailedConnection"));
     } finally {
       setSubmitting(false);
     }
@@ -249,7 +261,7 @@ export function TreatmentPlanDecisionClient({ token }: { token: string }) {
                       }))
                     }
                   >
-                    {decision === "accepted" ? "Accept" : "Decline"}
+                    {decision === "accepted" ? t("accept") : t("decline")}
                   </button>
                 ))}
               </div>
@@ -299,15 +311,15 @@ export function TreatmentPlanDecisionClient({ token }: { token: string }) {
       <div className="rounded-xl border border-gray-200 bg-white p-4">
         <dl className="space-y-1 text-sm">
           <div className="flex justify-between">
-            <dt className="text-gray-600">Subtotal</dt>
+            <dt className="text-gray-600">{t("subtotal")}</dt>
             <dd>{money(plan.subtotal, plan.currency)}</dd>
           </div>
           <div className="flex justify-between">
-            <dt className="text-gray-600">Tax</dt>
+            <dt className="text-gray-600">{t("tax")}</dt>
             <dd>{money(plan.tax, plan.currency)}</dd>
           </div>
           <div className="flex justify-between border-t pt-2 font-semibold">
-            <dt>Total offered</dt>
+            <dt>{t("totalOffered")}</dt>
             <dd>{money(plan.total, plan.currency)}</dd>
           </div>
         </dl>
@@ -324,10 +336,10 @@ export function TreatmentPlanDecisionClient({ token }: { token: string }) {
         onClick={() => void continueToSignature()}
         className="w-full rounded-lg bg-teal-600 px-4 py-3 text-sm font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {submitting ? "Saving decisions…" : "Continue to signature"}
+        {submitting ? t("savingDecisions") : t("continueToSignature")}
       </button>
       <p className="text-center text-xs text-gray-500">
-        This step records your choices. It does not charge you or schedule care.
+        {t("thisStepRecordsYourChoices")}
       </p>
     </div>
   );

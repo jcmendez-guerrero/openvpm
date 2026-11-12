@@ -2099,6 +2099,7 @@ export const recordsRouter = createRouter({
             clientState: clients.state,
             clientZip: clients.zip,
             clientPhone: clients.phone,
+            clientPreferredLanguage: clients.preferredLanguage,
           })
           .from(patients)
           .innerJoin(
@@ -2357,6 +2358,7 @@ export const recordsRouter = createRouter({
           name: `${identity.clientFirstName} ${identity.clientLastName}`.trim(),
           address: ownerAddress || null,
           phone: identity.clientPhone,
+          preferredLanguage: identity.clientPreferredLanguage,
         },
         patient: {
           name: identity.patientName,

@@ -1,9 +1,9 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("portal invoices UI", () => {
-  const source = readFileSync("app/portal/[token]/invoices/page.tsx", "utf8");
-  const route = readFileSync("app/portal/invoices/page.tsx", "utf8");
+  const source = readTranslatedSource("app/portal/[token]/invoices/page.tsx");
+  const route = readTranslatedSource("app/portal/invoices/page.tsx");
 
   it("wraps query-string state in the Next.js suspense boundary", () => {
     expect(source).toContain("useSearchParams()");
@@ -52,7 +52,7 @@ describe("portal invoices UI", () => {
     expect(source).toContain(
       'import { formatPortalDate } from "@/lib/portal/date"',
     );
-    expect(source).toContain("return formatPortalDate(d, country, timeZone)");
+    expect(source).toContain("formatPortalDate(d, country, timeZone, locale)");
     expect(source).toContain(
       "formatDate(inv.createdAt, inv.country, inv.timezone)",
     );

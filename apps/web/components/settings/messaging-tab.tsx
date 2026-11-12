@@ -141,6 +141,7 @@ export function MessagingTab() {
         <p className="text-sm text-muted-foreground">
           {t("intro")}
         </p>
+        <p className="text-xs text-muted-foreground">{t("spanishSegmentsHelp")}</p>
       </div>
 
       {data.launch.hosted && !data.launch.setupAvailable ? (

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { parseCsv, normalizeKey, normalizeRow } from "./parse";
 import {
   normalizeDateValue,
+  normalizeLanguageValue,
   normalizePatientStatusValue,
   normalizeSexValue,
   normalizeSpeciesValue,
@@ -28,6 +29,8 @@ export interface ClientImportRecord {
   city?: string;
   state?: string;
   zip?: string;
+  /** Optional; blank or unknown values import as the clinic default. */
+  preferredLanguage?: "en" | "es";
 }
 
 export interface PatientImportRecord {
@@ -262,6 +265,7 @@ const CLIENT_ALIASES: Record<keyof ClientImportRecord, string[]> = {
   city: ["city", "town"],
   state: ["state", "province", "region"],
   zip: ["zip", "zipcode", "postalcode", "postcode"],
+  preferredLanguage: ["preferredlanguage", "language", "clientlanguage"],
 };
 
 const PATIENT_ALIASES: Record<keyof PatientImportRecord, string[]> = {
@@ -691,6 +695,14 @@ export function csvToClientRecords(
       errors.push(`Row ${i + 1}: external client ID is too long.`);
       return;
     }
+    const languageRaw = fromAliases(r, CLIENT_ALIASES.preferredLanguage);
+    const preferredLanguage = normalizeLanguageValue(languageRaw);
+    if (languageRaw && !preferredLanguage) {
+      // Still imported: only the language falls back to the clinic default.
+      errors.push(
+        `Row ${i + 1}: preferred language "${languageRaw}" is not supported; the client was imported with the clinic default.`,
+      );
+    }
     sourceRows.push(i + 1);
     records.push({
       externalClientId,
@@ -702,6 +714,7 @@ export function csvToClientRecords(
       city: fromAliases(r, CLIENT_ALIASES.city),
       state: fromAliases(r, CLIENT_ALIASES.state),
       zip: fromAliases(r, CLIENT_ALIASES.zip),
+      preferredLanguage,
     });
   });
 

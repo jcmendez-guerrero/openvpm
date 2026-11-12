@@ -1,12 +1,19 @@
+import { useTranslations } from "use-intl";
 import type { Metadata } from "next";
+import { createTranslator } from "use-intl/core";
+import { getTranslatorFor, messagesFor } from "@/i18n/messages";
+import { getPublicRequestLanguage } from "@/i18n/public-request";
 import Link from "next/link";
 import { EmailPreferenceForm } from "./preference-form";
 
-export const metadata: Metadata = {
-  title: "Email preferences - OpenVPM",
-  description: "Manage optional OpenVPM email updates.",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = getTranslatorFor(await getPublicRequestLanguage());
+  return {
+    title: t("meta.emailPreferences.title"),
+    description: t("meta.emailPreferences.description"),
+    robots: { index: false, follow: false },
+  };
+}
 
 export default async function EmailPreferencesPage({
   searchParams,
@@ -15,6 +22,8 @@ export default async function EmailPreferencesPage({
 }) {
   const params = await searchParams;
   const token = typeof params.token === "string" ? params.token : "";
+  const language = await getPublicRequestLanguage();
+  const t = createTranslator({ locale: language, messages: messagesFor(language), namespace: "emailPreferences" });
 
   return (
     <main
@@ -27,20 +36,17 @@ export default async function EmailPreferencesPage({
         </Link>
         <div className="mt-8 space-y-3">
           <h1 className="font-heading text-2xl font-semibold">
-            Email preferences
+            {t("emailPreferences")}
           </h1>
           <p className="text-sm leading-6 text-muted-foreground">
-            Stop optional OpenVPM product, trial, research, and feedback emails
-            with one click.
+            {t("stopOptionalOpenvpmProductTrial")}
           </p>
         </div>
 
         <EmailPreferenceForm token={token} />
 
         <div className="mt-6 rounded-lg bg-muted/50 p-4 text-xs leading-5 text-muted-foreground">
-          This preference does not apply to important security alerts, billing
-          receipts, or service notices. It also does not affect messages your
-          clinic sends to pet owners. Optional emails stay off for this address.
+          {t("thisPreferenceDoesNotApply")}
         </div>
       </div>
     </main>

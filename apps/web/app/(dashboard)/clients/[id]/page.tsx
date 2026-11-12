@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   Clock,
   Globe,
+  Languages,
   Mail,
   MessageSquare,
   Phone,
@@ -23,6 +24,8 @@ import {
   X,
 } from "lucide-react";
 import { useLocale, useTranslations } from "use-intl";
+import { isSupportedLanguage } from "@/i18n/config";
+import { useLanguageSelectionEnabled } from "@/components/common/intl-provider";
 import { trpc } from "@/lib/trpc";
 import { PATIENT_SPECIES_EMOJI } from "@/lib/patients/species";
 import { useSpeciesLabel } from "@/lib/patients/use-species-label";
@@ -89,6 +92,8 @@ export default function ClientDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const t = useTranslations("clients");
+  const languageNames = useTranslations("language.names");
+  const selectionEnabled = useLanguageSelectionEnabled();
   const tp = useTranslations("patients");
   const speciesLabel = useSpeciesLabel();
   const utils = trpc.useUtils();
@@ -142,6 +147,7 @@ export default function ClientDetailPage() {
     );
   }
 
+  const clientLanguage = isSupportedLanguage(client.preferredLanguage) ? client.preferredLanguage : null;
   const address = [client.address, client.city, client.state, client.zip]
     .filter(Boolean)
     .join(", ");
@@ -206,6 +212,12 @@ export default function ClientDetailPage() {
                 <span className="flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
                   {address}
+                </span>
+              )}
+              {selectionEnabled && clientLanguage && (
+                <span className="flex items-center gap-2">
+                  <Languages className="h-4 w-4" />
+                  {t("form.preferredLanguage.shown", { language: languageNames(clientLanguage) })}
                 </span>
               )}
             </div>

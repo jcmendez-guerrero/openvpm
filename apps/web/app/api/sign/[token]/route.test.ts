@@ -60,6 +60,7 @@ const mocks = vi.hoisted(() => {
     const builder = {
       from: vi.fn(() => builder),
       innerJoin: vi.fn(() => builder),
+      leftJoin: vi.fn(() => builder),
       where: vi.fn(() => builder),
       limit: vi.fn(async () => result),
     };

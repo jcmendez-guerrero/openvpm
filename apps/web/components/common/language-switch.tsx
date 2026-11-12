@@ -69,7 +69,7 @@ export function LanguageSwitch({
         id={id}
         value={current}
         onChange={handleChange}
-        className="rounded-md border border-input bg-background px-2 py-1 text-sm"
+        className="max-w-full rounded-md border border-input bg-background px-2 py-1 text-sm"
       >
         {allowClinicDefault && <option value={CLINIC_DEFAULT}>{t("clinicDefault")}</option>}
         {SUPPORTED_LANGUAGES.map((language) => (

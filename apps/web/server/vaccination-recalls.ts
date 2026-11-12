@@ -1,3 +1,5 @@
+import { messageLanguage } from "@/i18n/message-language";
+import { getTranslatorFor } from "@/i18n/messages";
 import { and, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import type { Database } from "@openpims/db/client";
 import {
@@ -33,7 +35,6 @@ import {
   type VaccinationRecallRecipient,
 } from "@/lib/vaccination-recalls";
 
-const DEFAULT_PRACTICE_NAME = "your clinic";
 
 function activePracticePredicate(practiceId: string) {
   return sql`exists (
@@ -92,16 +93,23 @@ async function practiceNotificationSettings(ctx: {
       phone: practices.phone,
       timezone: practices.timezone,
       settings: practices.settings,
+      defaultLanguage: practices.defaultLanguage,
     })
     .from(practices)
     .where(and(eq(practices.id, ctx.practiceId), isNull(practices.deletedAt)))
     .limit(1);
   if (!practice) return null;
   return {
-    name: practice.name?.trim() || DEFAULT_PRACTICE_NAME,
+    // shortcut: fallback follows the clinic default, not each client's language; only hit when the clinic has no name.
+    name:
+      practice.name?.trim() ||
+      getTranslatorFor(
+        messageLanguage("message", { clinicDefault: practice.defaultLanguage }),
+      )("email.yourClinic"),
     phone: practice.phone ?? null,
     timezone: practice.timezone ?? null,
     settings: practice.settings,
+    defaultLanguage: practice.defaultLanguage,
   };
 }
 
@@ -149,6 +157,7 @@ type VaccinationRecallRow = {
   preferredContactMethod: string | null;
   smsConsent: boolean | null;
   emailSuppressionReason: string | null;
+  clientLanguage: string | null;
   vaccineName: string;
   nextDueDate: string | null;
 };
@@ -177,6 +186,7 @@ function groupRows(rows: VaccinationRecallRow[]): VaccinationRecallCandidate[] {
       preferredContactMethod: row.preferredContactMethod,
       smsConsent: row.smsConsent ?? false,
       emailSuppressionReason: row.emailSuppressionReason,
+      clientLanguage: row.clientLanguage,
       vaccines: [vaccine],
     });
   }
@@ -223,6 +233,7 @@ async function loadVaccinationRecallRecipients(
       preferredContactMethod: clients.preferredContactMethod,
       smsConsent: clients.smsConsent,
       emailSuppressionReason: emailSuppressions.reason,
+      clientLanguage: clients.preferredLanguage,
       vaccineName: vaccinationRecords.vaccineName,
       nextDueDate: vaccinationRecords.nextDueDate,
     })
@@ -407,6 +418,10 @@ export async function sendVaccinationRecallReminders(
       .map((vaccine) => vaccine.vaccineName)
       .join(", ");
     const dueDate = recipient.vaccines[0]?.nextDueDate;
+    const language = messageLanguage("message", {
+      clientLanguage: recipient.clientLanguage,
+      clinicDefault: practice.defaultLanguage,
+    });
     const durableSmsCommunication =
       reminderChannel === "sms" && Boolean(smsSender);
     const claimCommunication = async (
@@ -423,6 +438,7 @@ export async function sendVaccinationRecallReminders(
           content: `Vaccination reminder for ${recipient.patientName}: ${vaccineNames}`,
           status: "pending",
           dedupeKey: recipient.dedupeKey,
+          language,
         })
         .onConflictDoNothing({ target: communications.dedupeKey })
         .returning({ id: communications.id });
@@ -455,9 +471,15 @@ export async function sendVaccinationRecallReminders(
           clientName: recipient.clientName,
           patientName: recipient.patientName,
           vaccineName: vaccineNames,
-          dueDate: formatClinicalDate(dueDate, practice.timezone, "overdue"),
+          dueDate: formatClinicalDate(
+            dueDate,
+            practice.timezone,
+            "overdue",
+            language === "es" ? "es" : "en-US",
+          ),
           practiceName: practice.name,
           practicePhone: practice.phone ?? undefined,
+          language,
         });
       } catch {
         return { success: false as const };
@@ -482,6 +504,7 @@ export async function sendVaccinationRecallReminders(
           communicationId: claim.id,
           sourceId: recipient.dedupeKey,
           idempotencyKey: `sms:${recipient.dedupeKey}`,
+          language,
         });
         delivered = smsResult.success;
         providerMessageId = smsResult.sid;

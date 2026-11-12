@@ -221,7 +221,7 @@ export function Sidebar({
                     ) : null}
                   </span>
                   {!isCollapsed && (
-                    <span className="truncate">{t(`nav.${item.labelKey}`)}</span>
+                    <span className="min-w-0 leading-tight">{t(`nav.${item.labelKey}`)}</span>
                   )}
                   {!isCollapsed &&
                   item.href === "/inbox" &&

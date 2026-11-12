@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { languageSchema } from "@/i18n/config";
 import { TRPCError } from "@trpc/server";
 import { eq, and, isNull, inArray, sql } from "drizzle-orm";
 import { createRouter, protectedProcedure, requireRole } from "../trpc";
@@ -169,6 +170,7 @@ const clientImportRecordInput = z.object({
   city: importOptionalText("City", 128),
   state: importOptionalText("State", 64),
   zip: importOptionalText("ZIP", 16),
+  preferredLanguage: languageSchema.optional(),
 });
 const patientImportRecordInput = z
   .object({
@@ -760,6 +762,7 @@ function planClientCsvImport(
       city: client.city?.trim() || null,
       state: client.state?.trim() || null,
       zip: client.zip?.trim() || null,
+      ...(client.preferredLanguage ? { preferredLanguage: client.preferredLanguage } : {}),
       ...(externalId ? { externalSource: source, externalId } : {}),
     };
     row.importFingerprint = migrationImportFingerprint("clients", [
@@ -869,6 +872,7 @@ function dedupeClientImport(
       city: client.city?.trim() || null,
       state: client.state?.trim() || null,
       zip: client.zip?.trim() || null,
+      ...(client.preferredLanguage ? { preferredLanguage: client.preferredLanguage } : {}),
       importFingerprint: migrationImportFingerprint("clients", [
         email ? "email" : "record",
         email ?? normalizeImportText(client.firstName),

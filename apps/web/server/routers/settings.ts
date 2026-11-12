@@ -1,3 +1,4 @@
+import { staffEmailLanguage } from "@/i18n/clinic-default-cache";
 import { z } from "zod";
 import { createHash, randomUUID } from "crypto";
 import {
@@ -2649,6 +2650,8 @@ export const settingsRouter = createRouter({
           inviterName: ctx.user.name,
           practiceName: practice.name,
           inviteUrl,
+          // The invitee has no saved language yet: the clinic default decides.
+          language: await staffEmailLanguage(ctx.practiceId),
           idempotencyKey: `staff-invite:${ctx.practiceId}:${createHash("sha256").update(token).digest("hex")}`,
         });
         if (!delivery.success) {

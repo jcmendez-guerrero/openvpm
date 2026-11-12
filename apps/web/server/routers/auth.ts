@@ -1,3 +1,5 @@
+import { staffEmailLanguage } from "@/i18n/clinic-default-cache";
+import { messageLanguage } from "@/i18n/message-language";
 import { z } from "zod";
 import { hash } from "bcryptjs";
 import { and, eq, isNull } from "drizzle-orm";
@@ -621,6 +623,10 @@ export const authRouter = createRouter({
               userId: user.id,
               source: "registration",
               ...verificationDispatch,
+              // A new clinic starts in English, so the sign-in choice decides.
+              language: messageLanguage("staffEmail", {
+                userLanguage: ctx.languageChoice,
+              }),
               db: rootDb,
             });
             response.verificationEmailProvider = result.provider;
@@ -708,6 +714,7 @@ export const authRouter = createRouter({
         email: users.email,
         name: users.name,
         emailVerifiedAt: users.emailVerifiedAt,
+        language: users.language,
       })
       .from(users)
       .where(
@@ -773,6 +780,7 @@ export const authRouter = createRouter({
           to: user.email,
           name: user.name,
           verifyUrl: `${appBaseUrl()}/verify-email?token=${token}`,
+          language: await staffEmailLanguage(ctx.practiceId, user.language),
           db: rootDb,
         });
         response.verificationEmailProvider = result.provider;
@@ -840,7 +848,13 @@ export const authRouter = createRouter({
       }
 
       const [user] = await ctx.db
-        .select({ id: users.id, email: users.email, name: users.name })
+        .select({
+          id: users.id,
+          email: users.email,
+          name: users.name,
+          language: users.language,
+          practiceId: users.practiceId,
+        })
         .from(users)
         .where(and(eq(users.email, email), isNull(users.deletedAt)))
         .limit(1);
@@ -857,6 +871,7 @@ export const authRouter = createRouter({
             to: user.email,
             name: user.name,
             resetUrl: `${appBaseUrl()}/reset-password?token=${token}`,
+            language: await staffEmailLanguage(user.practiceId, user.language),
           });
         } catch (err) {
           console.error("[requestPasswordReset] email failed:", err);

@@ -602,3 +602,20 @@ describe("csvToServiceRecords", () => {
     ]);
   });
 });
+
+describe("csvToClientRecords preferred language", () => {
+  it("reads the optional column and keeps rows with unknown values", () => {
+    const csv = [
+      "First Name,Last Name,Email,Preferred Language",
+      "Ana,Ruiz,ana@example.com,Español",
+      "Bo,Lee,bo@example.com,",
+      "Cy,Day,cy@example.com,Klingon",
+      "Di,Ng,di@example.com,es-MX",
+    ].join("\n");
+    const { records, errors } = csvToClientRecords(csv);
+    expect(records.map((r) => r.preferredLanguage)).toEqual(["es", undefined, undefined, "es"]);
+    expect(errors).toEqual([
+      'Row 3: preferred language "Klingon" is not supported; the client was imported with the clinic default.',
+    ]);
+  });
+});

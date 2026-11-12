@@ -85,6 +85,7 @@ function claim(
   overrides: Partial<{
     channel: "sms" | "email";
     source: "staff" | "automated";
+    language: "en" | "es";
   }> = {},
 ) {
   return claimAppointmentReminderCommunication(db as never, {
@@ -94,6 +95,7 @@ function claim(
     channel: "email",
     patientName: "Miso",
     startTime: START,
+    language: "en",
     ...overrides,
   });
 }
@@ -116,6 +118,7 @@ describe("appointment reminder claim", () => {
       attempt: 1,
       claimToken: "token-1",
       redispatch: false,
+      language: "en",
     });
     expect(render(state.insertValues!.reminderClaimToken).sql).toBe(
       "gen_random_uuid()",
@@ -163,6 +166,7 @@ describe("appointment reminder claim", () => {
       attempt: 2,
       claimToken: "token-2",
       redispatch: false,
+      language: "en",
     });
     // Every reclaim writes a new fencing token.
     expect(render(state.updateSet!.reminderClaimToken).sql).toBe(
@@ -287,6 +291,7 @@ describe("appointment reminder claim", () => {
       attempt: 1,
       claimToken: "token-2",
       redispatch: true,
+      language: "en",
     });
 
     const { sql, params } = render(state.updateWhere);
@@ -344,6 +349,7 @@ describe("appointment reminder claim", () => {
       claimToken: "token-3",
       // No provider attempt was ever reserved, so nothing may have gone out.
       redispatch: false,
+      language: "en",
     });
     expect(mocks.recoverStaleUnreservedSmsCommunication).toHaveBeenCalledWith(
       db,
@@ -405,6 +411,7 @@ describe("recordAppointmentReminderOutcome", () => {
       attempt: 1,
       claimToken: "token-1",
       redispatch: false,
+      language: "en" as const,
     },
     channel: "email" as const,
     content: "x",
@@ -567,5 +574,67 @@ describe("staff-facing failure reasons", () => {
       }),
     ).toBe("The text message provider rejected the reminder.");
     consoleError.mockRestore();
+  });
+});
+
+describe("reminder language is frozen per send attempt", () => {
+  it("stores the client's language when a new reminder is claimed", async () => {
+    const { db, state } = claimDb({
+      inserted: [{ id: "new", claimToken: "token-1" }],
+      reclaimed: [],
+    });
+    const result = await claim(db, { language: "es" });
+    expect(state.insertValues).toMatchObject({ language: "es" });
+    expect(result?.language).toBe("es");
+  });
+
+  it("re-resolves the language only when a failure starts a new attempt", async () => {
+    const { db, state } = claimDb({
+      inserted: [],
+      reclaimed: [
+        { id: "row", channel: "email", attempt: 2, claimToken: "t", redispatch: false, language: "es" },
+      ],
+    });
+    const result = await claim(db, { language: "es" });
+    const set = render(state.updateSet!.language);
+    expect(set.sql).toBe(
+      `case when "communications"."status" = 'failed' then $1 else "communications"."language" end`,
+    );
+    expect(set.params).toEqual(["es"]);
+    expect(result?.language).toBe("es");
+  });
+
+  it("rebuilds a resumed attempt in its stored language after the client switches", async () => {
+    // The client switched to English, but the attempt began in Spanish.
+    const { db } = claimDb({
+      inserted: [],
+      reclaimed: [
+        { id: "row", channel: "email", attempt: 1, claimToken: "t", redispatch: true, language: "es" },
+      ],
+    });
+    const resumed = await claim(db, { language: "en" });
+    expect(resumed?.language).toBe("es");
+
+    const fields = {
+      startTime: START,
+      timeZone: "America/Mexico_City",
+      patientName: "Miso",
+      practiceName: "Clínica Sol",
+      practicePhone: null,
+    };
+    const first = appointmentReminderMessageFields({ ...fields, language: "es" });
+    const resend = appointmentReminderMessageFields({ ...fields, language: resumed!.language });
+    expect(resend).toEqual(first);
+    expect(first.appointmentDate).toBe("jueves, 2 de julio de 2026");
+  });
+
+  it("treats a legacy row with no stored language as English", async () => {
+    const { db } = claimDb({
+      inserted: [],
+      reclaimed: [
+        { id: "row", channel: "email", attempt: 1, claimToken: "t", redispatch: true, language: null },
+      ],
+    });
+    expect((await claim(db, { language: "es" }))?.language).toBe("en");
   });
 });

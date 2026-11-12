@@ -1,5 +1,6 @@
 "use client";
 
+import { useDocumentLanguage } from "@/components/common/use-document-language";
 import { useTranslations } from "use-intl";
 
 import { browserUuid } from "@/lib/browser-uuid";
@@ -387,9 +388,10 @@ function PatientAssignmentPanel({
 function formatAppointmentTime(
   value: Date | string,
   timeZone?: string | null,
+  locale = "en-US",
 ): string {
   try {
-    return new Date(value).toLocaleString("en-US", {
+    return new Date(value).toLocaleString(locale, {
       weekday: "short",
       month: "short",
       day: "numeric",
@@ -398,7 +400,7 @@ function formatAppointmentTime(
       timeZone: timeZone ?? undefined,
     });
   } catch {
-    return new Date(value).toLocaleString("en-US", {
+    return new Date(value).toLocaleString(locale, {
       weekday: "short",
       month: "short",
       day: "numeric",
@@ -426,10 +428,10 @@ function defaultPayLaterDueDate(timeZone?: string | null): string {
   return addDateInputDays(today, 30);
 }
 
-function formatClinicDate(value: string): string {
+function formatClinicDate(value: string, locale = "en-US"): string {
   const [year, month, day] = value.split("-").map(Number);
   return new Date(Date.UTC(year!, month! - 1, day!)).toLocaleDateString(
-    "en-US",
+    locale,
     {
       year: "numeric",
       month: "long",
@@ -1201,6 +1203,7 @@ function VisitCloseout({
     patientSpecies: string | null;
     clientFirstName: string | null;
     clientLastName: string | null;
+    clientPreferredLanguage?: string | null;
     doctorName: string | null;
     startTime: Date | string;
     typeRequiresDoctor: number | null;
@@ -1212,6 +1215,7 @@ function VisitCloseout({
   compact?: boolean;
   soapPlan?: string;
 }) {
+  const documentLanguage = useDocumentLanguage();
   const t = useTranslations("encounters.page");
   const utils = trpc.useUtils();
   const isOnline = useOnlineStatus();
@@ -1703,25 +1707,34 @@ function VisitCloseout({
   async function downloadDischarge() {
     if (!data || !signedClinical) return;
     try {
-      const { generateDischargeInstructions } = await import("@/lib/pdf");
+      const pdf = await import("@/lib/pdf");
+      const { generateDischargeInstructions, pdfText } = pdf;
+      const language = documentLanguage(appointment.clientPreferredLanguage);
+      const locale = language === "es" ? "es" : "en-US";
+      const tPdf = pdfText(language);
       const followUpDate = closeout?.followUpScheduledAt
-        ? new Date(closeout.followUpScheduledAt).toLocaleDateString("en-US", {
+        ? new Date(closeout.followUpScheduledAt).toLocaleDateString(locale, {
             year: "numeric",
             month: "long",
             day: "numeric",
             timeZone: data.practice.timezone ?? undefined,
           })
         : closeout?.followUpDisposition === "needed" && closeout.followUpDueDate
-          ? `Needed by ${formatClinicDate(closeout.followUpDueDate)}`
+          ? tPdf("pdf.discharge.neededBy", {
+              date: formatClinicDate(closeout.followUpDueDate, locale),
+            })
           : undefined;
       const instructions = closeout?.dischargeInstructions
         ? splitOwnerInstructions(closeout.dischargeInstructions)
         : closeout?.noInstructionsReason
           ? [
-              `No additional home-care instructions: ${closeout.noInstructionsReason}`,
+              tPdf("pdf.discharge.noInstructions", {
+                reason: closeout.noInstructionsReason,
+              }),
             ]
           : [];
       generateDischargeInstructions({
+        language,
         practiceName: data.practice.name,
         practicePhone: data.practice.phone ?? undefined,
         patientName: appointment.patientName ?? "Patient",
@@ -1730,6 +1743,7 @@ function VisitCloseout({
         visitDate: formatAppointmentTime(
           appointment.startTime,
           data.practice.timezone,
+          locale,
         ),
         doctorName: closeout?.clinicalFinalizerName ?? undefined,
         diagnosis: closeout?.diagnosisSummary ?? undefined,
@@ -1759,9 +1773,13 @@ function VisitCloseout({
   async function downloadHistoricalDischarge(amendment: HistoricalCloseout) {
     if (!data) return;
     try {
-      const { generateDischargeInstructions } = await import("@/lib/pdf");
+      const pdf = await import("@/lib/pdf");
+      const { generateDischargeInstructions, pdfText } = pdf;
+      const language = documentLanguage(appointment.clientPreferredLanguage);
+      const locale = language === "es" ? "es" : "en-US";
+      const tPdf = pdfText(language);
       const followUpDate = amendment.followUpScheduledAt
-        ? new Date(amendment.followUpScheduledAt).toLocaleDateString("en-US", {
+        ? new Date(amendment.followUpScheduledAt).toLocaleDateString(locale, {
             year: "numeric",
             month: "long",
             day: "numeric",
@@ -1769,16 +1787,21 @@ function VisitCloseout({
           })
         : amendment.followUpDisposition === "needed" &&
             amendment.followUpDueDate
-          ? `Needed by ${formatClinicDate(amendment.followUpDueDate)}`
+          ? tPdf("pdf.discharge.neededBy", {
+              date: formatClinicDate(amendment.followUpDueDate, locale),
+            })
           : undefined;
       const instructions = amendment.dischargeInstructions
         ? splitOwnerInstructions(amendment.dischargeInstructions)
         : amendment.noInstructionsReason
           ? [
-              `No additional home-care instructions: ${amendment.noInstructionsReason}`,
+              tPdf("pdf.discharge.noInstructions", {
+                reason: amendment.noInstructionsReason,
+              }),
             ]
           : [];
       generateDischargeInstructions({
+        language,
         practiceName: data.practice.name,
         practicePhone: data.practice.phone ?? undefined,
         patientName: appointment.patientName ?? "Patient",
@@ -1787,6 +1810,7 @@ function VisitCloseout({
         visitDate: formatAppointmentTime(
           appointment.startTime,
           data.practice.timezone,
+          locale,
         ),
         doctorName: amendment.clinicalFinalizerName,
         diagnosis: amendment.diagnosisSummary ?? undefined,
@@ -4109,7 +4133,13 @@ function ChargeCapture({
       <CardContent>
         {lock ? (
           <div className="rounded-md border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
-            {lock.message}
+            {lock.reason === "role"
+              ? t("chargeLockRole")
+              : lock.reason === "closed_out"
+                ? t("chargeLockClosedOut")
+                : t(lock.preExam ? "chargeLockPreExam" : "chargeLockNotInExam", {
+                    status: lock.statusLabel ?? "",
+                  })}
           </div>
         ) : invoiceStateLoading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">

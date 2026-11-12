@@ -3,6 +3,9 @@ export type ChargeCaptureLockReason = "role" | "closed_out" | "not_in_exam";
 export type ChargeCaptureLock = {
   reason: ChargeCaptureLockReason;
   message: string;
+  /** For not_in_exam: the visit hasn't reached the exam yet (vs. already past it). */
+  preExam?: boolean;
+  statusLabel?: string;
 };
 
 const PRE_EXAM_STATUSES = new Set(["scheduled", "confirmed", "checked_in"]);
@@ -36,9 +39,12 @@ export function getChargeCaptureLock(input: {
     const statusLabel = (
       input.appointmentStatusLabel ?? input.appointmentStatus.replace(/_/g, " ")
     ).toLowerCase();
+    const preExam = PRE_EXAM_STATUSES.has(input.appointmentStatus);
     return {
       reason: "not_in_exam",
-      message: PRE_EXAM_STATUSES.has(input.appointmentStatus)
+      preExam,
+      statusLabel,
+      message: preExam
         ? `Charges open once the visit is in exam. This visit is currently ${statusLabel}.`
         : `Charges can only be added while the visit is in exam. This visit is currently ${statusLabel}.`,
     };

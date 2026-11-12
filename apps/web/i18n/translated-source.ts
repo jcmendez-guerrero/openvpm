@@ -11,13 +11,20 @@ import en from "@/messages/en.json";
  *   t("key", { … })       → "English"   (raw ICU message)
  *
  * Each call uses the namespace of the nearest `const t = useTranslations(…)`
+ * (or `createTranslator({ namespace })`)
  * above it, so one file can reuse `t` per component. Keys built at runtime
  * (t(`nav.${key}`)) are left as written.
  */
 export function inlineEnglish(source: string): string {
   const declarations = [
     ...source.matchAll(/const (\w+) = useTranslations\((?:"([^"]*)")?\)/g),
-  ].map((m) => ({ name: m[1]!, namespace: m[2] ?? "", index: m.index! }));
+    // Server components: createTranslator({ …, namespace: "x" }).
+    ...source.matchAll(/const (\w+) = createTranslator\(\{[^}]*?namespace: "([^"]*)"[^}]*\}\)/g),
+    // lib/pdf.ts: `const t = pdfText(…)` with full keys.
+    ...source.matchAll(/const (\w+) = pdfText\(()/g),
+  ]
+    .map((m) => ({ name: m[1]!, namespace: m[2] ?? "", index: m.index! }))
+    .sort((a, b) => a.index - b.index);
   if (declarations.length === 0) return source;
 
   const names = [...new Set(declarations.map((d) => d.name))].join("|");

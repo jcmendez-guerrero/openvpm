@@ -1,0 +1,297 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`client emails follow the client's language > appointmentReminder: no language sends today's English email 1`] = `
+{
+  "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clínica Sol</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;">
+    <tr>
+      <td align="center" style="padding:24px 16px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#0d9488;padding:24px 32px;">
+              <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:600;letter-spacing:-0.01em;">Clínica Sol</h1>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px;">
+              
+    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">Hi Ana,</p>
+    <p style="margin:0 0 24px;color:#111827;font-size:15px;line-height:1.6;">This is a friendly reminder about an upcoming appointment for <strong>Luna</strong>.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;background-color:#f0fdfa;border:1px solid #ccfbf1;border-radius:8px;margin-bottom:24px;">
+      <tr>
+        <td style="padding:20px 24px;">
+          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Date</p>
+          <p style="margin:0 0 16px;color:#0f172a;font-size:18px;font-weight:600;">lunes, 3 de marzo de 2025</p>
+          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Time</p>
+          <p style="margin:0;color:#0f172a;font-size:18px;font-weight:600;">10:00</p>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:0 0 8px;color:#111827;font-size:15px;line-height:1.6;">If you need to cancel or reschedule, please call us at <strong>555-0100</strong> as soon as possible.</p>
+    <p style="margin:24px 0 0;color:#111827;font-size:15px;line-height:1.6;">We look forward to seeing you and Luna!</p>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding:24px 32px;background-color:#f9fafb;border-top:1px solid #e5e7eb;">
+              <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">Clínica Sol<br/>555-0100<br/>Calle 1</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+  "subject": "Appointment Reminder for Luna – lunes, 3 de marzo de 2025",
+}
+`;
+
+exports[`client emails follow the client's language > careReminder: no language sends today's English email 1`] = `
+{
+  "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clínica Sol</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;">
+    <tr>
+      <td align="center" style="padding:24px 16px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#0d9488;padding:24px 32px;">
+              <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:600;letter-spacing:-0.01em;">Clínica Sol</h1>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px;">
+              
+    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">Hi Ana,</p>
+    <p style="margin:0 0 24px;color:#111827;font-size:15px;line-height:1.6;">This is a reminder from our veterinary team about <strong>Luna</strong>.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;background-color:#f0fdfa;border:1px solid #ccfbf1;border-radius:8px;margin-bottom:24px;">
+      <tr>
+        <td style="padding:20px 24px;">
+          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Reminder</p>
+          <p style="margin:0 0 16px;color:#0f172a;font-size:18px;font-weight:600;">Dental</p>
+          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Reminder Date</p>
+          <p style="margin:0;color:#0f172a;font-size:18px;font-weight:600;">2025-03-03</p>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:0;color:#111827;font-size:15px;line-height:1.6;">Please contact us at <strong>555-0100</strong> if you have questions or would like to schedule.</p>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding:24px 32px;background-color:#f9fafb;border-top:1px solid #e5e7eb;">
+              <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">Clínica Sol<br/>555-0100</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+  "subject": "Care Reminder for Luna",
+}
+`;
+
+exports[`client emails follow the client's language > invoice: no language sends today's English email 1`] = `
+{
+  "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clínica Sol</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;">
+    <tr>
+      <td align="center" style="padding:24px 16px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#0d9488;padding:24px 32px;">
+              <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:600;letter-spacing:-0.01em;">Clínica Sol</h1>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px;">
+              
+    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">Hi Ana,</p>
+    <p style="margin:0 0 24px;color:#111827;font-size:15px;line-height:1.6;">Here is your invoice for <strong>Luna</strong> from Clínica Sol.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;background-color:#f0fdf4;border:1px solid #dcfce7;border-radius:8px;margin-bottom:24px;">
+      <tr>
+        <td style="padding:20px 24px;">
+          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Amount Due</p>
+          <p style="margin:0 0 16px;color:#0f172a;font-size:28px;font-weight:700;">$120.00</p>
+          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Due Date</p>
+       <p style="margin:0;color:#0f172a;font-size:16px;font-weight:600;">2025-03-03</p>
+        </td>
+      </tr>
+    </table>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0;">
+  <tr>
+    <td style="background-color:#0d9488;border-radius:6px;">
+      <a href="https://example.com/portal" target="_blank" style="display:inline-block;padding:12px 28px;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">View in Portal</a>
+    </td>
+  </tr>
+</table>
+    <p style="margin:0;color:#111827;font-size:15px;line-height:1.6;">If you have any questions about this invoice, please contact us at <strong>555-0100</strong>.</p>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding:24px 32px;background-color:#f9fafb;border-top:1px solid #e5e7eb;">
+              <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">Clínica Sol<br/>555-0100</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+  "subject": "Invoice from Clínica Sol – $120.00",
+}
+`;
+
+exports[`client emails follow the client's language > paymentReceipt: no language sends today's English email 1`] = `
+{
+  "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clínica Sol</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;">
+    <tr>
+      <td align="center" style="padding:24px 16px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#0d9488;padding:24px 32px;">
+              <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:600;letter-spacing:-0.01em;">Clínica Sol</h1>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px;">
+              
+    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">Hi Ana,</p>
+    <p style="margin:0 0 24px;color:#111827;font-size:15px;line-height:1.6;">We got your payment for <strong>Luna</strong>. Thank you!</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;background-color:#f0fdf4;border:1px solid #dcfce7;border-radius:8px;margin-bottom:24px;">
+      <tr>
+        <td style="padding:20px 24px;">
+          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Amount Paid</p>
+          <p style="margin:0 0 16px;color:#0f172a;font-size:28px;font-weight:700;">$50.00</p>
+          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Remaining Balance</p>
+       <p style="margin:0;color:#0f172a;font-size:16px;font-weight:600;">$70.00</p>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:0;color:#111827;font-size:15px;line-height:1.6;">Keep this email for your records. If anything looks wrong, please contact us at <strong>555-0100</strong>.</p>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding:24px 32px;background-color:#f9fafb;border-top:1px solid #e5e7eb;">
+              <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">Clínica Sol<br/>555-0100</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+  "subject": "Payment received – Clínica Sol",
+}
+`;
+
+exports[`client emails follow the client's language > vaccinationReminder: no language sends today's English email 1`] = `
+{
+  "html": "<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clínica Sol</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;">
+    <tr>
+      <td align="center" style="padding:24px 16px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#0d9488;padding:24px 32px;">
+              <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:600;letter-spacing:-0.01em;">Clínica Sol</h1>
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px;">
+              
+    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">Hi Ana,</p>
+    <p style="margin:0 0 24px;color:#111827;font-size:15px;line-height:1.6;">It's time to schedule <strong>Luna</strong>'s <strong>Rabia</strong> vaccination.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;background-color:#fffbeb;border:1px solid #fef3c7;border-radius:8px;margin-bottom:24px;">
+      <tr>
+        <td style="padding:20px 24px;">
+          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Vaccine</p>
+          <p style="margin:0 0 16px;color:#0f172a;font-size:18px;font-weight:600;">Rabia</p>
+          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Due Date</p>
+          <p style="margin:0;color:#0f172a;font-size:18px;font-weight:600;">2025-03-03</p>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">Please contact us at <strong>555-0100</strong> to schedule an appointment for Luna.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0;">
+  <tr>
+    <td style="background-color:#0d9488;border-radius:6px;">
+      <a href="tel:555-0100" target="_blank" style="display:inline-block;padding:12px 28px;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">Schedule Your Pet's Appointment</a>
+    </td>
+  </tr>
+</table>
+    <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.5;">Keeping vaccinations up to date is important for your pet's health and safety.</p>
+  
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="padding:24px 32px;background-color:#f9fafb;border-top:1px solid #e5e7eb;">
+              <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">Clínica Sol<br/>555-0100</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>",
+  "subject": "Vaccination Reminder: Rabia for Luna",
+}
+`;

@@ -33,6 +33,8 @@ describe("getChargeCaptureLock", () => {
     });
     expect(lock).toEqual({
       reason: "not_in_exam",
+      preExam: true,
+      statusLabel: "checked in",
       message:
         "Charges open once the visit is in exam. This visit is currently checked in.",
     });

@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { AlertCircle, ArrowLeft, Ban, Loader2 } from "lucide-react";
 import { useLocale, useTranslations } from "use-intl";
+import { ClientLanguageSelect } from "@/components/clients/client-language-select";
+import { isSupportedLanguage, type Language } from "@/i18n/config";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -111,6 +113,9 @@ function EditClientForm() {
   const [preferredContactMethod, setPreferredContactMethod] =
     useState<ClientContactMethod>("phone");
   const [preferredContactTouched, setPreferredContactTouched] = useState(false);
+  const [preferredLanguage, setPreferredLanguage] = useState<Language | null>(null);
+  // Sent only when changed, so saving with the flag off never clears an imported value.
+  const [languageTouched, setLanguageTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -139,6 +144,8 @@ function EditClientForm() {
       setSmsConsentTouched(false);
       setPreferredContactMethod(client.preferredContactMethod ?? "phone");
       setPreferredContactTouched(false);
+      setPreferredLanguage(isSupportedLanguage(client.preferredLanguage) ? client.preferredLanguage : null);
+      setLanguageTouched(false);
     }
   }, [client]);
 
@@ -232,6 +239,7 @@ function EditClientForm() {
       state: form.state.trim() || undefined,
       zip: form.zip.trim() || undefined,
       ...(preferredContactTouched ? { preferredContactMethod } : {}),
+      ...(languageTouched ? { preferredLanguage } : {}),
       ...(smsConsentTouched ? { smsConsent } : {}),
     });
   };
@@ -362,6 +370,14 @@ function EditClientForm() {
             />
           </div>
         </div>
+
+        <ClientLanguageSelect
+          value={preferredLanguage}
+          onChange={(language) => {
+            setPreferredLanguage(language);
+            setLanguageTouched(true);
+          }}
+        />
 
         <div className="rounded-md border border-border p-3">
           <label

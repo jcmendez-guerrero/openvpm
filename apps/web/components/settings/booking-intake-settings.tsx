@@ -20,6 +20,7 @@ export function BookingIntakeSettings({
   disabled = false,
 }: BookingIntakeSettingsProps) {
   const t = useTranslations("settings.bookingIntake");
+  const tField = useTranslations("booking.intake.fields");
   const selectedFieldKeySet = new Set(selectedFieldKeys);
 
   function updateField(fieldKey: PrevisitIntakeFieldKey, checked: boolean) {
@@ -70,9 +71,11 @@ export function BookingIntakeSettings({
               />
               <label htmlFor={inputId} className="min-w-0 text-sm">
                 <span className="block font-medium text-gray-800">
-                  {field.label}
+                  {tField(`${field.key}.label`)}
                 </span>
-                <span className="block text-gray-500">{field.placeholder}</span>
+                <span className="block text-gray-500">
+                  {tField(`${field.key}.placeholder`)}
+                </span>
               </label>
             </div>
           );

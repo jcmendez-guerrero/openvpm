@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "use-intl";
+
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -27,23 +29,18 @@ const statusStyles: Record<string, string> = {
 
 const speciesEmoji: Record<string, string> = PATIENT_SPECIES_EMOJI;
 
-function formatDateTime(d: string | Date, timeZone?: string | null): string {
-  return formatPortalDateTime(d, undefined, timeZone);
-}
-
-function formatStatusLabel(status: string, isClientRequest: boolean): string {
-  // `scheduled` is the internal state for a request that clinic staff have
-  // not yet confirmed with the owner only when the server identified its
-  // request origin. A staff-created scheduled visit is already scheduled.
-  if (status === "scheduled" && isClientRequest) {
-    return "Requested — awaiting confirmation";
-  }
-  // Pet-owner wording: "checked out" is clinic jargon.
-  if (status === "checked_out") return "Completed";
-  return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
 export default function AppointmentsPage() {
+  const t = useTranslations("portal.appointments");
+  const locale = useLocale();
+  const formatDateTime = (d: string | Date, timeZone?: string | null) =>
+    formatPortalDateTime(d, undefined, timeZone, locale);
+  const formatStatusLabel = (status: string, isClientRequest: boolean) => {
+    // `scheduled` is the internal state for a request that clinic staff have
+    // not yet confirmed with the owner only when the server identified its
+    // request origin. A staff-created scheduled visit is already scheduled.
+    if (status === "scheduled" && isClientRequest) return t("status.requested");
+    return t.has(`status.${status}`) ? t(`status.${status}` as never) : status.replace(/_/g, " ");
+  };
   const router = useRouter();
 
   const { data, isLoading, error } = trpc.portal.getAppointments.useQuery({});
@@ -62,8 +59,8 @@ export default function AppointmentsPage() {
         <EmptyState
           className="py-12"
           icon={AlertCircle}
-          title="Unable to load appointments"
-          description="Please refresh this page or contact your clinic if the portal link has expired."
+          title={t("unableToLoadAppointments")}
+          description={t("pleaseRefreshThisPageOr")}
         />
       </div>
     );
@@ -90,11 +87,11 @@ export default function AppointmentsPage() {
             d="M15.75 19.5L8.25 12l7.5-7.5"
           />
         </svg>
-        Back to portal
+        {t("backToPortal")}
       </Link>
 
       <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-gray-900">Appointments</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t("appointments")}</h1>
         <Link
           href="/portal/book"
           className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
@@ -112,7 +109,7 @@ export default function AppointmentsPage() {
               d="M12 4.5v15m7.5-7.5h-15"
             />
           </svg>
-          Request appointment
+          {t("requestAppointment")}
         </Link>
       </div>
 
@@ -120,15 +117,15 @@ export default function AppointmentsPage() {
       <section className="mb-10">
         <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-primary" />
-          Upcoming and requests
+          {t("upcomingAndRequests")}
         </h2>
         {upcoming.length === 0 ? (
           <EmptyState
             className="py-10"
             icon={CalendarClock}
-            title="No upcoming appointments or requests"
+            title={t("noUpcomingAppointmentsOrRequests")}
             action={{
-              label: "Request appointment",
+              label: t("requestAppointment"),
               onClick: () => router.push("/portal/book"),
               icon: CalendarPlus,
             }}
@@ -151,7 +148,7 @@ export default function AppointmentsPage() {
                           {speciesEmoji[appt.patientSpecies] || "🐾"}
                         </span>
                       )}
-                      {appt.patientName || "No patient"}
+                      {appt.patientName || t("noPatient")}
                       {appt.typeName && (
                         <span className="text-gray-400">
                           {" "}
@@ -189,13 +186,13 @@ export default function AppointmentsPage() {
       <section>
         <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-gray-400" />
-          Past
+          {t("past")}
         </h2>
         {past.length === 0 ? (
           <EmptyState
             className="py-10"
             icon={History}
-            title="No past appointments"
+            title={t("noPastAppointments")}
           />
         ) : (
           <div className="space-y-3">
@@ -215,7 +212,7 @@ export default function AppointmentsPage() {
                           {speciesEmoji[appt.patientSpecies] || "🐾"}
                         </span>
                       )}
-                      {appt.patientName || "No patient"}
+                      {appt.patientName || t("noPatient")}
                       {appt.typeName && (
                         <span className="text-gray-400">
                           {" "}

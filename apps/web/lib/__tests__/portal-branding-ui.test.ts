@@ -1,9 +1,9 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("portal branding UI", () => {
-  const shell = readFileSync("components/portal/portal-shell.tsx", "utf8");
-  const layout = readFileSync("app/portal/layout.tsx", "utf8");
+  const shell = readTranslatedSource("components/portal/portal-shell.tsx");
+  const layout = readTranslatedSource("app/portal/layout.tsx");
   const portalPages = [
     "app/portal/[token]/page.tsx",
     "app/portal/[token]/book/page.tsx",
@@ -11,7 +11,7 @@ describe("portal branding UI", () => {
     "app/portal/[token]/messages/page.tsx",
     "app/portal/[token]/invoices/page.tsx",
     "app/portal/[token]/pets/[petId]/page.tsx",
-  ].map((path) => readFileSync(path, "utf8"));
+  ].map((path) => readTranslatedSource(path));
 
   it("uses one token-aware shell across every client portal route", () => {
     expect(layout).toContain("<PortalShell>{children}</PortalShell>");
@@ -40,7 +40,7 @@ describe("portal branding UI", () => {
 
   it("retains accessible structure and logo alternatives", () => {
     expect(shell).toContain('id="main-content"');
-    expect(shell).toContain('alt={`${practiceName} logo`}');
+    expect(shell).toContain('alt="{name} logo"');
     expect(shell).toContain('href="/legal/privacy"');
   });
 });

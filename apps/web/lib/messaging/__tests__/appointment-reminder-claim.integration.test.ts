@@ -424,6 +424,7 @@ async function concurrentClaims(
         patientName: "Miso",
         startTime: options.startTime,
         source: claimer.source,
+        language: "en",
       });
       return claim ? { ...claim, claimer } : null;
     }),

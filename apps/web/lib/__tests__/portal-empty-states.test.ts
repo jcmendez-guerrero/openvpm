@@ -1,8 +1,8 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 function source(path: string): string {
-  return readFileSync(path, "utf8");
+  return readTranslatedSource(path);
 }
 
 describe("portal empty states", () => {
@@ -63,24 +63,23 @@ describe("portal empty states", () => {
     const petDetail = source("app/portal/[token]/pets/[petId]/page.tsx");
 
     expect(home).toContain(
-      'import { calculatePortalAge } from "@/lib/portal/date"',
+      'import { usePortalAge } from "@/components/portal/use-portal-age"',
     );
-    expect(home).toContain("calculatePortalAge(pet.dob)");
+    expect(home).toContain("age(pet.dob)");
     expect(home).not.toContain("new Date(dob)");
-    expect(petDetail).toContain("formatPortalDate");
     expect(petDetail).toContain(
-      "return formatPortalDate(d, undefined, timeZone)",
+      "formatPortalDate(d, undefined, timeZone, locale)",
     );
     expect(petDetail).toContain(
-      "formatDate(v.administeredAt, practiceTimeZone)",
+      "shownDate(v.administeredAt, practiceTimeZone)",
     );
-    expect(petDetail).toContain("formatDate(v.nextDueDate, practiceTimeZone)");
-    expect(petDetail).toContain("formatDate(rx.endDate, practiceTimeZone)");
-    expect(petDetail).toContain("formatDate(w.recordedAt, practiceTimeZone)");
+    expect(petDetail).toContain("shownDate(v.nextDueDate, practiceTimeZone)");
+    expect(petDetail).toContain("shownDate(rx.endDate, practiceTimeZone)");
+    expect(petDetail).toContain("shownDate(w.recordedAt, practiceTimeZone)");
     expect(petDetail).toContain(
       "portalCalendarDayDifference(\n      nextDue,\n      new Date(),\n      practiceTimeZone",
     );
-    expect(petDetail).toContain("calculatePortalAge(data.dob)");
+    expect(petDetail).toContain("age(data.dob)");
     expect(petDetail).not.toContain("new Date(nextDue)");
     expect(petDetail).not.toContain("new Date(dob)");
   });
@@ -105,7 +104,7 @@ describe("portal empty states", () => {
     expect(appointments).toContain('title="No past appointments"');
     expect(appointments).toContain('label: "Request appointment"');
     expect(appointments).toContain(
-      "formatStatusLabel(status: string, isClientRequest: boolean)",
+      "const formatStatusLabel = (status: string, isClientRequest: boolean) =>",
     );
     expect(appointments).toContain('status === "scheduled" && isClientRequest');
     expect(appointments).toContain("Requested — awaiting confirmation");
@@ -119,10 +118,10 @@ describe("portal empty states", () => {
       'import { formatPortalDateTime } from "@/lib/portal/date"',
     );
     expect(appointments).toContain(
-      "function formatDateTime(d: string | Date, timeZone?: string | null)",
+      "const formatDateTime = (d: string | Date, timeZone?: string | null) =>",
     );
     expect(appointments).toContain(
-      "return formatPortalDateTime(d, undefined, timeZone)",
+      "formatPortalDateTime(d, undefined, timeZone, locale)",
     );
     expect(appointments).toContain(
       "formatDateTime(appt.startTime, appt.timezone)",

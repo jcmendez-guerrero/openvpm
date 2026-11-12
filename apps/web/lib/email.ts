@@ -55,6 +55,8 @@ import {
   emailEnv,
   nonBlankEmailValue,
 } from "@/lib/email-env";
+import type { Language } from "@/i18n/config";
+import { getTranslatorFor } from "@/i18n/messages";
 
 // ---------------------------------------------------------------------------
 // Resend client – initialised lazily so the module can be imported even when
@@ -110,13 +112,27 @@ function emailSendTimeoutMessage(): string {
 // Shared layout helpers
 // ---------------------------------------------------------------------------
 
+/** Catalog text for one email; `<strong>` in the catalog stays bold. */
+function emailText(language: Language = "en") {
+  const t = getTranslatorFor(language);
+  const strong = (chunks: string) => `<strong>${chunks}</strong>`;
+  return {
+    t,
+    rich: (
+      key: Parameters<typeof t.markup>[0],
+      values: Record<string, string> = {},
+    ) => t.markup(key, { ...values, strong }),
+  };
+}
+
 function emailLayout(
   practiceName: string,
   body: string,
   footer?: string,
+  language: Language = "en",
 ): string {
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${language}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -142,7 +158,7 @@ function emailLayout(
           <!-- Footer -->
           <tr>
             <td style="padding:24px 32px;background-color:#f9fafb;border-top:1px solid #e5e7eb;">
-              ${footer || `<p style="margin:0;color:#6b7280;font-size:13px;line-height:1.5;">This email was sent by ${practiceName}. If you received this in error, please disregard it.</p>`}
+              ${footer || `<p style="margin:0;color:#6b7280;font-size:13px;line-height:1.5;">${emailText(language).t("email.defaultFooter", { practiceName })}</p>`}
             </td>
           </tr>
         </table>
@@ -379,6 +395,8 @@ export async function sendAppointmentReminder(data: {
   practiceAddress?: string;
   /** Stable per send attempt, so a replayed request never emails twice. */
   idempotencyKey: string;
+  /** Language of the client (or staff user); defaults to English. */
+  language?: Language;
 }): Promise<{
   success: boolean;
   id?: string;
@@ -390,21 +408,22 @@ export async function sendAppointmentReminder(data: {
    */
   idempotencyConflict?: boolean;
 }> {
+  const { t, rich } = emailText(data.language);
   const body = `
-    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">Hi ${data.clientName},</p>
-    <p style="margin:0 0 24px;color:#111827;font-size:15px;line-height:1.6;">This is a friendly reminder about an upcoming appointment for <strong>${data.patientName}</strong>.</p>
+    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">${t("email.greeting", { name: data.clientName })}</p>
+    <p style="margin:0 0 24px;color:#111827;font-size:15px;line-height:1.6;">${rich("email.appointmentReminder.intro", { patient: data.patientName })}</p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;background-color:#f0fdfa;border:1px solid #ccfbf1;border-radius:8px;margin-bottom:24px;">
       <tr>
         <td style="padding:20px 24px;">
-          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Date</p>
+          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">${t("email.appointmentReminder.date")}</p>
           <p style="margin:0 0 16px;color:#0f172a;font-size:18px;font-weight:600;">${data.appointmentDate}</p>
-          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Time</p>
+          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">${t("email.appointmentReminder.time")}</p>
           <p style="margin:0;color:#0f172a;font-size:18px;font-weight:600;">${data.appointmentTime}</p>
         </td>
       </tr>
     </table>
-    <p style="margin:0 0 8px;color:#111827;font-size:15px;line-height:1.6;">If you need to cancel or reschedule, please call us${data.practicePhone ? ` at <strong>${data.practicePhone}</strong>` : ""} as soon as possible.</p>
-    <p style="margin:24px 0 0;color:#111827;font-size:15px;line-height:1.6;">We look forward to seeing you and ${data.patientName}!</p>
+    <p style="margin:0 0 8px;color:#111827;font-size:15px;line-height:1.6;">${data.practicePhone ? rich("email.appointmentReminder.reschedulePhone", { phone: data.practicePhone }) : t("email.appointmentReminder.reschedule")}</p>
+    <p style="margin:24px 0 0;color:#111827;font-size:15px;line-height:1.6;">${t("email.appointmentReminder.closing", { patient: data.patientName })}</p>
   `;
 
   const footer = practiceFooter({
@@ -413,13 +432,16 @@ export async function sendAppointmentReminder(data: {
     practiceAddress: data.practiceAddress,
   });
 
-  const html = emailLayout(data.practiceName, body, footer);
+  const html = emailLayout(data.practiceName, body, footer, data.language);
 
   // Callers must know when the provider may have accepted the email, so the
   // reminder is never retried after a timeout or idempotency conflict.
   const result = await dispatchEmail({
     to: data.to,
-    subject: `Appointment Reminder for ${data.patientName} – ${data.appointmentDate}`,
+    subject: t("email.appointmentReminder.subject", {
+      patient: data.patientName,
+      date: data.appointmentDate,
+    }),
     html,
     idempotencyKey: data.idempotencyKey,
   });
@@ -453,23 +475,26 @@ export async function sendVaccinationReminder(data: {
   dueDate: string;
   practiceName: string;
   practicePhone?: string;
+  /** Language of the client (or staff user); defaults to English. */
+  language?: Language;
 }): Promise<{ success: boolean; id?: string; error?: string }> {
+  const { t, rich } = emailText(data.language);
   const body = `
-    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">Hi ${data.clientName},</p>
-    <p style="margin:0 0 24px;color:#111827;font-size:15px;line-height:1.6;">It's time to schedule <strong>${data.patientName}</strong>'s <strong>${data.vaccineName}</strong> vaccination.</p>
+    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">${t("email.greeting", { name: data.clientName })}</p>
+    <p style="margin:0 0 24px;color:#111827;font-size:15px;line-height:1.6;">${rich("email.vaccinationReminder.intro", { patient: data.patientName, vaccine: data.vaccineName })}</p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;background-color:#fffbeb;border:1px solid #fef3c7;border-radius:8px;margin-bottom:24px;">
       <tr>
         <td style="padding:20px 24px;">
-          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Vaccine</p>
+          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">${t("email.vaccinationReminder.vaccine")}</p>
           <p style="margin:0 0 16px;color:#0f172a;font-size:18px;font-weight:600;">${data.vaccineName}</p>
-          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Due Date</p>
+          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">${t("email.vaccinationReminder.dueDate")}</p>
           <p style="margin:0;color:#0f172a;font-size:18px;font-weight:600;">${data.dueDate}</p>
         </td>
       </tr>
     </table>
-    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">Please contact us${data.practicePhone ? ` at <strong>${data.practicePhone}</strong>` : ""} to schedule an appointment for ${data.patientName}.</p>
-    ${ctaButton("Schedule Your Pet's Appointment", `tel:${data.practicePhone || ""}`)}
-    <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.5;">Keeping vaccinations up to date is important for your pet's health and safety.</p>
+    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">${data.practicePhone ? rich("email.vaccinationReminder.contactPhone", { phone: data.practicePhone, patient: data.patientName }) : t("email.vaccinationReminder.contact", { patient: data.patientName })}</p>
+    ${ctaButton(t("email.vaccinationReminder.cta"), `tel:${data.practicePhone || ""}`)}
+    <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.5;">${t("email.vaccinationReminder.note")}</p>
   `;
 
   const footer = practiceFooter({
@@ -477,11 +502,14 @@ export async function sendVaccinationReminder(data: {
     practicePhone: data.practicePhone,
   });
 
-  const html = emailLayout(data.practiceName, body, footer);
+  const html = emailLayout(data.practiceName, body, footer, data.language);
 
   const result = await sendEmail({
     to: data.to,
-    subject: `Vaccination Reminder: ${data.vaccineName} for ${data.patientName}`,
+    subject: t("email.vaccinationReminder.subject", {
+      vaccine: data.vaccineName,
+      patient: data.patientName,
+    }),
     html,
   });
 
@@ -502,21 +530,24 @@ export async function sendCareReminder(data: {
   practicePhone?: string;
   practiceAddress?: string;
   idempotencyKey: string;
+  /** Language of the client (or staff user); defaults to English. */
+  language?: Language;
 }): Promise<{ success: boolean; id?: string; error?: string }> {
+  const { t, rich } = emailText(data.language);
   const body = `
-    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">Hi ${data.clientName},</p>
-    <p style="margin:0 0 24px;color:#111827;font-size:15px;line-height:1.6;">This is a reminder from our veterinary team about <strong>${data.patientName}</strong>.</p>
+    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">${t("email.greeting", { name: data.clientName })}</p>
+    <p style="margin:0 0 24px;color:#111827;font-size:15px;line-height:1.6;">${rich("email.careReminder.intro", { patient: data.patientName })}</p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;background-color:#f0fdfa;border:1px solid #ccfbf1;border-radius:8px;margin-bottom:24px;">
       <tr>
         <td style="padding:20px 24px;">
-          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Reminder</p>
+          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">${t("email.careReminder.reminder")}</p>
           <p style="margin:0 0 16px;color:#0f172a;font-size:18px;font-weight:600;">${data.reminderTitle}</p>
-          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Reminder Date</p>
+          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">${t("email.careReminder.reminderDate")}</p>
           <p style="margin:0;color:#0f172a;font-size:18px;font-weight:600;">${data.dueDate}</p>
         </td>
       </tr>
     </table>
-    <p style="margin:0;color:#111827;font-size:15px;line-height:1.6;">Please contact us${data.practicePhone ? ` at <strong>${data.practicePhone}</strong>` : ""} if you have questions or would like to schedule.</p>
+    <p style="margin:0;color:#111827;font-size:15px;line-height:1.6;">${data.practicePhone ? rich("email.careReminder.contactPhone", { phone: data.practicePhone }) : t("email.careReminder.contact")}</p>
   `;
 
   const html = emailLayout(
@@ -527,10 +558,11 @@ export async function sendCareReminder(data: {
       practicePhone: data.practicePhone,
       practiceAddress: data.practiceAddress,
     }),
+    data.language,
   );
   const result = await sendEmail({
     to: data.to,
-    subject: `Care Reminder for ${data.patientName}`,
+    subject: t("email.careReminder.subject", { patient: data.patientName }),
     html,
     idempotencyKey: data.idempotencyKey,
   });
@@ -550,30 +582,30 @@ export async function sendInvoiceEmail(data: {
   portalUrl?: string;
   practiceName: string;
   practicePhone?: string;
+  /** Language of the client (or staff user); defaults to English. */
+  language?: Language;
 }): Promise<{ success: boolean; id?: string; error?: string }> {
-  const patientLine = data.patientName
-    ? ` for <strong>${data.patientName}</strong>`
-    : "";
+  const { t, rich } = emailText(data.language);
 
   const dueDateBlock = data.dueDate
-    ? `<p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Due Date</p>
+    ? `<p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">${t("email.invoice.dueDate")}</p>
        <p style="margin:0;color:#0f172a;font-size:16px;font-weight:600;">${data.dueDate}</p>`
     : "";
 
   const body = `
-    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">Hi ${data.clientName},</p>
-    <p style="margin:0 0 24px;color:#111827;font-size:15px;line-height:1.6;">Here is your invoice${patientLine} from ${data.practiceName}.</p>
+    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">${t("email.greeting", { name: data.clientName })}</p>
+    <p style="margin:0 0 24px;color:#111827;font-size:15px;line-height:1.6;">${data.patientName ? rich("email.invoice.introPatient", { patient: data.patientName, practice: data.practiceName }) : t("email.invoice.intro", { practice: data.practiceName })}</p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;background-color:#f0fdf4;border:1px solid #dcfce7;border-radius:8px;margin-bottom:24px;">
       <tr>
         <td style="padding:20px 24px;">
-          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Amount Due</p>
+          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">${t("email.invoice.amountDue")}</p>
           <p style="margin:0${data.dueDate ? " 0 16px" : ""};color:#0f172a;font-size:28px;font-weight:700;">${data.invoiceTotal}</p>
           ${dueDateBlock}
         </td>
       </tr>
     </table>
-    ${data.portalUrl ? ctaButton("View in Portal", data.portalUrl) : ""}
-    <p style="margin:0;color:#111827;font-size:15px;line-height:1.6;">If you have any questions about this invoice, please contact us${data.practicePhone ? ` at <strong>${data.practicePhone}</strong>` : ""}.</p>
+    ${data.portalUrl ? ctaButton(t("email.invoice.viewInPortal"), data.portalUrl) : ""}
+    <p style="margin:0;color:#111827;font-size:15px;line-height:1.6;">${data.practicePhone ? rich("email.invoice.questionsPhone", { phone: data.practicePhone }) : t("email.invoice.questions")}</p>
   `;
 
   const footer = practiceFooter({
@@ -581,11 +613,14 @@ export async function sendInvoiceEmail(data: {
     practicePhone: data.practicePhone,
   });
 
-  const html = emailLayout(data.practiceName, body, footer);
+  const html = emailLayout(data.practiceName, body, footer, data.language);
 
   const result = await sendEmail({
     to: data.to,
-    subject: `Invoice from ${data.practiceName} – ${data.invoiceTotal}`,
+    subject: t("email.invoice.subject", {
+      practice: data.practiceName,
+      total: data.invoiceTotal,
+    }),
     html,
   });
 
@@ -605,28 +640,28 @@ export async function sendClientPaymentReceiptEmail(data: {
   fullyPaid: boolean;
   practiceName: string;
   practicePhone?: string;
+  /** Language of the client (or staff user); defaults to English. */
+  language?: Language;
 }): Promise<{ success: boolean; id?: string; error?: string }> {
-  const patientLine = data.patientName
-    ? ` for <strong>${data.patientName}</strong>`
-    : "";
+  const { t, rich } = emailText(data.language);
   const balanceBlock = data.fullyPaid
-    ? `<p style="margin:0;color:#0f172a;font-size:14px;font-weight:600;">This invoice is paid in full.</p>`
-    : `<p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Remaining Balance</p>
+    ? `<p style="margin:0;color:#0f172a;font-size:14px;font-weight:600;">${t("email.paymentReceipt.paidInFull")}</p>`
+    : `<p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">${t("email.paymentReceipt.remainingBalance")}</p>
        <p style="margin:0;color:#0f172a;font-size:16px;font-weight:600;">${data.balanceRemaining}</p>`;
 
   const body = `
-    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">Hi ${data.clientName},</p>
-    <p style="margin:0 0 24px;color:#111827;font-size:15px;line-height:1.6;">We got your payment${patientLine}. Thank you!</p>
+    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">${t("email.greeting", { name: data.clientName })}</p>
+    <p style="margin:0 0 24px;color:#111827;font-size:15px;line-height:1.6;">${data.patientName ? rich("email.paymentReceipt.introPatient", { patient: data.patientName }) : t("email.paymentReceipt.intro")}</p>
     <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;background-color:#f0fdf4;border:1px solid #dcfce7;border-radius:8px;margin-bottom:24px;">
       <tr>
         <td style="padding:20px 24px;">
-          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Amount Paid</p>
+          <p style="margin:0 0 4px;color:#6b7280;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">${t("email.paymentReceipt.amountPaid")}</p>
           <p style="margin:0 0 16px;color:#0f172a;font-size:28px;font-weight:700;">${data.amountPaid}</p>
           ${balanceBlock}
         </td>
       </tr>
     </table>
-    <p style="margin:0;color:#111827;font-size:15px;line-height:1.6;">Keep this email for your records. If anything looks wrong, please contact us${data.practicePhone ? ` at <strong>${data.practicePhone}</strong>` : ""}.</p>
+    <p style="margin:0;color:#111827;font-size:15px;line-height:1.6;">${data.practicePhone ? rich("email.paymentReceipt.recordsPhone", { phone: data.practicePhone }) : t("email.paymentReceipt.records")}</p>
   `;
 
   const footer = practiceFooter({
@@ -634,11 +669,11 @@ export async function sendClientPaymentReceiptEmail(data: {
     practicePhone: data.practicePhone,
   });
 
-  const html = emailLayout(data.practiceName, body, footer);
+  const html = emailLayout(data.practiceName, body, footer, data.language);
 
   const result = await sendEmail({
     to: data.to,
-    subject: `Payment received – ${data.practiceName}`,
+    subject: t("email.paymentReceipt.subject", { practice: data.practiceName }),
     html,
   });
 
@@ -653,17 +688,20 @@ interface VerificationEmailData {
   to: string;
   name: string;
   verifyUrl: string;
+  /** Language of the client (or staff user); defaults to English. */
+  language?: Language;
 }
 
 function verificationEmailContent(data: VerificationEmailData) {
+  const { t, rich } = emailText(data.language);
   const body = `
-    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">Hi ${data.name},</p>
-    <p style="margin:0 0 8px;color:#111827;font-size:15px;line-height:1.6;">Welcome to OpenVPM! Please confirm your email address to secure your workspace and keep important account messages deliverable.</p>
-    ${ctaButton("Confirm email", data.verifyUrl)}
-    <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.5;">This link expires in 24 hours. If you didn't create an OpenVPM account, you can ignore this email.</p>
+    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">${t("email.greeting", { name: data.name })}</p>
+    <p style="margin:0 0 8px;color:#111827;font-size:15px;line-height:1.6;">${t("email.verification.body")}</p>
+    ${ctaButton(t("email.verification.cta"), data.verifyUrl)}
+    <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.5;">${t("email.verification.note")}</p>
   `;
-  const html = emailLayout("OpenVPM", body);
-  return { subject: "Verify your OpenVPM email", html };
+  const html = emailLayout("OpenVPM", body, undefined, data.language);
+  return { subject: t("email.verification.subject"), html };
 }
 
 export async function sendVerificationEmail(
@@ -700,17 +738,20 @@ export async function sendPasswordResetEmail(data: {
   to: string;
   name: string;
   resetUrl: string;
+  /** Language of the client (or staff user); defaults to English. */
+  language?: Language;
 }): Promise<{ success: boolean }> {
+  const { t, rich } = emailText(data.language);
   const body = `
-    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">Hi ${data.name},</p>
-    <p style="margin:0 0 8px;color:#111827;font-size:15px;line-height:1.6;">We received a request to reset your OpenVPM password. Click below to choose a new one.</p>
-    ${ctaButton("Reset my password", data.resetUrl)}
-    <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.5;">This link expires in 1 hour. If you didn't request a password reset, you can safely ignore this email — your password won't change.</p>
+    <p style="margin:0 0 16px;color:#111827;font-size:15px;line-height:1.6;">${t("email.greeting", { name: data.name })}</p>
+    <p style="margin:0 0 8px;color:#111827;font-size:15px;line-height:1.6;">${t("email.passwordReset.body")}</p>
+    ${ctaButton(t("email.passwordReset.cta"), data.resetUrl)}
+    <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.5;">${t("email.passwordReset.note")}</p>
   `;
-  const html = emailLayout("OpenVPM", body);
+  const html = emailLayout("OpenVPM", body, undefined, data.language);
   const result = await sendEmail({
     to: data.to,
-    subject: "Reset your OpenVPM password",
+    subject: t("email.passwordReset.subject"),
     html,
   });
   return { success: result.success };
@@ -722,17 +763,20 @@ export async function sendStaffInviteEmail(data: {
   practiceName: string;
   inviteUrl: string;
   idempotencyKey?: string;
+  /** The clinic's default language: the invitee has not picked one yet. */
+  language?: Language;
 }): Promise<{ success: boolean }> {
+  const { t, rich } = emailText(data.language);
   const body = `
-    <p style="margin:0 0 8px;color:#111827;font-size:15px;line-height:1.6;"><strong>${data.inviterName}</strong> has invited you to join <strong>${data.practiceName}</strong> on OpenVPM.</p>
-    <p style="margin:0 0 8px;color:#111827;font-size:15px;line-height:1.6;">Accept the invite below to set your password and activate your account.</p>
-    ${ctaButton("Accept invite", data.inviteUrl)}
-    <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.5;">This link expires in 72 hours. If you weren't expecting this invitation, you can safely ignore this email.</p>
+    <p style="margin:0 0 8px;color:#111827;font-size:15px;line-height:1.6;">${rich("email.staffInvite.body", { inviter: data.inviterName, practice: data.practiceName })}</p>
+    <p style="margin:0 0 8px;color:#111827;font-size:15px;line-height:1.6;">${t("email.staffInvite.body2")}</p>
+    ${ctaButton(t("email.staffInvite.cta"), data.inviteUrl)}
+    <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.5;">${t("email.staffInvite.note")}</p>
   `;
-  const html = emailLayout(data.practiceName, body);
+  const html = emailLayout(data.practiceName, body, undefined, data.language);
   const result = await sendEmail({
     to: data.to,
-    subject: `You're invited to join ${data.practiceName} on OpenVPM`,
+    subject: t("email.staffInvite.subject", { practice: data.practiceName }),
     html,
     idempotencyKey: data.idempotencyKey,
   });

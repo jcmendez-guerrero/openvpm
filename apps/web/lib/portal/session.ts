@@ -19,6 +19,8 @@ export type PortalSessionClient = {
   lastName: string;
   email: string | null;
   phone: string | null;
+  /** clients.preferred_language; null follows the clinic default. */
+  preferredLanguage: string | null;
 };
 
 export function portalSessionCookieName(): string {
@@ -86,6 +88,7 @@ export async function resolvePortalSession(
       lastName: clients.lastName,
       email: clients.email,
       phone: clients.phone,
+      preferredLanguage: clients.preferredLanguage,
     })
     .from(portalSessions)
     .innerJoin(
@@ -140,6 +143,7 @@ export async function resolvePortalSession(
       lastName: row.lastName,
       email: row.email,
       phone: row.phone,
+      preferredLanguage: row.preferredLanguage,
     },
   };
 }

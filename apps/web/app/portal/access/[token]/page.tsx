@@ -1,11 +1,14 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { AlertCircle, LockKeyhole } from "lucide-react";
 import { fetchWithClientTimeout } from "@/lib/client-fetch";
 
 export default function PortalAccessPage() {
+  const t = useTranslations("portal.access");
   const { token } = useParams<{ token: string }>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,14 +28,14 @@ export default function PortalAccessPage() {
         error?: string;
       };
       if (!response.ok || body.redirectTo !== "/portal") {
-        throw new Error(body.error || "Unable to open the portal");
+        throw new Error(body.error || t("unableToOpenThePortal"));
       }
       window.location.replace(body.redirectTo);
     } catch (cause) {
       setError(
         cause instanceof Error
           ? cause.message
-          : "Unable to open the portal. Please ask your clinic for a new link.",
+          : t("unableToOpenThePortal2"),
       );
       setLoading(false);
     }
@@ -44,12 +47,10 @@ export default function PortalAccessPage() {
         <LockKeyhole className="h-6 w-6" aria-hidden="true" />
       </span>
       <h1 className="mt-4 text-xl font-semibold text-gray-900">
-        Open your secure pet portal
+        {t("openYourSecurePetPortal")}
       </h1>
       <p className="mt-2 text-sm leading-6 text-gray-600">
-        This private link can be used once and expires shortly. Continuing
-        creates a secure session on this device and removes the link from your
-        address bar.
+        {t("thisPrivateLinkCanBe")}
       </p>
       <button
         type="button"
@@ -57,7 +58,7 @@ export default function PortalAccessPage() {
         disabled={loading}
         className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-5 py-3 font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {loading ? "Opening portal…" : "Continue securely"}
+        {loading ? t("openingPortal") : t("continueSecurely")}
       </button>
       {error ? (
         <div

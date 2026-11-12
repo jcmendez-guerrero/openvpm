@@ -24,6 +24,7 @@ import {
   type Language,
 } from "@/i18n/config";
 import { getClinicDefaultLanguage } from "@/i18n/clinic-default-cache";
+import { resolveLanguage } from "@/i18n/resolve";
 import {
   resolveRequestLanguage,
   translateServerMessage,
@@ -87,6 +88,8 @@ export type TRPCContext = {
    * release flag is off.
    */
   languageChoice?: Language | null;
+  /** Raw Accept-Language header, for portal error messages. */
+  acceptLanguage?: string | null;
   ip?: string | null;
   portalSessionToken?: string | null;
   /**
@@ -234,6 +237,7 @@ export async function createTRPCContext(opts?: {
     session,
     language,
     languageChoice,
+    acceptLanguage: opts?.req?.headers.get("accept-language") ?? null,
     ip: clientIp(opts?.req),
     portalSessionToken: portalSessionTokenFromCookie(
       opts?.req?.headers.get("cookie"),
@@ -251,13 +255,17 @@ export async function createTRPCContext(opts?: {
   };
 }
 
+/** Per-error language override, set where a procedure knows better than the request (portal). */
+const errorLanguage = new WeakMap<Error, Language>();
+
 const t = initTRPC.context<TRPCContext>().create({
   transformer: superjson,
   errorFormatter({ shape, error, ctx }) {
+    const language = errorLanguage.get(error) ?? ctx?.language;
     return {
       ...shape,
-      message: ctx?.language
-        ? translateServerMessage(shape.message, ctx.language)
+      message: language
+        ? translateServerMessage(shape.message, language)
         : shape.message,
       data: {
         ...shape.data,
@@ -463,13 +471,30 @@ export const portalProcedure = publicProcedure.use(
     ) {
       throw new TRPCError({ code: "FORBIDDEN", message: "Invalid request origin" });
     }
-    return next({
+    const result = await next({
       ctx: {
         ...ctx,
         portalClient: portalSession.client as PortalSessionClient,
         portalSessionId: portalSession.sessionId,
       },
     });
+    if (!result.ok && isLanguageSelectionEnabled()) {
+      // Portal errors follow the client's saved language, not the visitor order.
+      errorLanguage.set(
+        result.error,
+        resolveLanguage({
+          enabled: true,
+          surface: "client",
+          cookie: ctx.languageChoice,
+          clientLanguage: portalSession.client.preferredLanguage,
+          acceptLanguage: ctx.acceptLanguage,
+          clinicDefault: await getClinicDefaultLanguage(
+            portalSession.client.practiceId,
+          ).catch(() => undefined),
+        }),
+      );
+    }
+    return result;
   },
 );
 

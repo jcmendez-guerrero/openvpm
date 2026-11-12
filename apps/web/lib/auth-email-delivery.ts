@@ -1,3 +1,4 @@
+import type { Language } from "@/i18n/config";
 import { createHash, randomUUID } from "node:crypto";
 import { and, eq, isNull, ne, or } from "drizzle-orm";
 import type { WebhookEventPayload } from "resend";
@@ -254,6 +255,8 @@ export async function sendTrackedVerificationEmail(input: {
   to: string;
   name: string;
   verifyUrl: string;
+  /** The user's saved language, else the clinic default. */
+  language?: Language;
   db: Database;
 }): Promise<TrackedVerificationEmailResult> {
   const attemptId = randomUUID();
@@ -292,6 +295,7 @@ export async function sendTrackedVerificationEmail(input: {
     to: input.to,
     name: input.name,
     verifyUrl: input.verifyUrl,
+    language: input.language,
     attemptId,
     idempotencyKey,
   });

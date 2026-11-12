@@ -243,7 +243,7 @@ describe("communications.create delivery", () => {
     );
 
     expect(createBlock).toMatch(
-      /select\(\{\s*name: practices\.name,\s*timezone: practices\.timezone,\s*email: practices\.email,\s*createdAt: practices\.createdAt,\s*\}\)[\s\S]+?where\(activePracticeWhere\(ctx\.practiceId\)\)/s,
+      /select\(\{\s*name: practices\.name,\s*timezone: practices\.timezone,\s*email: practices\.email,\s*createdAt: practices\.createdAt,\s*defaultLanguage: practices\.defaultLanguage,\s*\}\)[\s\S]+?where\(activePracticeWhere\(ctx\.practiceId\)\)/s,
     );
     expect(createBlock).toContain("if (!practice)");
     expect(createBlock).toContain("throw practiceNotFound()");
@@ -901,5 +901,24 @@ describe("communications.create delivery", () => {
     });
 
     expect(updateSet).not.toHaveBeenCalled();
+  });
+});
+
+describe("composed email language", () => {
+  it("renders the fixed text in the client's language and keeps values escaped", async () => {
+    const { renderComposedEmail } = await import("../routers/communications");
+    const html = renderComposedEmail({
+      practiceName: "Sol <Vet>",
+      content: "Hola",
+      replyToEmail: null,
+      language: "es",
+    });
+    expect(html).toContain('<html lang="es">');
+    expect(html).toContain("Este correo lo envió Sol &lt;Vet&gt;.");
+    expect(html).not.toContain("<Vet>");
+
+    const english = renderComposedEmail({ practiceName: "Sol", content: "Hi" });
+    expect(english).toContain('<html lang="en">');
+    expect(english).toContain("This email was sent by Sol.");
   });
 });

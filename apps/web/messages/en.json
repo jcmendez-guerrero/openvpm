@@ -554,7 +554,8 @@
       "included": "included",
       "reconcile": "Reconcile provider setup",
       "sendTest": "Send test",
-      "safetyCheckBody": "OpenVPM must verify the exact texting profile immediately before sending can be enabled. Your clinic does not need to repeat carrier registration; this operational check keeps the webhook, US-only destinations, and spend cap in the approved state."
+      "safetyCheckBody": "OpenVPM must verify the exact texting profile immediately before sending can be enabled. Your clinic does not need to repeat carrier registration; this operational check keeps the webhook, US-only destinations, and spend cap in the approved state.",
+      "spanishSegmentsHelp": "Texts to clients who prefer Spanish are sent in Spanish. A Spanish appointment reminder is longer, so it usually counts as two segments. Letters like á, í, ó and ú, in the message or in your registered clinic name, switch a text to shorter segments (70 characters instead of 160), in either language."
     },
     "messagingRegistration": {
       "openvpmHostsThePrivacyPolicy": "OpenVPM hosts the privacy policy, messaging terms, and exact consent disclosure carriers need to review. You can use these links now or replace them with your own public HTTPS pages.",
@@ -1179,7 +1180,13 @@
         "system": "system"
       },
       "saving": "Saving...",
-      "saveChanges": "Save Changes"
+      "saveChanges": "Save Changes",
+      "preferredLanguage": {
+        "label": "Preferred language",
+        "clinicDefault": "Clinic default",
+        "help": "Used for the client portal, appointment links, and messages to this client.",
+        "shown": "Preferred language: {language}"
+      }
     },
     "detail": {
       "portalCreated": "One-time portal link created",
@@ -3442,7 +3449,11 @@
       "addVisitCharge": "Add visit charge {name}",
       "removeItem": "Remove {name}",
       "patientFallback": "Patient",
-      "revisionDownloaded": "Discharge revision {revision} downloaded"
+      "revisionDownloaded": "Discharge revision {revision} downloaded",
+      "chargeLockRole": "Charge capture is read-only for your role. An admin or front desk teammate can add charges and create the invoice.",
+      "chargeLockClosedOut": "Charge capture is closed because this visit's closeout is complete.",
+      "chargeLockPreExam": "Charges open once the visit is in exam. This visit is currently {status}.",
+      "chargeLockNotInExam": "Charges can only be added while the visit is in exam. This visit is currently {status}."
     }
   },
   "onboarding": {
@@ -5925,5 +5936,619 @@
       "body": "This page may have moved, or the link may no longer be available.",
       "home": "Go to Dashboard"
     }
+  },
+  "portal": {
+    "shell": {
+      "poweredByOpenvpm": "Powered by OpenVPM",
+      "privacy": "Privacy",
+      "petPortal": "Pet Portal",
+      "signingOut": "Signing out…",
+      "signOut": "Sign out",
+      "logoAlt": "{name} logo"
+    },
+    "home": {
+      "hereIsEverythingAboutYour": "Here is everything about your pets in one place.",
+      "requestAnAppointment": "Request an Appointment",
+      "yourPets": "Your Pets",
+      "quickLinks": "Quick Links",
+      "messages": "Messages",
+      "readAndReplyToYour": "Read and reply to your clinic",
+      "appointments": "Appointments",
+      "viewUpcomingAndPastVisits": "View upcoming and past visits",
+      "invoices": "Invoices",
+      "viewBillingAndPayments": "View billing and payments",
+      "unableToLoadPortal": "Unable to load portal",
+      "thisPortalLinkIsInvalid": "This portal link is invalid or has expired. Please contact your veterinary clinic for a new link.",
+      "noPetsOnFileYet": "No pets on file yet",
+      "yourClinicWillAddPets": "Your clinic will add pets here when they create patient records.",
+      "welcome": "Welcome, {name}!"
+    },
+    "access": {
+      "openYourSecurePetPortal": "Open your secure pet portal",
+      "thisPrivateLinkCanBe": "This private link can be used once and expires shortly. Continuing creates a secure session on this device and removes the link from your address bar.",
+      "unableToOpenThePortal": "Unable to open the portal",
+      "unableToOpenThePortal2": "Unable to open the portal. Please ask your clinic for a new link.",
+      "openingPortal": "Opening portal…",
+      "continueSecurely": "Continue securely"
+    },
+    "messages": {
+      "backToPortal": "Back to portal",
+      "sendQuestionsAndFollowUps": "Send questions and follow-ups directly to your clinic.",
+      "message": "Message",
+      "messages": "Messages",
+      "unableToLoadMessages": "Unable to load messages",
+      "pleaseRefreshThisPageOr": "Please refresh this page or contact your clinic if the portal link has expired.",
+      "noPortalMessagesYet": "No portal messages yet",
+      "messagesFromYourClinicAnd": "Messages from your clinic and your replies will appear here.",
+      "typeYourMessage": "Type your message...",
+      "you": "You",
+      "clinic": "Clinic",
+      "sending": "Sending...",
+      "send": "Send",
+      "messageSent": "Message sent"
+    },
+    "age": {
+      "months": "{count, plural, one {# month old} other {# months old}}",
+      "years": "{count, plural, one {# year old} other {# years old}}",
+      "unknown": "Unknown age"
+    },
+    "appointments": {
+      "backToPortal": "Back to portal",
+      "requestAppointment": "Request appointment",
+      "upcomingAndRequests": "Upcoming and requests",
+      "past": "Past",
+      "appointments": "Appointments",
+      "unableToLoadAppointments": "Unable to load appointments",
+      "pleaseRefreshThisPageOr": "Please refresh this page or contact your clinic if the portal link has expired.",
+      "noUpcomingAppointmentsOrRequests": "No upcoming appointments or requests",
+      "noPastAppointments": "No past appointments",
+      "noPatient": "No patient",
+      "status": {
+        "requested": "Requested — awaiting confirmation",
+        "scheduled": "Scheduled",
+        "confirmed": "Confirmed",
+        "checked_in": "Checked in",
+        "in_exam": "In exam",
+        "checked_out": "Completed",
+        "no_show": "No show",
+        "cancelled": "Cancelled"
+      }
+    },
+    "invoices": {
+      "onlinePaymentIsTemporarilyUnavailable": "Online payment is temporarily unavailable. Please contact the clinic to pay.",
+      "backToPortal": "Back to portal",
+      "poweredByStripe": "Powered by Stripe",
+      "invoices": "Invoices",
+      "date": "Date",
+      "patient": "Patient",
+      "total": "Total",
+      "paid": "Paid",
+      "balance": "Balance",
+      "status": {
+        "draft": "Draft",
+        "sent": "Sent",
+        "paid": "Paid",
+        "overdue": "Overdue",
+        "void": "Void",
+        "estimate": "Estimate"
+      },
+      "dueDate": "Due Date",
+      "unableToLoadInvoices": "Unable to load invoices",
+      "pleaseRefreshThisPageOr": "Please refresh this page or contact your clinic if the portal link has expired.",
+      "noInvoicesYet": "No invoices yet",
+      "invoicesAndEstimatesFromYour": "Invoices and estimates from your clinic will appear here.",
+      "unableToStartPayment": "Unable to start payment",
+      "openingSecureCheckout": "Opening secure checkout...",
+      "paySecurelyOnline": "Pay securely online",
+      "due": "Due: {date}"
+    },
+    "pet": {
+      "backToPortal": "Back to portal",
+      "backToAllPets": "Back to all pets",
+      "allergyAlerts": "Allergy Alerts",
+      "vaccine": "Vaccine",
+      "given": "Given",
+      "nextDue": "Next Due",
+      "status": "Status",
+      "certificate": "Certificate",
+      "medication": "Medication",
+      "dosage": "Dosage",
+      "frequency": "Frequency",
+      "refills": "Refills",
+      "endDate": "End Date",
+      "unableToLoadPetInformation": "Unable to load pet information",
+      "pleaseRefreshThisPageOr": "Please refresh this page or return to the portal home.",
+      "noVaccinationRecordsYet": "No vaccination records yet",
+      "noActivePrescriptions": "No active prescriptions",
+      "noWeightRecordsYet": "No weight records yet",
+      "vaccinations": "Vaccinations",
+      "prescriptions": "Prescriptions",
+      "weightHistory": "Weight History",
+      "noDueDate": "No due date",
+      "overdue": "Overdue",
+      "dueSoon": "Due soon",
+      "upToDate": "Up to date",
+      "checking": "Checking...",
+      "download": "Download",
+      "thisCertificateIsNoLonger": "This certificate is no longer available. Refresh to see current vaccination records."
+    },
+    "book": {
+      "requestedNotYetConfirmed": "Requested — not yet confirmed",
+      "viewYourAppointments": "View your appointments",
+      "backToAppointments": "Back to appointments",
+      "pickATimeThatWorks": "Pick a time that works for you. The clinic will confirm the final time.",
+      "clinicLocation": "Clinic location",
+      "chooseALocation": "Choose a location…",
+      "pet": "Pet",
+      "reasonForVisit": "Reason for visit",
+      "selectAVisitType": "Select a visit type…",
+      "preferredDate": "Preferred date",
+      "preferredTime": "Preferred time",
+      "suggestedTimesCouldNotBe": "Suggested times could not be loaded. You can still enter a preferred time.",
+      "noSuggestedRequestTimesAre": "No suggested request times are available for this date.",
+      "anythingWeShouldKnow": "Anything we should know?",
+      "requestSent": "Request sent!",
+      "visit": "Visit",
+      "clinic": "Clinic",
+      "requestAnAppointment": "Request an appointment",
+      "selectAPet": "Select a pet…",
+      "checkingSuggestedTimes": "Checking suggested times…",
+      "unableToLoadBookingForm": "Unable to load booking form",
+      "thisPortalLinkIsInvalid": "This portal link is invalid or has expired. Please contact your veterinary clinic for a new link.",
+      "appointmentRequestsAreUnavailable": "Appointment requests are unavailable",
+      "theClinicHasNotConfigured": "The clinic has not configured an active scheduling location. Please contact the clinic directly.",
+      "theClinicHasNotMade": "The clinic has not made any active visit types available. Please contact the clinic directly.",
+      "noPetsOnFileYet": "No pets on file yet",
+      "yourClinicWillAddPets": "Your clinic will add pets here when they create patient records.",
+      "brieflyDescribeTheReasonFor": "Briefly describe the reason for the visit",
+      "patient": "Patient",
+      "appointment": "Appointment",
+      "thisVisitTypeIsLonger": "This visit type is longer than the online booking window.",
+      "sending": "Sending…",
+      "requestAppointment": "Request appointment",
+      "timeRange": "Choose a start time from {min} to {max}."
+    }
+  },
+  "booking": {
+    "public": {
+      "requestedNotYetConfirmed": "Requested — not yet confirmed",
+      "requestAnAppointment": "Request an appointment",
+      "chooseAPreferredTimeThe": "Choose a preferred time. The clinic will review your request and confirm the appointment with you.",
+      "clinicLocation": "Clinic location",
+      "chooseALocation": "Choose a location",
+      "whatDoYouNeed": "What do you need?",
+      "chooseAVisitType": "Choose a visit type",
+      "pickADay": "Pick a day",
+      "pickATime": "Pick a time",
+      "suggestedTimesCouldNotBe": "Suggested times could not be loaded. Please try again.",
+      "noSuggestedRequestTimesThat": "No suggested request times that day. Try another date.",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "website": "Website",
+      "petSName": "Pet's name",
+      "petType": "Pet type",
+      "whatSThisVisitAbout": "What's this visit about?",
+      "preferToTalkToA": "Prefer to talk to a person?",
+      "requestSent": "Request sent!",
+      "pet": "Pet",
+      "visit": "Visit",
+      "preferredTime": "Preferred time",
+      "clinic": "Clinic",
+      "checkingSuggestedTimes": "Checking suggested times…",
+      "aboutYou": "About you",
+      "thisAppointmentRequestPageIsn": "This appointment request page isn't available",
+      "theLinkMayBeIncorrect": "The link may be incorrect, or online appointment requests may be turned off. Please contact the clinic directly.",
+      "tellUsALittleAbout": "Tell us a little about what your pet needs",
+      "appointment": "Appointment",
+      "contactTheClinic": "Contact the clinic.",
+      "sendingRequest": "Sending request…",
+      "requestAppointment": "Request appointment"
+    },
+    "intake": {
+      "visitLocationAndHealthDetails": "Visit location and health details",
+      "shareWhereTheVisitShould": "Share where the visit should happen and anything that would help the clinic prepare. These are owner-reported details and remain unverified until the care team reviews and confirms them.",
+      "optional": "(optional)",
+      "fields": {
+        "serviceAddress": {
+          "label": "Service or farm address",
+          "placeholder": "Street address, farm name, gate, unit, or arrival directions"
+        },
+        "symptoms": {
+          "label": "Current signs or symptoms",
+          "placeholder": "What are you seeing right now?"
+        },
+        "concernOnset": {
+          "label": "When it started or changed",
+          "placeholder": "Include timing and whether it is improving or getting worse"
+        },
+        "currentMedications": {
+          "label": "Current medications or supplements",
+          "placeholder": "Names, doses, and timing if known"
+        },
+        "allergies": {
+          "label": "Known allergies or past reactions",
+          "placeholder": "Include medications, vaccines, foods, or other reactions"
+        },
+        "medicalHistory": {
+          "label": "Relevant medical history",
+          "placeholder": "Previous diagnoses, procedures, or similar episodes"
+        },
+        "diet": {
+          "label": "Diet",
+          "placeholder": "Food, grazing, recent changes, or possible exposures"
+        },
+        "handlingNotes": {
+          "label": "Handling or access notes",
+          "placeholder": "Temperament, restraint needs, gate directions, or arrival notes"
+        }
+      }
+    },
+    "footer": {
+      "poweredBy": "Powered by <link>OpenVPM</link>",
+      "privacy": "Privacy"
+    }
+  },
+  "sign": {
+    "clear": "Clear",
+    "thankYouTheClinicHas": "Thank you. The clinic has your signed form.",
+    "thisPrivateDownloadIsAvailable": "This private download is available briefly on this device. Save it now if you would like to keep a copy.",
+    "youCanCloseThisPage": "You can close this page. Ask the clinic if you need a copy.",
+    "thankYouTheClinicHas2": "Thank you. The clinic has your signed form. Ask the clinic if you need another copy.",
+    "yourSignatureIsSafe": "Your signature is safe",
+    "theClinicHasYourExact": "The clinic has your exact signature. Finish saving the signed document without drawing it again.",
+    "yourFullName": "Your full name",
+    "chooseHowToSign": "Choose how to sign",
+    "drawSignature": "Draw signature",
+    "typeSignature": "Type signature",
+    "typeYourSignature": "Type your signature",
+    "yourTypedNameWillBe": "Your typed name will be saved as the signature image on the PDF.",
+    "signing": "Signing…",
+    "signAboveWithYourFinger": "Sign above with your finger.",
+    "loadingTheForm": "Loading the form…",
+    "allSigned": "All signed",
+    "signatureAreaDrawYourSignature": "Signature area. Draw your signature here.",
+    "firstAndLastName": "First and last name",
+    "somethingWentWrongPleaseTry": "Something went wrong. Please try again.",
+    "signingFailedPleaseTryAgain": "Signing failed. Please try again.",
+    "tooManyDownloadAttemptsWait": "Too many download attempts. Wait a minute and try again.",
+    "thisDownloadIsNoLonger": "This download is no longer available. Ask the clinic for a copy.",
+    "finishing": "Finishing…",
+    "finishSaving": "Finish saving",
+    "tooManyTriesRightNow": "Too many tries right now. Wait a minute and try again.",
+    "signingFailedPleaseCheckYour": "Signing failed. Please check your connection and try again.",
+    "agreeAndSign": "Agree and sign",
+    "expired": "This link has expired. Ask the front desk for a new code.",
+    "downloadFailed": "Download failed. Please check your connection.",
+    "downloadPdf": "Download your signed PDF",
+    "header": "Consent Form",
+    "poweredBy": "Powered by OpenVPM",
+    "apiErrors": {
+      "confirmAuthorized": "Please confirm you are authorized to sign",
+      "typeFullName": "Please type your full name",
+      "validSignature": "Please provide a valid signature",
+      "provideSignature": "Please provide your signature",
+      "outcomeVerifying": "Signing outcome is still being verified. Please retry.",
+      "alreadyFinalizing": "Signing is already being finalized. Please retry.",
+      "attemptMismatch": "This signing attempt does not match the in-progress request",
+      "integrityFailed": "Signed document failed integrity verification"
+    }
+  },
+  "treatmentPlan": {
+    "theClinicHasYourDecisions": "The clinic has your decisions and signed document.",
+    "thisStepRecordsYourChoices": "This step records your choices. It does not charge you or schedule care.",
+    "planSigned": "Plan signed",
+    "subtotal": "Subtotal",
+    "tax": "Tax",
+    "totalOffered": "Total offered",
+    "thePlanCouldNotBe": "The plan could not be loaded.",
+    "thisLinkIsNoLonger": "This link is no longer available. Ask the clinic for a new link.",
+    "decisionsCouldNotBeSaved": "Decisions could not be saved.",
+    "accept": "Accept",
+    "decline": "Decline",
+    "savingDecisions": "Saving decisions…",
+    "continueToSignature": "Continue to signature",
+    "saveFailedConnection": "Decisions could not be saved. Check your connection.",
+    "header": "Treatment Plan",
+    "apiErrors": {
+      "decideEveryLine": "Decide every line using a valid quantity",
+      "decisionsMismatch": "These decisions do not match the saved response"
+    }
+  },
+  "emailPreferences": {
+    "emailPreferences": "Email preferences",
+    "stopOptionalOpenvpmProductTrial": "Stop optional OpenVPM product, trial, research, and feedback emails with one click.",
+    "thisPreferenceDoesNotApply": "This preference does not apply to important security alerts, billing receipts, or service notices. It also does not affect messages your clinic sends to pet owners. Optional emails stay off for this address.",
+    "optionalOpenvpmEmailsAreNow": "Optional OpenVPM emails are now off. No sign-in or sales call was required.",
+    "immediateNoSignInRequired": "Immediate, no sign-in required.",
+    "preferenceSaved": "Preference saved",
+    "thisEmailPreferenceLinkIs": "This email preference link is invalid or incomplete.",
+    "weCouldNotSaveThat": "We could not save that preference.",
+    "weCouldNotSaveThat2": "We could not save that preference. Try again.",
+    "turnOff": "Turn off optional emails"
+  },
+  "email": {
+    "greeting": "Hi {name},",
+    "defaultFooter": "This email was sent by {practiceName}. If you received this in error, please disregard it.",
+    "appointmentReminder": {
+      "subject": "Appointment Reminder for {patient} – {date}",
+      "intro": "This is a friendly reminder about an upcoming appointment for <strong>{patient}</strong>.",
+      "date": "Date",
+      "time": "Time",
+      "reschedulePhone": "If you need to cancel or reschedule, please call us at <strong>{phone}</strong> as soon as possible.",
+      "reschedule": "If you need to cancel or reschedule, please call us as soon as possible.",
+      "closing": "We look forward to seeing you and {patient}!"
+    },
+    "vaccinationReminder": {
+      "subject": "Vaccination Reminder: {vaccine} for {patient}",
+      "intro": "It's time to schedule <strong>{patient}</strong>'s <strong>{vaccine}</strong> vaccination.",
+      "vaccine": "Vaccine",
+      "dueDate": "Due Date",
+      "contactPhone": "Please contact us at <strong>{phone}</strong> to schedule an appointment for {patient}.",
+      "contact": "Please contact us to schedule an appointment for {patient}.",
+      "cta": "Schedule Your Pet's Appointment",
+      "note": "Keeping vaccinations up to date is important for your pet's health and safety."
+    },
+    "careReminder": {
+      "subject": "Care Reminder for {patient}",
+      "intro": "This is a reminder from our veterinary team about <strong>{patient}</strong>.",
+      "reminder": "Reminder",
+      "reminderDate": "Reminder Date",
+      "contactPhone": "Please contact us at <strong>{phone}</strong> if you have questions or would like to schedule.",
+      "contact": "Please contact us if you have questions or would like to schedule."
+    },
+    "invoice": {
+      "subject": "Invoice from {practice} – {total}",
+      "introPatient": "Here is your invoice for <strong>{patient}</strong> from {practice}.",
+      "intro": "Here is your invoice from {practice}.",
+      "amountDue": "Amount Due",
+      "dueDate": "Due Date",
+      "viewInPortal": "View in Portal",
+      "questionsPhone": "If you have any questions about this invoice, please contact us at <strong>{phone}</strong>.",
+      "questions": "If you have any questions about this invoice, please contact us."
+    },
+    "paymentReceipt": {
+      "subject": "Payment received – {practice}",
+      "introPatient": "We got your payment for <strong>{patient}</strong>. Thank you!",
+      "intro": "We got your payment. Thank you!",
+      "paidInFull": "This invoice is paid in full.",
+      "remainingBalance": "Remaining Balance",
+      "amountPaid": "Amount Paid",
+      "recordsPhone": "Keep this email for your records. If anything looks wrong, please contact us at <strong>{phone}</strong>.",
+      "records": "Keep this email for your records. If anything looks wrong, please contact us."
+    },
+    "verification": {
+      "subject": "Verify your OpenVPM email",
+      "body": "Welcome to OpenVPM! Please confirm your email address to secure your workspace and keep important account messages deliverable.",
+      "cta": "Confirm email",
+      "note": "This link expires in 24 hours. If you didn't create an OpenVPM account, you can ignore this email."
+    },
+    "passwordReset": {
+      "subject": "Reset your OpenVPM password",
+      "body": "We received a request to reset your OpenVPM password. Click below to choose a new one.",
+      "cta": "Reset my password",
+      "note": "This link expires in 1 hour. If you didn't request a password reset, you can safely ignore this email — your password won't change."
+    },
+    "staffInvite": {
+      "subject": "You're invited to join {practice} on OpenVPM",
+      "body": "<strong>{inviter}</strong> has invited you to join <strong>{practice}</strong> on OpenVPM.",
+      "body2": "Accept the invite below to set your password and activate your account.",
+      "cta": "Accept invite",
+      "note": "This link expires in 72 hours. If you weren't expecting this invitation, you can safely ignore this email."
+    },
+    "yourClinic": "your clinic",
+    "composed": {
+      "sentBy": "This email was sent by {practiceName}.",
+      "repliesTo": "Replies go to {email}. Email replies are not imported into OpenVPM yet.",
+      "contactDirectly": "Email replies are not imported into OpenVPM yet. Please contact {practiceName} directly if you need to respond."
+    }
+  },
+  "sms": {
+    "appointmentReminder": "Reminder: {patient} has an appointment on {date} at {time}. {contact}",
+    "callToReschedule": "Call {phone} to reschedule.",
+    "contactToReschedule": "Contact us to reschedule.",
+    "vaccinationReminder": "{patient} is due for their {vaccine} vaccination. {contact}",
+    "callToSchedule": "Call {phone} to schedule.",
+    "contactToSchedule": "Contact us to schedule.",
+    "careReminder": "Reminder for {patient}: {title}. Reminder date: {date}. {contact}",
+    "callWithQuestions": "Call {phone} with questions.",
+    "contactWithQuestions": "Contact us with questions."
+  },
+  "pdf": {
+    "common": {
+      "page": "Page {page} of {count}",
+      "generatedOn": "Generated on {date}",
+      "veterinaryPractice": "Veterinary Practice",
+      "patient": "Patient",
+      "owner": "Owner",
+      "vaccine": "Vaccine",
+      "nextDueLower": "Next due",
+      "manufacturer": "Manufacturer",
+      "lotNumber": "Lot number",
+      "administeredBy": "Administered by",
+      "dobValue": "DOB: {value}",
+      "certificateId": "Certificate ID: {id}",
+      "unknown": "Unknown",
+      "unknownDate": "Unknown date"
+    },
+    "invoice": {
+      "title": "INVOICE",
+      "date": "Date: {date}",
+      "due": "Due: {date}",
+      "billTo": "BILL TO",
+      "patient": "Patient: {name}",
+      "description": "Description",
+      "qty": "Qty",
+      "unitPrice": "Unit Price",
+      "total": "Total",
+      "subtotalLabel": "Subtotal:",
+      "taxLabel": "Tax:",
+      "totalLabel": "Total:",
+      "paidLabel": "Paid:",
+      "adjustedLabel": "Credits / write-offs:",
+      "balanceLabel": "Balance Due:",
+      "thanks": "Thank you for trusting us with your pet's care"
+    },
+    "prescription": {
+      "patient": "Patient: {name} ({species})",
+      "owner": "Owner: {name}",
+      "prescribedBy": "Prescribed by: {name}",
+      "date": "Date: {date}",
+      "qty": "Qty: {qty}",
+      "refills": "Refills: {count}"
+    },
+    "summary": {
+      "title": "MEDICAL RECORD SUMMARY",
+      "patientInformation": "Patient Information",
+      "name": "Name",
+      "species": "Species",
+      "breed": "Breed",
+      "sex": "Sex",
+      "dob": "Date of Birth",
+      "color": "Color",
+      "microchip": "Microchip",
+      "ownerInformation": "Owner Information",
+      "nameLabel": "Name: ",
+      "phoneLabel": "Phone: ",
+      "emailLabel": "Email: ",
+      "allergies": "Allergies",
+      "reaction": "Reaction: {reaction}",
+      "activeProblems": "Active Problems",
+      "onset": " (onset: {date})",
+      "vaccinationHistory": "Vaccination History",
+      "dateGiven": "Date Given",
+      "nextDue": "Next Due",
+      "recentSoapNotes": "Recent SOAP Notes",
+      "finalizedImported": "{date}  (Finalized imported record)",
+      "finalized": "{date}  (Finalized)",
+      "unknownClinician": "Unknown clinician",
+      "importedBy": "Imported by {name}",
+      "authoredFinalized": "Authored by {author}; finalized by {finalizer}",
+      "authoredFinalizedOn": "Authored by {author}; finalized by {finalizer} on {date}",
+      "signedReplacementFor": "Signed replacement for retained {label}",
+      "addendum": "Addendum - {author}, {date}",
+      "recentChartNotes": "Recent Chart Notes",
+      "chartNotesHidden": "Chart notes are not included for this access level.",
+      "chartNotesLimited": "Showing the latest 25 chart notes. Earlier notes remain available in the patient chart.",
+      "noChartNotes": "No chart notes recorded.",
+      "authoredBy": "Authored by {name}",
+      "recordCorrections": "Record Corrections",
+      "enteredInError": "Entered in error by {name} on {date}",
+      "reason": "Reason: {reason}",
+      "signedReplacement": "Signed replacement: {label}",
+      "currentPrescriptions": "Current Prescriptions",
+      "medication": "Medication",
+      "dosage": "Dosage",
+      "frequency": "Frequency",
+      "status": "Status",
+      "footer": "Generated on {date} — This document is for reference only"
+    },
+    "certificate": {
+      "title": "VACCINATION CERTIFICATE",
+      "colorValue": "Color: {value}",
+      "vaccinationRecord": "Vaccination Record",
+      "administered": "Administered",
+      "portalNote": "This certificate reflects the vaccination record currently available in the client portal.",
+      "sexValue": "Sex: {value}",
+      "colorMarkings": "Color/markings: {value}",
+      "microchipValue": "Microchip: {value}",
+      "weightValue": "Weight: {value} kg",
+      "phoneValue": "Phone: {value}",
+      "footer": "Generated {date} • Certificate {id}"
+    },
+    "history": {
+      "section": "Vaccination history",
+      "sectionContinued": "Vaccination history (continued)",
+      "vaccineProduct": "Vaccine / product",
+      "given": "Given",
+      "lot": "Lot",
+      "note": "This document is a record of vaccinations entered in the patient's chart as of the generated date."
+    },
+    "rabies": {
+      "section": "Rabies vaccination",
+      "years": "{count} year",
+      "months": "{count} months",
+      "product": "Product",
+      "productExpiration": "Product expiration",
+      "dose": "Dose",
+      "initial": "Initial",
+      "booster": "Booster",
+      "licensedDuration": "Licensed duration",
+      "dateAdministered": "Date administered",
+      "tag": "Rabies tag",
+      "tagNotAssigned": "Not assigned (microchip listed above)",
+      "notRecorded": "Not recorded"
+    },
+    "report": {
+      "noData": "No report data available."
+    },
+    "discharge": {
+      "title": "DISCHARGE INSTRUCTIONS",
+      "patient": "Patient:",
+      "owner": "Owner:",
+      "visitDate": "Visit Date:",
+      "doctor": "Doctor:",
+      "diagnosis": "Diagnosis",
+      "medications": "Medications",
+      "frequency": "Frequency: {value}",
+      "careInstructions": "Care Instructions",
+      "restrictions": "Restrictions",
+      "followUp": "Follow-Up",
+      "scheduled": "Scheduled:",
+      "emergency": "WHEN TO SEEK EMERGENCY CARE",
+      "questions": "If you have any questions or concerns, please contact our office.",
+      "neededBy": "Needed by {date}",
+      "noInstructions": "No additional home-care instructions: {reason}"
+    }
+  },
+  "meta": {
+    "app": {
+      "title": "OpenVPM: Open-Source Veterinary Practice Management",
+      "description": "The first modern, open-source, API-first practice management system built for the veterinary community. Beautiful, fast, and free."
+    },
+    "portal": {
+      "title": "Pet Portal - OpenVPM",
+      "description": "View your pet's health information"
+    },
+    "sign": {
+      "title": "Sign Consent - OpenVPM",
+      "description": "Review and sign a consent form"
+    },
+    "treatmentPlan": {
+      "title": "Treatment Plan - OpenVPM",
+      "description": "Review a veterinary treatment plan"
+    },
+    "book": {
+      "title": "Book an appointment",
+      "description": "Book an appointment online"
+    },
+    "emailPreferences": {
+      "title": "Email preferences - OpenVPM",
+      "description": "Manage optional OpenVPM email updates."
+    },
+    "start": {
+      "title": "Build your clinic - OpenVPM",
+      "description": "See OpenVPM with your clinic's name, colors, and services before you start your free trial."
+    },
+    "capture": {
+      "title": "Add Photos - OpenVPM",
+      "description": "Add photos to the visit record"
+    }
+  },
+  "capture": {
+    "header": "Photo Capture",
+    "poweredBy": "Powered by OpenVPM",
+    "expired": "This link has expired. Ask the front desk for a new code.",
+    "tooMany": "Too many uploads right now. Wait a minute and try again.",
+    "linkFull": "This capture link cannot accept another photo. Ask the clinic for a new link.",
+    "imagePolicy": "Images must be JPG, PNG, or WebP and 10 MB or less.",
+    "uploadFailed": "The upload failed. Please try again.",
+    "title": "Add photos to the visit record",
+    "intro": "Take a photo or pick one from your phone. It goes straight to the clinic.",
+    "addMore": "Add more photos",
+    "takeOrChoose": "Take or choose photos",
+    "tryAgain": "Try again",
+    "allSet": "All set.",
+    "added": "{count, plural, one {Your photo was added to the visit record.} other {Your # photos were added to the visit record.}} You can close this page or add more."
   }
 }

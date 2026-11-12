@@ -1,4 +1,5 @@
 import type { Database } from "@openpims/db/client";
+import { isSupportedLanguage, type Language } from "@/i18n/config";
 import {
   appointments,
   clients,
@@ -223,6 +224,8 @@ export function appointmentReminderMessageFields(options: {
   patientName: string | null;
   practiceName: string | null;
   practicePhone: string | null;
+  /** The claim's frozen language; English when omitted. */
+  language?: Language;
 }): {
   appointmentDate: string;
   appointmentTime: string;
@@ -232,9 +235,10 @@ export function appointmentReminderMessageFields(options: {
 } {
   const startTime = new Date(options.startTime);
   const practicePhone = options.practicePhone?.trim();
+  const locale = options.language === "es" ? "es" : "en-US";
   return {
     appointmentDate: formatInTimeZone(startTime, options.timeZone, (d, tz) =>
-      d.toLocaleDateString("en-US", {
+      d.toLocaleDateString(locale, {
         timeZone: tz,
         weekday: "long",
         month: "long",
@@ -243,7 +247,7 @@ export function appointmentReminderMessageFields(options: {
       }),
     ),
     appointmentTime: formatInTimeZone(startTime, options.timeZone, (d, tz) =>
-      d.toLocaleTimeString("en-US", {
+      d.toLocaleTimeString(locale, {
         timeZone: tz,
         hour: "numeric",
         minute: "2-digit",
@@ -264,6 +268,7 @@ export function appointmentReminderEmailFields(options: {
   patientName: string | null;
   practiceName: string | null;
   practicePhone: string | null;
+  language?: Language;
 }) {
   return {
     ...appointmentReminderMessageFields(options),
@@ -387,7 +392,17 @@ export type AppointmentReminderClaim = {
    * retryable failure that would start a new attempt under a new key.
    */
   redispatch: boolean;
+  /**
+   * Language of this send attempt, stored on the row when the attempt
+   * started. Every resend of the attempt builds its text in this language,
+   * so the body under one idempotency key never changes. Legacy rows: English.
+   */
+  language: Language;
 };
+
+function storedLanguage(value: string | null | undefined): Language {
+  return isSupportedLanguage(value) ? value : "en";
+}
 
 /**
  * Shared cross-path claim. One row per appointment start time (the dedupe
@@ -429,6 +444,8 @@ export async function claimAppointmentReminderCommunication(
     patientName: string | null;
     startTime: Date;
     source?: "staff" | "automated";
+    /** Client language resolved now; used only when a new attempt starts. */
+    language: Language;
   },
 ): Promise<AppointmentReminderClaim | null> {
   const dedupeKey = appointmentReminderDedupeKey({
@@ -456,6 +473,7 @@ export async function claimAppointmentReminderCommunication(
       reminderOutcome: null,
       reminderAttemptStartedAt: sql`now()`,
       reminderClaimToken: sql`gen_random_uuid()`,
+      language: options.language,
     })
     .onConflictDoNothing({ target: communications.dedupeKey })
     .returning({
@@ -469,6 +487,7 @@ export async function claimAppointmentReminderCommunication(
       attempt: 1,
       claimToken: row.claimToken!,
       redispatch: false,
+      language: options.language,
     };
   }
 
@@ -522,6 +541,9 @@ export async function claimAppointmentReminderCommunication(
           ? sql`case when ${communications.status} = 'failed' then ${communications.reminderAutomatedAttempts} + 1 else ${communications.reminderAutomatedAttempts} end`
           : sql`${communications.reminderAutomatedAttempts}`,
       reminderClaimToken: sql`gen_random_uuid()`,
+      // A new attempt takes the client's current language; a resumed email
+      // keeps the language its earlier send used.
+      language: sql`case when ${communications.status} = 'failed' then ${options.language} else ${communications.language} end`,
       updatedAt: sql`now()`,
     })
     .where(
@@ -550,6 +572,7 @@ export async function claimAppointmentReminderCommunication(
       // clock at this transaction's now(); a resumed email keeps the earlier
       // start, so an older start means this claim resumed an attempt.
       redispatch: sql<boolean>`${communications.reminderAttemptStartedAt} < now()`,
+      language: communications.language,
     });
   if (reclaimed) {
     return {
@@ -558,6 +581,7 @@ export async function claimAppointmentReminderCommunication(
       attempt: reclaimed.attempt ?? 1,
       claimToken: reclaimed.claimToken!,
       redispatch: Boolean(reclaimed.redispatch),
+      language: storedLanguage(reclaimed.language),
     };
   }
 
@@ -608,6 +632,7 @@ export async function claimAppointmentReminderCommunication(
     .returning({
       attempt: communications.reminderAttempt,
       claimToken: communications.reminderClaimToken,
+      language: communications.language,
     });
   if (!recovered?.claimToken) return null;
   return {
@@ -616,6 +641,7 @@ export async function claimAppointmentReminderCommunication(
     attempt: recovered.attempt ?? 1,
     claimToken: recovered.claimToken,
     redispatch: false,
+    language: storedLanguage(recovered.language),
   };
 }
 

@@ -33,14 +33,26 @@ development set the flag to true.
 | Surface | Used for | Order (first supported value wins) |
 |---------|----------|-------------------------------------|
 | `staff` | `(dashboard)`, signed-in settings | cookie → clinicDefault → `en` |
-| `public` | `(auth)` screens, booking with no client yet | cookie → acceptLanguage → `en` |
-| `client` | portal, sign, treatment-plan, email-preferences, booking with a known client | cookie → clientLanguage → acceptLanguage → clinicDefault → `en` |
+| `public` | `(auth)` screens, booking with no client yet, photo capture, `/email-preferences` | cookie → acceptLanguage → `en` |
+| `client` | portal (pages and error messages), sign, treatment-plan, booking with a known client | cookie → clientLanguage → acceptLanguage → clinicDefault → `en` |
 | `message` | emails, SMS, PDFs for a client | clientLanguage → clinicDefault → `en` (no cookie or browser) |
 | `staffEmail` | verification, password reset | userLanguage → clinicDefault → `en` |
 | `invite` | staff invite email | clinicDefault → `en` |
 
 For signed-in staff the cookie already holds the saved user language (sign-in
 writes it), so page requests never read the user row (research R2).
+
+`/email-preferences` manages OpenVPM account emails, not pet-owner email, so
+it uses the `public` order through `apps/web/i18n/public-request.ts`.
+
+### Consent signing and treatment-plan pages
+
+The page and its layout render before anything checks the token, so they
+cannot read the client record without becoming a token-validity oracle. The
+first render uses the `public` order. After the page loads, its rate-limited
+API (`/api/sign/<token>`, `/api/treatment-plan/<token>`) returns `language`,
+resolved with the `client` order, and `apps/web/i18n/token-page.ts` switches
+the page to it. An explicit cookie still wins.
 
 On client pages the cookie comes first, so the language switch shown there
 always works. Switching on a public page changes only that browser; it never

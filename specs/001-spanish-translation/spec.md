@@ -202,6 +202,8 @@ fixed text in each is Spanish.
 - Clinic-entered content (patient records, notes, service and product names, clinic templates) stays as entered.
 - Out of scope: the marketing website, the external guides site, API reference docs, the README, and country-specific legal, tax, or e-invoicing features for Spanish-speaking countries.
 - Internal operator tooling used only by the hosting team may stay English.
+- The pet-owner photo capture page (`/capture/<token>`) is translated and follows the visitor's language (cookie, then browser), because the link carries no client identity. The SMS program pages (`/sms/<practiceId>` opt-in, privacy, and terms) stay English: they are compliance disclosures reviewed by carriers, like consent disclosures, and change only with a reviewed Spanish version.
+- Spanish texts keep the English compliance footer ("Reply STOP to opt out or HELP for help."). It is the wording registered with the carriers, and STOP and HELP are the keywords carriers act on. A Spanish footer needs the clinic's messaging campaign registered with that wording first.
 - Staff roles and permissions are unchanged: any user can set their own language; roles that can edit client records can set a client's language; admins can set the clinic default.
 - Adding user, clinic, and client language fields is an additive data change and follows the project's expand-contract migration rules.
 - Work ships in small, reviewable pieces (one surface at a time) per docs/I18N.md; while work is in progress, untranslated areas show English through the fallback, but the release is not complete until all four stories are in Spanish (FR-020). Until then, language selection stays hidden behind a default-off release switch, so no clinic sees a half-translated product.

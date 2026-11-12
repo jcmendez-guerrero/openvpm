@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveLanguage, parseAcceptLanguage } from "../resolve";
+import { isPortalSessionPath, resolveLanguage, parseAcceptLanguage } from "../resolve";
 
 const on = { enabled: true } as const;
 
@@ -99,5 +99,15 @@ describe("parseAcceptLanguage", () => {
   });
   it("ignores q=0", () => {
     expect(parseAcceptLanguage("es;q=0,en")).toBe("en");
+  });
+});
+
+describe("isPortalSessionPath", () => {
+  it("matches portal pages but not the access-token step or look-alike paths", () => {
+    expect(isPortalSessionPath("/portal")).toBe(true);
+    expect(isPortalSessionPath("/portal/invoices")).toBe(true);
+    expect(isPortalSessionPath("/portal/access/abc")).toBe(false);
+    expect(isPortalSessionPath("/portals")).toBe(false);
+    expect(isPortalSessionPath(null)).toBe(false);
   });
 });

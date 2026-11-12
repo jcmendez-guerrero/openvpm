@@ -1,5 +1,6 @@
 "use client";
 
+import { useDocumentLanguage } from "@/components/common/use-document-language";
 import { useLocale, useTranslations } from "use-intl";
 
 import { useEffect, useRef, useState } from "react";
@@ -1011,6 +1012,7 @@ function InvoiceRow({
   canManageBilling: boolean;
   isMutating: boolean;
 }) {
+  const documentLanguage = useDocumentLanguage();
   const t = useTranslations("billing.page");
   const locale = useLocale();
   const formatCurrency = useCurrencyFormatter();
@@ -1169,6 +1171,7 @@ function InvoiceRow({
                             .join(" ");
                           const { generateInvoicePdf } = await import("@/lib/pdf");
                           generateInvoicePdf({
+                            language: documentLanguage(d.clientPreferredLanguage),
                             practiceName,
                             clientName,
                             clientEmail: d.clientEmail ?? undefined,
@@ -1356,6 +1359,7 @@ function InvoiceRow({
                             .join(" ");
                           const { generateInvoicePdf } = await import("@/lib/pdf");
                           generateInvoicePdf({
+                            language: documentLanguage(d.clientPreferredLanguage),
                             practiceName,
                             clientName,
                             clientEmail: d.clientEmail ?? undefined,

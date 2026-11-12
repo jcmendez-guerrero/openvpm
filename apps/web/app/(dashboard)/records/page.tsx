@@ -1,5 +1,6 @@
 "use client";
 
+import { useDocumentLanguage } from "@/components/common/use-document-language";
 import { useLocale, useTranslations } from "use-intl";
 
 import dynamic from "next/dynamic";
@@ -592,6 +593,7 @@ function CorrectedLabResultHistory({
 }
 
 function RecordsPageContent() {
+  const documentLanguage = useDocumentLanguage();
   const router = useRouter();
   const t = useTranslations("records.page");
   const ts = useTranslations("patients.soap");
@@ -626,6 +628,7 @@ function RecordsPageContent() {
     breed: string | null;
     clientFirstName: string | null;
     clientLastName: string | null;
+    clientPreferredLanguage?: string | null;
   } | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("soap");
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
@@ -2492,6 +2495,9 @@ function RecordsPageContent() {
                                   const { generatePrescriptionLabelPdf } =
                                     await import("@/lib/pdf");
                                   generatePrescriptionLabelPdf({
+                                    language: documentLanguage(
+                                      selectedPatient?.clientPreferredLanguage,
+                                    ),
                                     practiceName: recordsPracticeName,
                                     practicePhone:
                                       recordsPracticePhone ?? undefined,

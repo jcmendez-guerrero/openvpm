@@ -31,13 +31,13 @@
       "rotated": "Se creó un nuevo enlace de calendario. El anterior dejó de funcionar.",
       "copied": "Enlace del calendario copiado",
       "copyFailed": "No se pudo copiar el enlace",
-      "trigger": "Agregar a su calendario",
-      "title": "Su agenda, en su calendario",
-      "intro": "Suscríbase una vez y la agenda de la clínica se mantiene al día por sí sola en Google, Apple u Outlook. El enlace solo muestra nombres de pacientes y tipos de visita, así que compártalo con el personal, no con los clientes.",
+      "trigger": "Agregar a tu calendario",
+      "title": "Tu agenda, en tu calendario",
+      "intro": "Suscríbete una vez y la agenda de la clínica se mantiene al día por sí sola en Google, Apple u Outlook. El enlace solo muestra nombres de pacientes y tipos de visita, así que compártelo con el personal, no con los clientes.",
       "checking": "Revisando el calendario...",
       "loadFailed": "No se pudo cargar el calendario.",
       "retry": "Reintentar",
-      "howTo": "En su aplicación de calendario, busque \"suscribirse por URL\" o \"desde internet\" y pegue el enlace.",
+      "howTo": "En tu aplicación de calendario, busca \"suscribirse por URL\" o \"desde internet\" y pega el enlace.",
       "copy": "Copiar enlace",
       "updating": "Actualizando...",
       "confirmRotate": "Confirmar nuevo enlace",
@@ -554,7 +554,8 @@
       "included": "incluidos",
       "reconcile": "Conciliar configuración del proveedor",
       "sendTest": "Enviar prueba",
-      "safetyCheckBody": "OpenVPM debe verificar el perfil exacto de mensajes de texto justo antes de habilitar el envío. Tu clínica no necesita repetir el registro con el operador; esta verificación operativa mantiene el webhook, los destinos solo de EE. UU. y el límite de gasto en el estado aprobado."
+      "safetyCheckBody": "OpenVPM debe verificar el perfil exacto de mensajes de texto justo antes de habilitar el envío. Tu clínica no necesita repetir el registro con el operador; esta verificación operativa mantiene el webhook, los destinos solo de EE. UU. y el límite de gasto en el estado aprobado.",
+      "spanishSegmentsHelp": "Los textos para clientes que prefieren español se envían en español. Un recordatorio de cita en español es más largo, así que suele contar como dos segmentos. Letras como á, í, ó y ú, en el mensaje o en el nombre registrado de tu clínica, cambian el texto a segmentos más cortos (70 caracteres en vez de 160), en cualquier idioma."
     },
     "messagingRegistration": {
       "openvpmHostsThePrivacyPolicy": "OpenVPM aloja la política de privacidad, los términos de mensajería y el texto exacto de consentimiento que los operadores deben revisar. Puedes usar estos enlaces ahora o reemplazarlos por tus propias páginas HTTPS públicas.",
@@ -1179,7 +1180,13 @@
         "system": "sistema"
       },
       "saving": "Guardando...",
-      "saveChanges": "Guardar cambios"
+      "saveChanges": "Guardar cambios",
+      "preferredLanguage": {
+        "label": "Idioma preferido",
+        "clinicDefault": "Predeterminado de la clínica",
+        "help": "Se usa en el portal del cliente, los enlaces de citas y los mensajes a este cliente.",
+        "shown": "Idioma preferido: {language}"
+      }
     },
     "detail": {
       "portalCreated": "Enlace de acceso único al portal creado",
@@ -3442,7 +3449,11 @@
       "addVisitCharge": "Agregar cargo de la visita: {name}",
       "removeItem": "Quitar {name}",
       "patientFallback": "Paciente",
-      "revisionDownloaded": "Revisión {revision} del alta descargada"
+      "revisionDownloaded": "Revisión {revision} del alta descargada",
+      "chargeLockRole": "La captura de cargos es de solo lectura para tu rol. Un administrador o alguien de recepción puede agregar cargos y crear la factura.",
+      "chargeLockClosedOut": "La captura de cargos está cerrada porque el cierre de esta visita está completo.",
+      "chargeLockPreExam": "Los cargos se habilitan cuando la visita está en consulta. Esta visita está {status}.",
+      "chargeLockNotInExam": "Solo se pueden agregar cargos mientras la visita está en consulta. Esta visita está {status}."
     }
   },
   "onboarding": {
@@ -5925,5 +5936,619 @@
       "body": "Es posible que esta página se haya movido o que el enlace ya no esté disponible.",
       "home": "Ir al panel"
     }
+  },
+  "portal": {
+    "shell": {
+      "poweredByOpenvpm": "Con la tecnología de OpenVPM",
+      "privacy": "Privacidad",
+      "petPortal": "Portal de mascotas",
+      "signingOut": "Cerrando sesión…",
+      "signOut": "Cerrar sesión",
+      "logoAlt": "Logo de {name}"
+    },
+    "home": {
+      "hereIsEverythingAboutYour": "Aquí tienes todo sobre tus mascotas en un solo lugar.",
+      "requestAnAppointment": "Solicitar una cita",
+      "yourPets": "Tus mascotas",
+      "quickLinks": "Accesos rápidos",
+      "messages": "Mensajes",
+      "readAndReplyToYour": "Lee y responde a tu clínica",
+      "appointments": "Citas",
+      "viewUpcomingAndPastVisits": "Consulta tus visitas próximas y pasadas",
+      "invoices": "Facturas",
+      "viewBillingAndPayments": "Consulta tus cobros y pagos",
+      "unableToLoadPortal": "No se pudo cargar el portal",
+      "thisPortalLinkIsInvalid": "Este enlace del portal no es válido o ya venció. Pide a tu clínica veterinaria un enlace nuevo.",
+      "noPetsOnFileYet": "Todavía no hay mascotas registradas",
+      "yourClinicWillAddPets": "Tu clínica agregará aquí a tus mascotas cuando cree sus historias clínicas.",
+      "welcome": "¡Hola, {name}!"
+    },
+    "access": {
+      "openYourSecurePetPortal": "Abre tu portal seguro de mascotas",
+      "thisPrivateLinkCanBe": "Este enlace privado se puede usar una sola vez y vence pronto. Al continuar se crea una sesión segura en este dispositivo y el enlace desaparece de la barra de direcciones.",
+      "unableToOpenThePortal": "No se pudo abrir el portal",
+      "unableToOpenThePortal2": "No se pudo abrir el portal. Pide a tu clínica un enlace nuevo.",
+      "openingPortal": "Abriendo el portal…",
+      "continueSecurely": "Continuar de forma segura"
+    },
+    "messages": {
+      "backToPortal": "Volver al portal",
+      "sendQuestionsAndFollowUps": "Envía preguntas y seguimientos directamente a tu clínica.",
+      "message": "Mensaje",
+      "messages": "Mensajes",
+      "unableToLoadMessages": "No se pudieron cargar los mensajes",
+      "pleaseRefreshThisPageOr": "Actualiza esta página o contacta a tu clínica si el enlace del portal venció.",
+      "noPortalMessagesYet": "Todavía no hay mensajes en el portal",
+      "messagesFromYourClinicAnd": "Aquí aparecerán los mensajes de tu clínica y tus respuestas.",
+      "typeYourMessage": "Escribe tu mensaje...",
+      "you": "Tú",
+      "clinic": "Clínica",
+      "sending": "Enviando...",
+      "send": "Enviar",
+      "messageSent": "Mensaje enviado"
+    },
+    "age": {
+      "months": "{count, plural, one {# mes} other {# meses}}",
+      "years": "{count, plural, one {# año} other {# años}}",
+      "unknown": "Edad desconocida"
+    },
+    "appointments": {
+      "backToPortal": "Volver al portal",
+      "requestAppointment": "Solicitar una cita",
+      "upcomingAndRequests": "Próximas y solicitudes",
+      "past": "Pasadas",
+      "appointments": "Citas",
+      "unableToLoadAppointments": "No se pudieron cargar las citas",
+      "pleaseRefreshThisPageOr": "Actualiza esta página o contacta a tu clínica si el enlace del portal venció.",
+      "noUpcomingAppointmentsOrRequests": "No hay citas próximas ni solicitudes",
+      "noPastAppointments": "No hay citas pasadas",
+      "noPatient": "Sin paciente",
+      "status": {
+        "requested": "Solicitada — pendiente de confirmación",
+        "scheduled": "Programada",
+        "confirmed": "Confirmada",
+        "checked_in": "En la clínica",
+        "in_exam": "En consulta",
+        "checked_out": "Completada",
+        "no_show": "No asistió",
+        "cancelled": "Cancelada"
+      }
+    },
+    "invoices": {
+      "onlinePaymentIsTemporarilyUnavailable": "El pago en línea no está disponible por ahora. Contacta a la clínica para pagar.",
+      "backToPortal": "Volver al portal",
+      "poweredByStripe": "Procesado por Stripe",
+      "invoices": "Facturas",
+      "date": "Fecha",
+      "patient": "Paciente",
+      "total": "Total",
+      "paid": "Pagado",
+      "balance": "Saldo",
+      "status": {
+        "draft": "Borrador",
+        "sent": "Enviada",
+        "paid": "Pagada",
+        "overdue": "Vencida",
+        "void": "Anulada",
+        "estimate": "Presupuesto"
+      },
+      "dueDate": "Vence",
+      "unableToLoadInvoices": "No se pudieron cargar las facturas",
+      "pleaseRefreshThisPageOr": "Actualiza esta página o contacta a tu clínica si el enlace del portal venció.",
+      "noInvoicesYet": "Todavía no hay facturas",
+      "invoicesAndEstimatesFromYour": "Aquí aparecerán las facturas y presupuestos de tu clínica.",
+      "unableToStartPayment": "No se pudo iniciar el pago",
+      "openingSecureCheckout": "Abriendo el pago seguro...",
+      "paySecurelyOnline": "Pagar en línea de forma segura",
+      "due": "Vence: {date}"
+    },
+    "pet": {
+      "backToPortal": "Volver al portal",
+      "backToAllPets": "Volver a todas las mascotas",
+      "allergyAlerts": "Alertas de alergias",
+      "vaccine": "Vacuna",
+      "given": "Aplicada",
+      "nextDue": "Próxima dosis",
+      "status": "Estado",
+      "certificate": "Certificado",
+      "medication": "Medicamento",
+      "dosage": "Dosis",
+      "frequency": "Frecuencia",
+      "refills": "Resurtidos",
+      "endDate": "Fecha de fin",
+      "unableToLoadPetInformation": "No se pudo cargar la información de la mascota",
+      "pleaseRefreshThisPageOr": "Actualiza esta página o vuelve al inicio del portal.",
+      "noVaccinationRecordsYet": "Todavía no hay registros de vacunación",
+      "noActivePrescriptions": "No hay recetas activas",
+      "noWeightRecordsYet": "Todavía no hay registros de peso",
+      "vaccinations": "Vacunas",
+      "prescriptions": "Recetas",
+      "weightHistory": "Historial de peso",
+      "noDueDate": "Sin fecha de vencimiento",
+      "overdue": "Vencida",
+      "dueSoon": "Vence pronto",
+      "upToDate": "Al día",
+      "checking": "Comprobando...",
+      "download": "Descargar",
+      "thisCertificateIsNoLonger": "Este certificado ya no está disponible. Actualiza para ver los registros de vacunación actuales."
+    },
+    "book": {
+      "requestedNotYetConfirmed": "Solicitada — aún sin confirmar",
+      "viewYourAppointments": "Ver tus citas",
+      "backToAppointments": "Volver a las citas",
+      "pickATimeThatWorks": "Elige un horario que te convenga. La clínica confirmará la hora final.",
+      "clinicLocation": "Sede de la clínica",
+      "chooseALocation": "Elige una sede…",
+      "pet": "Mascota",
+      "reasonForVisit": "Motivo de la visita",
+      "selectAVisitType": "Elige un tipo de visita…",
+      "preferredDate": "Fecha preferida",
+      "preferredTime": "Hora preferida",
+      "suggestedTimesCouldNotBe": "No se pudieron cargar los horarios sugeridos. Aun así puedes escribir una hora preferida.",
+      "noSuggestedRequestTimesAre": "No hay horarios sugeridos para esta fecha.",
+      "anythingWeShouldKnow": "¿Algo que debamos saber?",
+      "requestSent": "¡Solicitud enviada!",
+      "visit": "Visita",
+      "clinic": "Clínica",
+      "requestAnAppointment": "Solicitar una cita",
+      "selectAPet": "Elige una mascota…",
+      "checkingSuggestedTimes": "Buscando horarios sugeridos…",
+      "unableToLoadBookingForm": "No se pudo cargar el formulario de citas",
+      "thisPortalLinkIsInvalid": "Este enlace del portal no es válido o ya venció. Pide a tu clínica veterinaria un enlace nuevo.",
+      "appointmentRequestsAreUnavailable": "Las solicitudes de cita no están disponibles",
+      "theClinicHasNotConfigured": "La clínica no ha configurado una sede activa para agendar. Contacta directamente a la clínica.",
+      "theClinicHasNotMade": "La clínica no tiene tipos de visita disponibles. Contacta directamente a la clínica.",
+      "noPetsOnFileYet": "Todavía no hay mascotas registradas",
+      "yourClinicWillAddPets": "Tu clínica agregará aquí a tus mascotas cuando cree sus historias clínicas.",
+      "brieflyDescribeTheReasonFor": "Describe brevemente el motivo de la visita",
+      "patient": "Paciente",
+      "appointment": "Cita",
+      "thisVisitTypeIsLonger": "Este tipo de visita dura más que el horario disponible para reservar en línea.",
+      "sending": "Enviando…",
+      "requestAppointment": "Solicitar cita",
+      "timeRange": "Elige una hora de inicio entre {min} y {max}."
+    }
+  },
+  "booking": {
+    "public": {
+      "requestedNotYetConfirmed": "Solicitada — aún sin confirmar",
+      "requestAnAppointment": "Solicita una cita",
+      "chooseAPreferredTimeThe": "Elige un horario preferido. La clínica revisará tu solicitud y confirmará la cita contigo.",
+      "clinicLocation": "Sede de la clínica",
+      "chooseALocation": "Elige una sede",
+      "whatDoYouNeed": "¿Qué necesitas?",
+      "chooseAVisitType": "Elige un tipo de visita",
+      "pickADay": "Elige un día",
+      "pickATime": "Elige una hora",
+      "suggestedTimesCouldNotBe": "No se pudieron cargar los horarios sugeridos. Inténtalo de nuevo.",
+      "noSuggestedRequestTimesThat": "No hay horarios sugeridos ese día. Prueba con otra fecha.",
+      "firstName": "Nombre",
+      "lastName": "Apellido",
+      "email": "Correo electrónico",
+      "website": "Sitio web",
+      "petSName": "Nombre de tu mascota",
+      "petType": "Tipo de mascota",
+      "whatSThisVisitAbout": "¿De qué se trata esta visita?",
+      "preferToTalkToA": "¿Prefieres hablar con una persona?",
+      "requestSent": "¡Solicitud enviada!",
+      "pet": "Mascota",
+      "visit": "Visita",
+      "preferredTime": "Hora preferida",
+      "clinic": "Clínica",
+      "checkingSuggestedTimes": "Buscando horarios sugeridos…",
+      "aboutYou": "Sobre ti",
+      "thisAppointmentRequestPageIsn": "Esta página para solicitar citas no está disponible",
+      "theLinkMayBeIncorrect": "Es posible que el enlace sea incorrecto o que las solicitudes de cita en línea estén desactivadas. Contacta directamente a la clínica.",
+      "tellUsALittleAbout": "Cuéntanos un poco qué necesita tu mascota",
+      "appointment": "Cita",
+      "contactTheClinic": "Contacta a la clínica.",
+      "sendingRequest": "Enviando solicitud…",
+      "requestAppointment": "Solicitar cita"
+    },
+    "intake": {
+      "visitLocationAndHealthDetails": "Lugar de la visita y datos de salud",
+      "shareWhereTheVisitShould": "Indica dónde debe ser la visita y cualquier dato que ayude a la clínica a prepararse. Son datos que informa el dueño y no se consideran verificados hasta que el equipo de atención los revise y confirme.",
+      "optional": "(opcional)",
+      "fields": {
+        "serviceAddress": {
+          "label": "Dirección de servicio o de la granja",
+          "placeholder": "Calle, nombre de la granja, portón, unidad o indicaciones para llegar"
+        },
+        "symptoms": {
+          "label": "Signos o síntomas actuales",
+          "placeholder": "¿Qué estás notando ahora mismo?"
+        },
+        "concernOnset": {
+          "label": "Cuándo empezó o cambió",
+          "placeholder": "Incluye cuándo pasó y si está mejorando o empeorando"
+        },
+        "currentMedications": {
+          "label": "Medicamentos o suplementos actuales",
+          "placeholder": "Nombres, dosis y horarios si los conoces"
+        },
+        "allergies": {
+          "label": "Alergias conocidas o reacciones anteriores",
+          "placeholder": "Incluye medicamentos, vacunas, alimentos u otras reacciones"
+        },
+        "medicalHistory": {
+          "label": "Historial médico relevante",
+          "placeholder": "Diagnósticos, procedimientos o episodios parecidos anteriores"
+        },
+        "diet": {
+          "label": "Alimentación",
+          "placeholder": "Comida, pastoreo, cambios recientes o posibles exposiciones"
+        },
+        "handlingNotes": {
+          "label": "Notas de manejo o acceso",
+          "placeholder": "Temperamento, necesidades de sujeción, indicaciones del portón o de llegada"
+        }
+      }
+    },
+    "footer": {
+      "poweredBy": "Con la tecnología de <link>OpenVPM</link>",
+      "privacy": "Privacidad"
+    }
+  },
+  "sign": {
+    "clear": "Borrar",
+    "thankYouTheClinicHas": "Gracias. La clínica ya tiene tu formulario firmado.",
+    "thisPrivateDownloadIsAvailable": "Esta descarga privada está disponible por poco tiempo en este dispositivo. Guárdala ahora si quieres conservar una copia.",
+    "youCanCloseThisPage": "Puedes cerrar esta página. Pide una copia a la clínica si la necesitas.",
+    "thankYouTheClinicHas2": "Gracias. La clínica ya tiene tu formulario firmado. Pide otra copia a la clínica si la necesitas.",
+    "yourSignatureIsSafe": "Tu firma está a salvo",
+    "theClinicHasYourExact": "La clínica tiene tu firma tal cual. Termina de guardar el documento firmado sin volver a dibujarla.",
+    "yourFullName": "Tu nombre completo",
+    "chooseHowToSign": "Elige cómo firmar",
+    "drawSignature": "Dibujar firma",
+    "typeSignature": "Escribir firma",
+    "typeYourSignature": "Escribe tu firma",
+    "yourTypedNameWillBe": "Tu nombre escrito se guardará como la imagen de la firma en el PDF.",
+    "signing": "Firmando…",
+    "signAboveWithYourFinger": "Firma arriba con tu dedo.",
+    "loadingTheForm": "Cargando el formulario…",
+    "allSigned": "Firmado",
+    "signatureAreaDrawYourSignature": "Área de firma. Dibuja tu firma aquí.",
+    "firstAndLastName": "Nombre y apellido",
+    "somethingWentWrongPleaseTry": "Algo salió mal. Inténtalo de nuevo.",
+    "signingFailedPleaseTryAgain": "No se pudo firmar. Inténtalo de nuevo.",
+    "tooManyDownloadAttemptsWait": "Demasiados intentos de descarga. Espera un minuto e inténtalo de nuevo.",
+    "thisDownloadIsNoLonger": "Esta descarga ya no está disponible. Pide una copia a la clínica.",
+    "finishing": "Terminando…",
+    "finishSaving": "Terminar de guardar",
+    "tooManyTriesRightNow": "Demasiados intentos por ahora. Espera un minuto e inténtalo de nuevo.",
+    "signingFailedPleaseCheckYour": "No se pudo firmar. Revisa tu conexión e inténtalo de nuevo.",
+    "agreeAndSign": "Aceptar y firmar",
+    "expired": "Este enlace venció. Pide un código nuevo en recepción.",
+    "downloadFailed": "No se pudo descargar. Revisa tu conexión.",
+    "downloadPdf": "Descarga tu PDF firmado",
+    "header": "Formulario de consentimiento",
+    "poweredBy": "Con la tecnología de OpenVPM",
+    "apiErrors": {
+      "confirmAuthorized": "Confirma que tienes autorización para firmar",
+      "typeFullName": "Escribe tu nombre completo",
+      "validSignature": "Agrega una firma válida",
+      "provideSignature": "Agrega tu firma",
+      "outcomeVerifying": "Todavía estamos verificando la firma. Vuelve a intentarlo.",
+      "alreadyFinalizing": "La firma ya se está terminando de guardar. Vuelve a intentarlo.",
+      "attemptMismatch": "Este intento de firma no coincide con la solicitud en curso",
+      "integrityFailed": "El documento firmado no pasó la verificación de integridad"
+    }
+  },
+  "treatmentPlan": {
+    "theClinicHasYourDecisions": "La clínica ya tiene tus decisiones y el documento firmado.",
+    "thisStepRecordsYourChoices": "Este paso registra tus elecciones. No te cobra nada ni agenda la atención.",
+    "planSigned": "Plan firmado",
+    "subtotal": "Subtotal",
+    "tax": "Impuestos",
+    "totalOffered": "Total ofrecido",
+    "thePlanCouldNotBe": "No se pudo cargar el plan.",
+    "thisLinkIsNoLonger": "Este enlace ya no está disponible. Pide a la clínica un enlace nuevo.",
+    "decisionsCouldNotBeSaved": "No se pudieron guardar tus decisiones.",
+    "accept": "Aceptar",
+    "decline": "Rechazar",
+    "savingDecisions": "Guardando decisiones…",
+    "continueToSignature": "Continuar a la firma",
+    "saveFailedConnection": "No se pudieron guardar tus decisiones. Revisa tu conexión.",
+    "header": "Plan de tratamiento",
+    "apiErrors": {
+      "decideEveryLine": "Decide cada línea con una cantidad válida",
+      "decisionsMismatch": "Estas decisiones no coinciden con la respuesta guardada"
+    }
+  },
+  "emailPreferences": {
+    "emailPreferences": "Preferencias de correo",
+    "stopOptionalOpenvpmProductTrial": "Deja de recibir con un clic los correos opcionales de OpenVPM sobre el producto, la prueba, investigación y opiniones.",
+    "thisPreferenceDoesNotApply": "Esta preferencia no aplica a alertas de seguridad importantes, recibos de facturación ni avisos del servicio. Tampoco afecta los mensajes que tu clínica envía a los dueños de mascotas. Los correos opcionales seguirán desactivados para esta dirección.",
+    "optionalOpenvpmEmailsAreNow": "Los correos opcionales de OpenVPM ya están desactivados. No hizo falta iniciar sesión ni hablar con ventas.",
+    "immediateNoSignInRequired": "Inmediato, sin iniciar sesión.",
+    "preferenceSaved": "Preferencia guardada",
+    "thisEmailPreferenceLinkIs": "Este enlace de preferencias de correo no es válido o está incompleto.",
+    "weCouldNotSaveThat": "No pudimos guardar esa preferencia.",
+    "weCouldNotSaveThat2": "No pudimos guardar esa preferencia. Inténtalo de nuevo.",
+    "turnOff": "Desactivar los correos opcionales"
+  },
+  "email": {
+    "greeting": "Hola {name},",
+    "defaultFooter": "Este correo lo envió {practiceName}. Si lo recibiste por error, puedes ignorarlo.",
+    "appointmentReminder": {
+      "subject": "Recordatorio de cita para {patient} – {date}",
+      "intro": "Te recordamos que <strong>{patient}</strong> tiene una cita próximamente.",
+      "date": "Fecha",
+      "time": "Hora",
+      "reschedulePhone": "Si necesitas cancelar o cambiar la cita, llámanos al <strong>{phone}</strong> lo antes posible.",
+      "reschedule": "Si necesitas cancelar o cambiar la cita, llámanos lo antes posible.",
+      "closing": "¡Esperamos verte pronto a ti y a {patient}!"
+    },
+    "vaccinationReminder": {
+      "subject": "Recordatorio de vacuna: {vaccine} para {patient}",
+      "intro": "Es hora de programar la vacuna <strong>{vaccine}</strong> de <strong>{patient}</strong>.",
+      "vaccine": "Vacuna",
+      "dueDate": "Fecha límite",
+      "contactPhone": "Llámanos al <strong>{phone}</strong> para programar una cita para {patient}.",
+      "contact": "Contáctanos para programar una cita para {patient}.",
+      "cta": "Programa la cita de tu mascota",
+      "note": "Mantener las vacunas al día es importante para la salud y la seguridad de tu mascota."
+    },
+    "careReminder": {
+      "subject": "Recordatorio de cuidado para {patient}",
+      "intro": "Este es un recordatorio de nuestro equipo veterinario sobre <strong>{patient}</strong>.",
+      "reminder": "Recordatorio",
+      "reminderDate": "Fecha del recordatorio",
+      "contactPhone": "Llámanos al <strong>{phone}</strong> si tienes preguntas o quieres programar una cita.",
+      "contact": "Contáctanos si tienes preguntas o quieres programar una cita."
+    },
+    "invoice": {
+      "subject": "Factura de {practice} – {total}",
+      "introPatient": "Aquí está tu factura de {practice} por la atención de <strong>{patient}</strong>.",
+      "intro": "Aquí está tu factura de {practice}.",
+      "amountDue": "Monto a pagar",
+      "dueDate": "Fecha de vencimiento",
+      "viewInPortal": "Ver en el portal",
+      "questionsPhone": "Si tienes preguntas sobre esta factura, llámanos al <strong>{phone}</strong>.",
+      "questions": "Si tienes preguntas sobre esta factura, contáctanos."
+    },
+    "paymentReceipt": {
+      "subject": "Pago recibido – {practice}",
+      "introPatient": "Recibimos tu pago por la atención de <strong>{patient}</strong>. ¡Gracias!",
+      "intro": "Recibimos tu pago. ¡Gracias!",
+      "paidInFull": "Esta factura está pagada en su totalidad.",
+      "remainingBalance": "Saldo pendiente",
+      "amountPaid": "Monto pagado",
+      "recordsPhone": "Guarda este correo como comprobante. Si algo no está bien, llámanos al <strong>{phone}</strong>.",
+      "records": "Guarda este correo como comprobante. Si algo no está bien, contáctanos."
+    },
+    "verification": {
+      "subject": "Verifica tu correo de OpenVPM",
+      "body": "¡Te damos la bienvenida a OpenVPM! Confirma tu dirección de correo para proteger tu espacio de trabajo y asegurarte de recibir los mensajes importantes de tu cuenta.",
+      "cta": "Confirmar correo",
+      "note": "Este enlace vence en 24 horas. Si no creaste una cuenta de OpenVPM, puedes ignorar este correo."
+    },
+    "passwordReset": {
+      "subject": "Restablece tu contraseña de OpenVPM",
+      "body": "Recibimos una solicitud para restablecer tu contraseña de OpenVPM. Haz clic abajo para elegir una nueva.",
+      "cta": "Restablecer mi contraseña",
+      "note": "Este enlace vence en 1 hora. Si no pediste restablecer tu contraseña, puedes ignorar este correo: tu contraseña no cambiará."
+    },
+    "staffInvite": {
+      "subject": "Te invitaron a unirte a {practice} en OpenVPM",
+      "body": "<strong>{inviter}</strong> te invitó a unirte a <strong>{practice}</strong> en OpenVPM.",
+      "body2": "Acepta la invitación para crear tu contraseña y activar tu cuenta.",
+      "cta": "Aceptar invitación",
+      "note": "Este enlace vence en 72 horas. Si no esperabas esta invitación, puedes ignorar este correo."
+    },
+    "yourClinic": "tu clínica",
+    "composed": {
+      "sentBy": "Este correo lo envió {practiceName}.",
+      "repliesTo": "Las respuestas llegan a {email}. OpenVPM todavía no importa las respuestas por correo.",
+      "contactDirectly": "OpenVPM todavía no importa las respuestas por correo. Si necesitas responder, comunícate directamente con {practiceName}."
+    }
+  },
+  "sms": {
+    "appointmentReminder": "Recordatorio: {patient} tiene una cita el {date} a las {time}. {contact}",
+    "callToReschedule": "Llama al {phone} para reprogramar.",
+    "contactToReschedule": "Contacta a tu veterinario para reprogramar.",
+    "vaccinationReminder": "{patient} debe recibir su vacuna {vaccine}. {contact}",
+    "callToSchedule": "Llama al {phone} para agendar.",
+    "contactToSchedule": "Contacta a tu veterinario para agendar.",
+    "careReminder": "Recordatorio para {patient}: {title}. Fecha: {date}. {contact}",
+    "callWithQuestions": "Llama al {phone} si tienes preguntas.",
+    "contactWithQuestions": "Contacta a tu veterinario si tienes preguntas."
+  },
+  "pdf": {
+    "common": {
+      "page": "Página {page} de {count}",
+      "generatedOn": "Generado el {date}",
+      "veterinaryPractice": "Clínica veterinaria",
+      "patient": "Paciente",
+      "owner": "Propietario",
+      "vaccine": "Vacuna",
+      "nextDueLower": "Próxima dosis",
+      "manufacturer": "Fabricante",
+      "lotNumber": "Número de lote",
+      "administeredBy": "Aplicada por",
+      "dobValue": "Fecha de nac.: {value}",
+      "certificateId": "ID del certificado: {id}",
+      "unknown": "Desconocido",
+      "unknownDate": "Fecha desconocida"
+    },
+    "invoice": {
+      "title": "FACTURA",
+      "date": "Fecha: {date}",
+      "due": "Vence: {date}",
+      "billTo": "FACTURAR A",
+      "patient": "Paciente: {name}",
+      "description": "Descripción",
+      "qty": "Cant.",
+      "unitPrice": "Precio unit.",
+      "total": "Total",
+      "subtotalLabel": "Subtotal:",
+      "taxLabel": "Impuesto:",
+      "totalLabel": "Total:",
+      "paidLabel": "Pagado:",
+      "adjustedLabel": "Créditos / ajustes:",
+      "balanceLabel": "Saldo pendiente:",
+      "thanks": "Gracias por confiarnos el cuidado de tu mascota"
+    },
+    "prescription": {
+      "patient": "Paciente: {name} ({species})",
+      "owner": "Propietario: {name}",
+      "prescribedBy": "Recetado por: {name}",
+      "date": "Fecha: {date}",
+      "qty": "Cant.: {qty}",
+      "refills": "Resurtidos: {count}"
+    },
+    "summary": {
+      "title": "RESUMEN DEL HISTORIAL MÉDICO",
+      "patientInformation": "Datos del paciente",
+      "name": "Nombre",
+      "species": "Especie",
+      "breed": "Raza",
+      "sex": "Sexo",
+      "dob": "Fecha de nacimiento",
+      "color": "Color",
+      "microchip": "Microchip",
+      "ownerInformation": "Datos del propietario",
+      "nameLabel": "Nombre: ",
+      "phoneLabel": "Teléfono: ",
+      "emailLabel": "Correo: ",
+      "allergies": "Alergias",
+      "reaction": "Reacción: {reaction}",
+      "activeProblems": "Problemas activos",
+      "onset": " (inicio: {date})",
+      "vaccinationHistory": "Historial de vacunas",
+      "dateGiven": "Fecha de aplicación",
+      "nextDue": "Próxima dosis",
+      "recentSoapNotes": "Notas SOAP recientes",
+      "finalizedImported": "{date}  (Registro importado finalizado)",
+      "finalized": "{date}  (Finalizada)",
+      "unknownClinician": "Clínico desconocido",
+      "importedBy": "Importado por {name}",
+      "authoredFinalized": "Escrita por {author}; finalizada por {finalizer}",
+      "authoredFinalizedOn": "Escrita por {author}; finalizada por {finalizer} el {date}",
+      "signedReplacementFor": "Reemplazo firmado de {label} conservada",
+      "addendum": "Adenda - {author}, {date}",
+      "recentChartNotes": "Notas recientes del expediente",
+      "chartNotesHidden": "Las notas del expediente no se incluyen para este nivel de acceso.",
+      "chartNotesLimited": "Se muestran las 25 notas más recientes. Las anteriores siguen disponibles en el expediente del paciente.",
+      "noChartNotes": "No hay notas en el expediente.",
+      "authoredBy": "Escrita por {name}",
+      "recordCorrections": "Correcciones del registro",
+      "enteredInError": "Marcado como error por {name} el {date}",
+      "reason": "Motivo: {reason}",
+      "signedReplacement": "Reemplazo firmado: {label}",
+      "currentPrescriptions": "Recetas actuales",
+      "medication": "Medicamento",
+      "dosage": "Dosis",
+      "frequency": "Frecuencia",
+      "status": "Estado",
+      "footer": "Generado el {date} — Este documento es solo de referencia"
+    },
+    "certificate": {
+      "title": "CERTIFICADO DE VACUNACIÓN",
+      "colorValue": "Color: {value}",
+      "vaccinationRecord": "Registro de vacunación",
+      "administered": "Aplicada",
+      "portalNote": "Este certificado refleja el registro de vacunación disponible actualmente en el portal del cliente.",
+      "sexValue": "Sexo: {value}",
+      "colorMarkings": "Color/señas: {value}",
+      "microchipValue": "Microchip: {value}",
+      "weightValue": "Peso: {value} kg",
+      "phoneValue": "Teléfono: {value}",
+      "footer": "Generado el {date} • Certificado {id}"
+    },
+    "history": {
+      "section": "Historial de vacunas",
+      "sectionContinued": "Historial de vacunas (continuación)",
+      "vaccineProduct": "Vacuna / producto",
+      "given": "Aplicada",
+      "lot": "Lote",
+      "note": "Este documento registra las vacunas anotadas en el expediente del paciente hasta la fecha de generación."
+    },
+    "rabies": {
+      "section": "Vacunación antirrábica",
+      "years": "{count, plural, one {# año} other {# años}}",
+      "months": "{count} meses",
+      "product": "Producto",
+      "productExpiration": "Vencimiento del producto",
+      "dose": "Dosis",
+      "initial": "Inicial",
+      "booster": "Refuerzo",
+      "licensedDuration": "Duración autorizada",
+      "dateAdministered": "Fecha de aplicación",
+      "tag": "Placa antirrábica",
+      "tagNotAssigned": "No asignada (microchip indicado arriba)",
+      "notRecorded": "No registrado"
+    },
+    "report": {
+      "noData": "No hay datos para el informe."
+    },
+    "discharge": {
+      "title": "INSTRUCCIONES DE ALTA",
+      "patient": "Paciente:",
+      "owner": "Propietario:",
+      "visitDate": "Fecha de la visita:",
+      "doctor": "Veterinario:",
+      "diagnosis": "Diagnóstico",
+      "medications": "Medicamentos",
+      "frequency": "Frecuencia: {value}",
+      "careInstructions": "Instrucciones de cuidado",
+      "restrictions": "Restricciones",
+      "followUp": "Seguimiento",
+      "scheduled": "Programado:",
+      "emergency": "CUÁNDO BUSCAR ATENCIÓN DE URGENCIA",
+      "questions": "Si tienes preguntas o dudas, comunícate con nuestra clínica.",
+      "neededBy": "Necesario antes del {date}",
+      "noInstructions": "Sin indicaciones adicionales de cuidado en casa: {reason}"
+    }
+  },
+  "meta": {
+    "app": {
+      "title": "OpenVPM: software veterinario de código abierto",
+      "description": "El primer sistema moderno de gestión de clínicas veterinarias, de código abierto y pensado primero para la API, hecho para la comunidad veterinaria. Bonito, rápido y gratis."
+    },
+    "portal": {
+      "title": "Portal de mascotas - OpenVPM",
+      "description": "Consulta la información de salud de tu mascota"
+    },
+    "sign": {
+      "title": "Firmar consentimiento - OpenVPM",
+      "description": "Revisa y firma un formulario de consentimiento"
+    },
+    "treatmentPlan": {
+      "title": "Plan de tratamiento - OpenVPM",
+      "description": "Revisa un plan de tratamiento veterinario"
+    },
+    "book": {
+      "title": "Reservar una cita",
+      "description": "Reserva una cita en línea"
+    },
+    "emailPreferences": {
+      "title": "Preferencias de correo - OpenVPM",
+      "description": "Administra los correos opcionales de OpenVPM."
+    },
+    "start": {
+      "title": "Arma tu clínica - OpenVPM",
+      "description": "Mira OpenVPM con el nombre, los colores y los servicios de tu clínica antes de empezar tu prueba gratis."
+    },
+    "capture": {
+      "title": "Agregar fotos - OpenVPM",
+      "description": "Agrega fotos al registro de la visita"
+    }
+  },
+  "capture": {
+    "header": "Fotos",
+    "poweredBy": "Funciona con OpenVPM",
+    "expired": "Este enlace venció. Pide un código nuevo en recepción.",
+    "tooMany": "Demasiadas subidas en este momento. Espera un minuto y vuelve a intentarlo.",
+    "linkFull": "Este enlace ya no acepta más fotos. Pide un enlace nuevo a la clínica.",
+    "imagePolicy": "Las imágenes deben ser JPG, PNG o WebP y pesar 10 MB o menos.",
+    "uploadFailed": "No se pudo subir. Vuelve a intentarlo.",
+    "title": "Agrega fotos al registro de la visita",
+    "intro": "Toma una foto o elige una de tu teléfono. Llega directo a la clínica.",
+    "addMore": "Agregar más fotos",
+    "takeOrChoose": "Tomar o elegir fotos",
+    "tryAgain": "Reintentar",
+    "allSet": "Listo.",
+    "added": "{count, plural, one {Tu foto se agregó al registro de la visita.} other {Tus # fotos se agregaron al registro de la visita.}} Puedes cerrar esta página o agregar más."
   }
 }

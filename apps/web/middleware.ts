@@ -13,6 +13,7 @@ import {
   nextAuthSecretRejected,
 } from "./lib/auth-secret";
 import { isSecretIndependentPath } from "./lib/secret-independent-paths";
+import { REQUEST_PATH_HEADER } from "./i18n/config";
 
 const CAPABILITY_PATH_PREFIXES = [
   "/newsletter/confirm",
@@ -119,6 +120,10 @@ function authSecretSetupResponse(pathname: string): NextResponse {
 export async function middleware(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const pathname = requestUrl.pathname;
+  // Always overwrite, so a value sent by the browser is never trusted.
+  const forwarded = new Headers(request.headers);
+  forwarded.set(REQUEST_PATH_HEADER, pathname);
+  const next = () => NextResponse.next({ request: { headers: forwarded } });
 
   // Fail closed before any route can read or issue a session. Health stays
   // reachable so operators and orchestrators can see why the app is down.
@@ -136,15 +141,15 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isVercelObservabilityPath(pathname)) {
-    return applySecurityHeaders(NextResponse.next());
+    return applySecurityHeaders(next());
   }
 
   if (isCapabilityPath(pathname)) {
-    return applyCapabilitySecurityHeaders(NextResponse.next());
+    return applyCapabilitySecurityHeaders(next());
   }
 
   if (isPublicPath(pathname)) {
-    return applySecurityHeaders(NextResponse.next());
+    return applySecurityHeaders(next());
   }
 
   const secret = nextAuthSecret();
@@ -162,7 +167,7 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.redirect(loginUrl));
   }
 
-  const response = NextResponse.next();
+  const response = next();
   return applySecurityHeaders(response);
 }
 

@@ -1,18 +1,16 @@
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-const page = readFileSync(
+const page = readTranslatedSource(
   fileURLToPath(
     new URL("../../app/email-preferences/page.tsx", import.meta.url),
   ),
-  "utf8",
 );
-const form = readFileSync(
+const form = readTranslatedSource(
   fileURLToPath(
     new URL("../../app/email-preferences/preference-form.tsx", import.meta.url),
   ),
-  "utf8",
 );
 
 describe("email preferences UI", () => {

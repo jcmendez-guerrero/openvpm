@@ -37,3 +37,6 @@ export function languageCookieFromHeader(cookieHeader: string | null | undefined
   }
   return undefined;
 }
+
+/** Request path forwarded by middleware, so the root layout can tell portal pages apart. */
+export const REQUEST_PATH_HEADER = "x-openvpm-path";

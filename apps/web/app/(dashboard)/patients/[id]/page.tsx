@@ -1,5 +1,6 @@
 "use client";
 
+import { useDocumentLanguage } from "@/components/common/use-document-language";
 import dynamic from "next/dynamic";
 import { Fragment, useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -319,6 +320,7 @@ function PatientDetailLoadingPanel({ label }: { label: string }) {
 }
 
 export default function PatientDetailPage() {
+  const documentLanguage = useDocumentLanguage();
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const t = useTranslations("patients");
@@ -760,13 +762,17 @@ export default function PatientDetailPage() {
       const vaccinations = vaccinationsResult.data;
       const soapNotes = soapNotesResult.data;
       const prescriptions = prescriptionsResult.data;
-      const { generateMedicalSummaryPdf } = await import("@/lib/pdf");
+      const { generateMedicalSummaryPdf, pdfText } = await import("@/lib/pdf");
+      const pdfLanguage = documentLanguage(patientData.clientPreferredLanguage);
+      const pdfLocale = pdfLanguage === "es" ? "es" : "en-US";
+      const unknown = pdfText(pdfLanguage)("pdf.common.unknown");
 
       generateMedicalSummaryPdf({
+        language: pdfLanguage,
         practiceName: recordsPracticeName,
         practicePhone: recordsPracticePhone ?? undefined,
         patientName: patientData.name,
-        species: patientData.species ?? "Unknown",
+        species: patientData.species ?? unknown,
         breed: patientData.breed ?? undefined,
         sex: patientData.sex ?? undefined,
         dob: patientData.dob ?? undefined,
@@ -790,10 +796,20 @@ export default function PatientDetailPage() {
           .map((v) => ({
             name: v.vaccineName,
             date: v.administeredAt
-              ? formatClinicalDate(v.administeredAt, recordsTimeZone, "Unknown")
-              : "Unknown",
+              ? formatClinicalDate(
+                  v.administeredAt,
+                  recordsTimeZone,
+                  unknown,
+                  pdfLocale,
+                )
+              : unknown,
             nextDue: v.nextDueDate
-              ? formatClinicalDate(v.nextDueDate, recordsTimeZone)
+              ? formatClinicalDate(
+                  v.nextDueDate,
+                  recordsTimeZone,
+                  undefined,
+                  pdfLocale,
+                )
               : undefined,
           })),
         recentNotes: soapNotes
@@ -2226,6 +2242,7 @@ function VaccinationsTab({
   canPrepareCertificate: boolean;
   canEditCertificate: boolean;
 }) {
+  const documentLanguage = useDocumentLanguage();
   const t = useTranslations("patients.vaccines");
   const locale = useLocale();
   const utils = trpc.useUtils();
@@ -2279,12 +2296,19 @@ function VaccinationsTab({
         return;
       }
       const pdf = await import("@/lib/pdf");
+      const pdfLanguage = documentLanguage(certificate.owner.preferredLanguage);
+      // The rabies certificate keeps English dates and wording until its Spanish text is reviewed (T067).
+      const pdfLocale =
+        kind === "vaccination_history" && pdfLanguage === "es" ? "es" : "en-US";
+      const tPdf = pdf.pdfText(kind === "vaccination_history" ? pdfLanguage : "en");
       const generatedDate = formatClinicalDate(
         certificate.generatedAt,
         certificate.practice.timezone,
-        "Unknown date",
+        tPdf("pdf.common.unknownDate"),
+        pdfLocale,
       );
       const baseData = {
+        language: pdfLanguage,
         certificateId: certificate.certificateId,
         generatedDate,
         practice: certificate.practice,
@@ -2296,6 +2320,7 @@ function VaccinationsTab({
             certificate.patient.dob,
             certificate.practice.timezone,
             undefined,
+            pdfLocale,
           ),
         },
       };
@@ -2312,12 +2337,14 @@ function VaccinationsTab({
               administeredAt: formatClinicalDate(
                 vaccination.administeredAt,
                 certificate.practice.timezone,
-                "Unknown",
+                tPdf("pdf.common.unknown"),
+                pdfLocale,
               ),
               nextDueDate: formatClinicalDate(
                 vaccination.nextDueDate,
                 certificate.practice.timezone,
                 undefined,
+                pdfLocale,
               ),
             })),
           })

@@ -1,5 +1,6 @@
 "use client";
 
+import { isSupportedLanguage } from "@/i18n/config";
 import { useTranslations } from "use-intl";
 
 import dynamic from "next/dynamic";
@@ -166,7 +167,10 @@ async function downloadReportPdf({
   emptyMessage?: string;
 }) {
   const { generateReportPdf } = await import("@/lib/pdf");
+  // Staff-only report: printed in the language the page is shown in.
+  const lang = document.documentElement.lang;
   generateReportPdf({
+    language: isSupportedLanguage(lang) ? lang : "en",
     title,
     subtitle,
     columns,
