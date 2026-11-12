@@ -6,8 +6,9 @@ against this list. One neutral Latin American Spanish variant is used.
 
 Rules:
 
-- Use *usted* forms when addressing pet owners; staff screens use short
-  imperative labels ("Guardar", "Buscar").
+- Address everyone with *tú*, staff and pet owners alike ("Elige una sede",
+  "Revisa tu correo"). Buttons stay short infinitive labels ("Guardar",
+  "Buscar").
 - Never translate clinic-entered data, drug names, or units (mg, mL, kg).
 - Keep regulatory wording (prescription labels, rabies certificates) in
   English unless a qualified reviewer approves the Spanish text.
