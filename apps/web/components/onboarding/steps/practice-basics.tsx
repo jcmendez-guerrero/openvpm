@@ -187,7 +187,7 @@ export function PracticeBasicsStep({
         />
         {practiceNameInvalid ? (
           <p id="ob-practice-name-error" className="text-xs text-destructive">
-            Practice name must be at most {PRACTICE_NAME_MAX_LENGTH} characters.
+            {t("practiceNameTooLong", { max: PRACTICE_NAME_MAX_LENGTH })}
           </p>
         ) : null}
       </FormField>

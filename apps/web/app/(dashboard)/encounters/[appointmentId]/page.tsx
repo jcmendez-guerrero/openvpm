@@ -2,6 +2,7 @@
 
 import { useDocumentLanguage } from "@/components/common/use-document-language";
 import { useTranslations } from "use-intl";
+import { codeLabel } from "@/i18n/code-label";
 
 import { browserUuid } from "@/lib/browser-uuid";
 
@@ -347,11 +348,11 @@ function PatientAssignmentPanel({
             </p>
           ) : canSearch && patientSearch.data?.length === 0 ? (
             <p className="mt-2 text-xs">
-              No active patient matched.{" "}
+              {t("noActivePatientMatched")}{" "}
               <Link className="font-medium underline" href="/patients/new">
                 {t("createThePatientRecord")}
               </Link>{" "}
-              and then return to this visit.
+              {t("thenReturnToVisit")}
             </p>
           ) : patientSearch.data?.length ? (
             <div className="mt-2 overflow-hidden rounded-md border border-amber-300 bg-background text-foreground dark:border-amber-800">
@@ -761,7 +762,7 @@ export default function EncounterWorkspacePage() {
                               </span>
                             </div>
                             <p className="mt-1 text-xs text-foreground">
-                              Reaction: {allergy.reaction || t("notDocumented")}
+                              {t("reactionValue", { reaction: allergy.reaction || t("notDocumented") })}
                             </p>
                           </div>
                         ))}
@@ -1737,9 +1738,9 @@ function VisitCloseout({
         language,
         practiceName: data.practice.name,
         practicePhone: data.practice.phone ?? undefined,
-        patientName: appointment.patientName ?? "Patient",
+        patientName: appointment.patientName ?? tPdf("pdf.common.patient"),
         species: appointment.patientSpecies ?? "",
-        clientName: clientName || "Owner",
+        clientName: clientName || tPdf("pdf.common.owner"),
         visitDate: formatAppointmentTime(
           appointment.startTime,
           data.practice.timezone,
@@ -1804,9 +1805,9 @@ function VisitCloseout({
         language,
         practiceName: data.practice.name,
         practicePhone: data.practice.phone ?? undefined,
-        patientName: appointment.patientName ?? "Patient",
+        patientName: appointment.patientName ?? tPdf("pdf.common.patient"),
         species: appointment.patientSpecies ?? "",
-        clientName: clientName || "Owner",
+        clientName: clientName || tPdf("pdf.common.owner"),
         visitDate: formatAppointmentTime(
           appointment.startTime,
           data.practice.timezone,
@@ -1921,8 +1922,7 @@ function VisitCloseout({
           {compactPendingActions.length > 0 ? (
             <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3">
               <p className="text-sm font-medium">
-                {compactPendingActions.length} decision
-                {compactPendingActions.length === 1 ? "" : "s"} still needed
+                {t("decisionsStillNeeded", { count: compactPendingActions.length })}
               </p>
               <ul className="mt-2 grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
                 {compactPendingActions.map((action) => (
@@ -2021,7 +2021,10 @@ function VisitCloseout({
             label={t("billing")}
             value={
               activeInvoice
-                ? `${activeInvoice.status} · ${activeInvoice.itemCount} line${activeInvoice.itemCount === 1 ? "" : "s"}`
+                ? t("invoiceReadiness", {
+                    status: codeLabel(t, "codes.invoiceStatus", activeInvoice.status),
+                    count: activeInvoice.itemCount,
+                  })
                 : t("noActiveInvoice")
             }
           />
@@ -2100,11 +2103,10 @@ function VisitCloseout({
           <div className="space-y-3 rounded-md border border-border bg-muted/20 p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <h3 className="font-medium">1. Clinical handoff finalized</h3>
+                <h3 className="font-medium">{t("clinicalHandoffStep")}</h3>
                 <p className="text-sm text-muted-foreground">
-                  {closeout?.medicationSnapshot.length ?? 0} visit medication
-                  {closeout?.medicationSnapshot.length === 1 ? "" : "s"} ·{" "}
-                  {closeout?.followUpDisposition?.replace("_", " ")}
+                  {t("visitMedicationCount", { count: closeout?.medicationSnapshot.length ?? 0 })} ·{" "}
+                  {codeLabel(t, "codes.followUpDisposition", closeout?.followUpDisposition)}
                 </p>
               </div>
               <Button variant="outline" size="sm" onClick={downloadDischarge}>
@@ -2194,7 +2196,7 @@ function VisitCloseout({
                   </p>
                 ) : (
                   <p className="mt-1 text-muted-foreground">
-                    No additional instructions: {closeout?.noInstructionsReason}
+                    {t("noAdditionalInstructions", { reason: closeout?.noInstructionsReason ?? "" })}
                   </p>
                 )}
               </div>
@@ -2220,7 +2222,7 @@ function VisitCloseout({
             {closeout?.amendmentHistory.length ? (
               <div className="space-y-2">
                 <p className="text-sm font-medium">
-                  Prior finalized versions ({closeout.amendmentHistory.length})
+                  {t("priorFinalizedVersions", { count: closeout.amendmentHistory.length })}
                 </p>
                 {closeout.amendmentHistory.map((amendment) => (
                   <details
@@ -2228,21 +2230,22 @@ function VisitCloseout({
                     className="rounded-md border border-border bg-background p-3 text-sm"
                   >
                     <summary className="cursor-pointer font-medium">
-                      Revision {amendment.priorRevision} · {amendment.reason}
+                      {t("revisionReason", { revision: amendment.priorRevision, reason: amendment.reason })}
                     </summary>
                     <div className="mt-3 space-y-2 text-muted-foreground">
                       <p>
-                        Finalized by {amendment.clinicalFinalizerName} on{" "}
-                        {formatAppointmentTime(
-                          amendment.clinicalFinalizedAt,
-                          data.practice.timezone,
-                        )}
-                        . Correction opened by {amendment.reopenedByName} on{" "}
-                        {formatAppointmentTime(
-                          amendment.reopenedAt,
-                          data.practice.timezone,
-                        )}
-                        .
+                        {t("finalizedAndReopened", {
+                          finalizer: amendment.clinicalFinalizerName,
+                          finalizedAt: formatAppointmentTime(
+                            amendment.clinicalFinalizedAt,
+                            data.practice.timezone,
+                          ),
+                          reopener: amendment.reopenedByName,
+                          reopenedAt: formatAppointmentTime(
+                            amendment.reopenedAt,
+                            data.practice.timezone,
+                          ),
+                        })}
                       </p>
                       <p className="whitespace-pre-wrap">
                         {amendment.dischargeInstructions ||
@@ -2299,7 +2302,7 @@ function VisitCloseout({
                         onClick={() => downloadHistoricalDischarge(amendment)}
                       >
                         <Download className="mr-2 h-4 w-4" />
-                        Download revision {amendment.priorRevision}
+                        {t("downloadRevision", { revision: amendment.priorRevision })}
                       </Button>
                     </div>
                   </details>
@@ -2429,8 +2432,10 @@ function VisitCloseout({
               {t("visitCompletedWithADurable")}
             </p>
             <p className="mt-1 text-muted-foreground">
-              Billing: {closeout?.chargeDisposition?.replace("_", " ")} · Owner
-              handoff: {closeout?.handoffMethod}
+              {t("billingAndHandoff", {
+                billing: codeLabel(t, "codes.chargeDisposition", closeout?.chargeDisposition),
+                handoff: codeLabel(t, "codes.handoffMethod", closeout?.handoffMethod),
+              })}
             </p>
           </div>
         ) : null}
@@ -2516,6 +2521,7 @@ type ClinicalCloseoutFormProps = {
 
 function ClinicalCloseoutForm(props: ClinicalCloseoutFormProps) {
   const t = useTranslations("encounters.page");
+  const tRoles = useTranslations("shell.roles");
   const finalizationIssues = [
     props.soapDraft
       ? t("finalizeOrDiscardTheSoap2")
@@ -2575,8 +2581,8 @@ function ClinicalCloseoutForm(props: ClinicalCloseoutFormProps) {
   const diagnosisField = (
     <div>
       <label className="text-sm font-medium" htmlFor="closeout-diagnosis">
-        Diagnosis or visit summary{" "}
-        <span className="text-muted-foreground">(optional)</span>
+        {t("diagnosisOrVisitSummary")}{" "}
+        <span className="text-muted-foreground">{t("optionalField")}</span>
       </label>
       <Textarea
         id="closeout-diagnosis"
@@ -2645,7 +2651,7 @@ function ClinicalCloseoutForm(props: ClinicalCloseoutFormProps) {
               className="text-sm font-medium"
               htmlFor="closeout-instructions"
             >
-              Home-care instructions <span aria-hidden="true">*</span>
+              {t("homeCareInstructionsLabel")} <span aria-hidden="true">*</span>
             </label>
             <p className="text-xs text-muted-foreground">
               {t("internalSoapContentIsNever")}
@@ -2701,7 +2707,7 @@ function ClinicalCloseoutForm(props: ClinicalCloseoutFormProps) {
           className="text-sm font-medium"
           htmlFor="closeout-no-instructions"
         >
-          If none, clinical reason <span aria-hidden="true">*</span>
+          {t("noInstructionsReasonLabel")} <span aria-hidden="true">*</span>
         </label>
         <Input
           id="closeout-no-instructions"
@@ -2716,8 +2722,8 @@ function ClinicalCloseoutForm(props: ClinicalCloseoutFormProps) {
       </div>
       <div>
         <label className="text-sm font-medium" htmlFor="closeout-warning-signs">
-          Warning signs and when to call{" "}
-          <span className="text-muted-foreground">(optional)</span>
+          {t("warningSignsWhenToCall")}{" "}
+          <span className="text-muted-foreground">{t("optionalField")}</span>
         </label>
         <Textarea
           id="closeout-warning-signs"
@@ -2734,7 +2740,7 @@ function ClinicalCloseoutForm(props: ClinicalCloseoutFormProps) {
             className="text-sm font-medium"
             htmlFor="closeout-prescriptions"
           >
-            Prescriptions <span aria-hidden="true">*</span>
+            {t("prescriptionsLabel")} <span aria-hidden="true">*</span>
           </label>
           <select
             id="closeout-prescriptions"
@@ -2763,7 +2769,7 @@ function ClinicalCloseoutForm(props: ClinicalCloseoutFormProps) {
         </div>
         <div>
           <label className="text-sm font-medium" htmlFor="closeout-follow-up">
-            Follow-up <span aria-hidden="true">*</span>
+            {t("followUp")} <span aria-hidden="true">*</span>
           </label>
           <select
             id="closeout-follow-up"
@@ -2845,7 +2851,7 @@ function ClinicalCloseoutForm(props: ClinicalCloseoutFormProps) {
               className="text-sm font-medium"
               htmlFor="closeout-follow-up-due-date"
             >
-              Follow-up due date <span aria-hidden="true">*</span>
+              {t("followUpDueDateLabel")} <span aria-hidden="true">*</span>
             </label>
             <Input
               id="closeout-follow-up-due-date"
@@ -2860,7 +2866,7 @@ function ClinicalCloseoutForm(props: ClinicalCloseoutFormProps) {
               className="text-sm font-medium"
               htmlFor="closeout-follow-up-assignee"
             >
-              Accountable staff owner <span aria-hidden="true">*</span>
+              {t("accountableStaffOwner")} <span aria-hidden="true">*</span>
             </label>
             <select
               id="closeout-follow-up-assignee"
@@ -2874,7 +2880,7 @@ function ClinicalCloseoutForm(props: ClinicalCloseoutFormProps) {
               {props.followUpAssignees.map((assignee) => (
                 <option key={assignee.id} value={assignee.id}>
                   {assignee.name || assignee.email} ·{" "}
-                  {assignee.role.replace("_", " ")}
+                  {codeLabel(tRoles, "", assignee.role)}
                 </option>
               ))}
             </select>
@@ -2887,8 +2893,8 @@ function ClinicalCloseoutForm(props: ClinicalCloseoutFormProps) {
             className="text-sm font-medium"
             htmlFor="closeout-follow-up-notes"
           >
-            Follow-up notes{" "}
-            <span className="text-muted-foreground">(optional)</span>
+            {t("followUpNotes")}{" "}
+            <span className="text-muted-foreground">{t("optionalField")}</span>
           </label>
           <Textarea
             id="closeout-follow-up-notes"
@@ -3243,7 +3249,7 @@ function OperationalCloseoutForm({
   return (
     <div className="space-y-4 rounded-md border border-border p-4">
       <div>
-        <h3 className="font-medium">2. Billing and owner handoff</h3>
+        <h3 className="font-medium">{t("billingHandoffStep")}</h3>
         <p className="text-sm text-muted-foreground">
           {t("confirmThePaidPayLater")}
         </p>
@@ -3268,7 +3274,7 @@ function OperationalCloseoutForm({
           >
             <option value="">{t("choose")}</option>
             <option value="paid" disabled={!paidReady}>
-              Invoice fully paid{paidReady ? "" : " — not ready"}
+              {t("invoiceFullyPaid", { ready: paidReady ? "yes" : "no" })}
             </option>
             <option
               value="accounts_receivable"
@@ -3342,10 +3348,12 @@ function OperationalCloseoutForm({
       ) : null}
       {activeInvoice ? (
         <div className="rounded-md border border-border bg-muted/20 p-3 text-sm">
-          Invoice is <strong>{activeInvoice.status}</strong>, has{" "}
-          {activeInvoice.itemCount} line
-          {activeInvoice.itemCount === 1 ? "" : "s"}, and a balance of{" "}
-          {formatCurrency(activeInvoice.balanceDueCents / 100)}.{" "}
+          {t.rich("invoiceStatusSummary", {
+            status: codeLabel(t, "codes.invoiceStatus", activeInvoice.status),
+            count: activeInvoice.itemCount,
+            balance: formatCurrency(activeInvoice.balanceDueCents / 100),
+            strong: (chunks) => <strong>{chunks}</strong>,
+          })}{" "}
           {paidReady
             ? t("readyForPaidCheckout")
             : zeroDollarInvoiceReady
@@ -3465,7 +3473,7 @@ function EncounterInvoices({
                       </Badge>
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Total {fmt(invoice.total)} · Balance {fmt(balance)}
+                      {t("totalAndBalance", { total: fmt(invoice.total), balance: fmt(balance) })}
                     </p>
                   </div>
                   <Button size="sm" variant="outline" asChild>
@@ -3478,7 +3486,7 @@ function EncounterInvoices({
             })}
           </div>
         )}
-        <span className="sr-only">Appointment {appointmentId}</span>
+        <span className="sr-only">{t("appointmentId", { id: appointmentId })}</span>
       </CardContent>
     </Card>
   );
@@ -3606,8 +3614,8 @@ function VisitWorkReconciliation({
                       }
                     >
                       {staleCharge
-                        ? "charge removed"
-                        : item.status.replace("_", " ")}
+                        ? t("chargeRemoved")
+                        : codeLabel(t, "codes.workStatus", item.status)}
                     </Badge>
                   </div>
 
@@ -3639,8 +3647,7 @@ function VisitWorkReconciliation({
                               {reconciliation.data.invoiceItemOptions.map(
                                 (charge) => (
                                   <option key={charge.id} value={charge.id}>
-                                    {charge.description} · qty {charge.quantity}{" "}
-                                    · {fmt(charge.total)}
+                                    {t("chargeOption", { description: charge.description, quantity: charge.quantity, total: fmt(charge.total) })}
                                   </option>
                                 ),
                               )}
@@ -4260,8 +4267,10 @@ function ChargeCapture({
                 <ul className="mt-2 space-y-1 text-xs">
                   {prescriptionChargesNeedingUnitReview.map((prescription) => (
                     <li key={prescription.id}>
-                      {prescription.dispenseChargeDescription} · quantity{" "}
-                      {prescription.quantity ?? "not recorded"}
+                      {t("prescriptionQuantity", {
+                        description: prescription.dispenseChargeDescription ?? "",
+                        quantity: prescription.quantity ?? t("notRecorded"),
+                      })}
                     </li>
                   ))}
                 </ul>
@@ -4428,7 +4437,7 @@ function ChargeCapture({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">
-                    Tax ({configQuery.data?.taxRatePercent ?? "0.00"}%)
+                    {t("taxPercent", { percent: configQuery.data?.taxRatePercent ?? "0.00" })}
                   </span>
                   <span>{fmt(tax)}</span>
                 </div>

@@ -169,7 +169,7 @@ export function FirstDayRecommendations({
           tilt="sm:rotate-1"
         >
           <span className="flex items-center gap-2 text-xs font-semibold text-violet-700">
-            <ReceiptText className="h-4 w-4" /> Client billing
+            <ReceiptText className="h-4 w-4" /> {t("clientBillingTag")}
           </span>
           <div className="rounded-lg bg-white/90 px-3 py-2.5 shadow-sm">
             <div className="flex items-center justify-between text-xs text-slate-500">
@@ -177,7 +177,7 @@ export function FirstDayRecommendations({
               <span className="font-semibold text-slate-900">$68.00</span>
             </div>
             <div className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-violet-700">
-              <CreditCard className="h-3.5 w-3.5" /> Pay securely online
+              <CreditCard className="h-3.5 w-3.5" /> {t("paySecurelyOnline")}
             </div>
           </div>
         </RecommendationCard>
@@ -190,7 +190,7 @@ export function FirstDayRecommendations({
           tilt="sm:-rotate-1"
         >
           <span className="flex items-center gap-2 text-xs font-semibold text-orange-700">
-            <Globe2 className="h-4 w-4" /> Client portal
+            <Globe2 className="h-4 w-4" /> {t("clientPortalTag")}
           </span>
           <div className="flex items-center gap-2 rounded-lg bg-white/90 px-3 py-2.5 shadow-sm">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100 text-orange-700">

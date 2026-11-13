@@ -169,7 +169,7 @@ export default function ReplaceSoapNotePage() {
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center gap-2 p-8 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Checking access...
+        <Loader2 className="h-4 w-4 animate-spin" /> {t("checkingAccess")}
       </div>
     );
   }
@@ -206,7 +206,7 @@ export default function ReplaceSoapNotePage() {
     }
     return (
       <div className="flex items-center justify-center gap-2 p-8 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading signed SOAP...
+        <Loader2 className="h-4 w-4 animate-spin" /> {t("loadingSignedSoap")}
       </div>
     );
   }

@@ -50,10 +50,10 @@ export function AddACardStep({
           <div className="text-right">
             <p className="font-heading text-lg font-bold text-slate-900">
               ${unitPrice}
-              <span className="text-sm font-normal text-slate-500">/month</span>
+              <span className="text-sm font-normal text-slate-500">{t("perMonth")}</span>
             </p>
             <p className="text-sm font-medium text-emerald-700">
-              or ${annualPrice}/year
+              {t("orPerYear", { price: annualPrice })}
             </p>
           </div>
         </div>

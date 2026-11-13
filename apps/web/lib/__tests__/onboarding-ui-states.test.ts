@@ -204,7 +204,7 @@ describe("onboarding UI states", () => {
     );
     expect(practiceBasics).toContain('id="ob-practice-name-error"');
     expect(practiceBasics).toContain(
-      "Practice name must be at most {PRACTICE_NAME_MAX_LENGTH} characters.",
+      "Practice name must be at most {max} characters.",
     );
   });
 

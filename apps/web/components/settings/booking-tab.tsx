@@ -244,17 +244,17 @@ export function BookingTab() {
               setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
             }
             maxLength={BOOKING_SLUG_MAX_LENGTH}
-            placeholder="your-clinic-name"
+            placeholder={t("slugPlaceholder")}
             className="max-w-xs"
           />
           {slug && slugValid && !slugCheck.isLoading && (
             slugTaken ? (
               <span className="flex items-center gap-1 text-xs text-red-600">
-                <X className="h-3.5 w-3.5" /> Taken
+                <X className="h-3.5 w-3.5" /> {t("slugTaken")}
               </span>
             ) : (
               <span className="flex items-center gap-1 text-xs text-emerald-600">
-                <Check className="h-3.5 w-3.5" /> Available
+                <Check className="h-3.5 w-3.5" /> {t("slugAvailable")}
               </span>
             )
           )}
@@ -343,7 +343,7 @@ export function BookingTab() {
                       }
                       className="rounded-md border border-gray-300 px-2 py-1 text-sm"
                     />
-                    <span className="text-gray-400">to</span>
+                    <span className="text-gray-400">{t("timeRangeTo")}</span>
                     <input
                       type="time"
                       value={hours.close}
@@ -486,7 +486,7 @@ export function BookingTab() {
             htmlFor="booking-welcome-message"
             className="block text-sm font-medium text-gray-700 mb-1.5"
           >
-            Welcome message <span className="text-gray-400 font-normal">(optional)</span>
+            {t("welcomeMessageLabel")} <span className="text-gray-400 font-normal">{t("optionalField")}</span>
           </label>
           <textarea
             id="booking-welcome-message"

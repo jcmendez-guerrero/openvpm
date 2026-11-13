@@ -127,8 +127,7 @@ export function MessagingRegistrationForm() {
   if (registrationQuery.isLoading || defaultsQuery.isLoading) {
     return (
       <div className="flex items-center gap-2 rounded-lg border border-border p-5 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading carrier
-        registration…
+        <Loader2 className="h-4 w-4 animate-spin" /> {t("loadingCarrierRegistration")}
       </div>
     );
   }

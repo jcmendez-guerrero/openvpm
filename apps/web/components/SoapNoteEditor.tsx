@@ -144,7 +144,7 @@ export function SoapNoteEditor({
             title={t("bullets")}
             className="h-8 px-2 text-xs"
           >
-            • List
+            {t("bulletList")}
           </Button>
           <Button
             type="button"
@@ -154,7 +154,7 @@ export function SoapNoteEditor({
             title={t("numbered")}
             className="h-8 px-2 text-xs"
           >
-            1. List
+            {t("numberedList")}
           </Button>
         </div>
 

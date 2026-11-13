@@ -2,6 +2,7 @@
 
 import { useDocumentLanguage } from "@/components/common/use-document-language";
 import { useLocale, useTranslations } from "use-intl";
+import { codeLabel } from "@/i18n/code-label";
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -289,7 +290,7 @@ export default function BillingPage() {
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-heading text-xl font-semibold">Billing</h2>
+          <h2 className="font-heading text-xl font-semibold">{t("billingTitle")}</h2>
           <p className="text-sm text-muted-foreground">
             {t("invoicesAndPayments")}
           </p>
@@ -320,7 +321,7 @@ export default function BillingPage() {
       {/* Accounts receivable at a glance */}
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Outstanding</p>
+          <p className="text-sm text-muted-foreground">{t("outstanding")}</p>
           <p className="mt-1 font-heading text-2xl font-semibold">
             {arSummary.isError
               ? "—"
@@ -330,7 +331,7 @@ export default function BillingPage() {
           </p>
         </div>
         <div className="rounded-lg border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Overdue</p>
+          <p className="text-sm text-muted-foreground">{t("overdue")}</p>
           <p
             className={`mt-1 font-heading text-2xl font-semibold ${
               arSummary.data && Number(arSummary.data.overdue) > 0
@@ -346,7 +347,7 @@ export default function BillingPage() {
           </p>
         </div>
         <div className="rounded-lg border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Collected this month</p>
+          <p className="text-sm text-muted-foreground">{t("collectedThisMonth")}</p>
           <p className="mt-1 font-heading text-2xl font-semibold">
             {arSummary.isError
               ? "—"
@@ -447,8 +448,7 @@ export default function BillingPage() {
           {/* Pagination */}
           <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
             <p>
-              Showing {offset + 1}--{Math.min(offset + limit, data.total)} of{" "}
-              {data.total}
+              {t("showingRange", { from: offset + 1, to: Math.min(offset + limit, data.total), total: data.total })}
             </p>
             <div className="flex gap-2">
               <Button
@@ -659,7 +659,7 @@ function DispenseChargeQueuePanel({
       </div>
       {pending.isError ? (
         <div className="p-4 text-sm text-destructive">
-          Unable to load medication billing work. {pending.error.message}
+          {t("medicationWorkFailed", { message: pending.error.message })}
         </div>
       ) : pending.isLoading ? (
         <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
@@ -681,10 +681,13 @@ function DispenseChargeQueuePanel({
                   ) : null}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {item.patientName} · {item.clientFirstName}{" "}
-                  {item.clientLastName} · Qty {item.quantity} at{" "}
-                  {formatCurrency(item.unitPrice)} · dispensed{" "}
-                  {formatBillingInstantDate(item.createdAt, billingTimeZone, locale)}
+                  {t("dispenseLine", {
+                    patient: item.patientName,
+                    client: [item.clientFirstName, item.clientLastName].filter(Boolean).join(" "),
+                    quantity: item.quantity,
+                    price: formatCurrency(item.unitPrice),
+                    date: formatBillingInstantDate(item.createdAt, billingTimeZone, locale),
+                  })}
                   {item.appointmentId ? (
                     <>
                       {" "}·{" "}
@@ -733,7 +736,7 @@ function DispenseChargeQueuePanel({
       {canWaive && waived.data && waived.data.items.length > 0 ? (
         <details className="border-t border-border p-4">
           <summary className="cursor-pointer text-sm font-medium">
-            Recently waived ({waived.data.total})
+            {t("recentlyWaivedCount", { count: waived.data.total })}
           </summary>
           <div className="mt-3 space-y-3">
             {waived.data.items.map((item) => (
@@ -862,7 +865,7 @@ function WellnessBillingPanel({
           <CalendarClock className="mt-0.5 h-5 w-5 text-primary" />
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-medium">Wellness invoices due</h3>
+              <h3 className="font-medium">{t("wellnessInvoicesDue")}</h3>
               <Badge variant="secondary">{t("invoiceSchedule")}</Badge>
             </div>
             <p
@@ -1057,7 +1060,7 @@ function InvoiceRow({
           <span>{formatCurrency(invoice.paidAmount)}</span>
           {adjustedAmount > 0 && (
             <span className="block text-xs text-muted-foreground">
-              Adj {formatCurrency(adjustedAmount)}
+              {t("adjAmount", { amount: formatCurrency(adjustedAmount) })}
             </span>
           )}
         </td>
@@ -1170,8 +1173,9 @@ function InvoiceRow({
                             .filter(Boolean)
                             .join(" ");
                           const { generateInvoicePdf } = await import("@/lib/pdf");
+                          const docLanguage = documentLanguage(d.clientPreferredLanguage);
                           generateInvoicePdf({
-                            language: documentLanguage(d.clientPreferredLanguage),
+                            language: docLanguage,
                             practiceName,
                             clientName,
                             clientEmail: d.clientEmail ?? undefined,
@@ -1179,31 +1183,31 @@ function InvoiceRow({
                             invoiceDate: d.createdAt
                               ? formatBillingInstantDate(
                                   d.createdAt,
-                                  billingTimeZone, locale
+                                  billingTimeZone, docLanguage
                                 )
                               : formatBillingInstantDate(
                                   new Date(),
-                                  billingTimeZone, locale
+                                  billingTimeZone, docLanguage
                                 ),
                             dueDate: d.dueDate
                               ? formatBillingDateInput(
                                   d.dueDate,
-                                  billingTimeZone, locale
+                                  billingTimeZone, docLanguage
                                 )
                               : undefined,
                             status: "estimate",
                             items: d.items.map((item) => ({
                               description: item.description ?? "",
                               quantity: Number(item.quantity ?? 1),
-                              unitPrice: formatCurrency(item.unitPrice),
-                              total: formatCurrency(item.total),
+                              unitPrice: formatCurrency(item.unitPrice, docLanguage),
+                              total: formatCurrency(item.total, docLanguage),
                             })),
-                            subtotal: formatCurrency(d.subtotal),
-                            tax: formatCurrency(d.tax),
-                            total: formatCurrency(d.total),
-                            paidAmount: formatCurrency(d.paidAmount),
-                            adjustedAmount: formatCurrency(d.adjustedAmount),
-                            balanceDue: formatCurrency(d.balanceDue),
+                            subtotal: formatCurrency(d.subtotal, docLanguage),
+                            tax: formatCurrency(d.tax, docLanguage),
+                            total: formatCurrency(d.total, docLanguage),
+                            paidAmount: formatCurrency(d.paidAmount, docLanguage),
+                            adjustedAmount: formatCurrency(d.adjustedAmount, docLanguage),
+                            balanceDue: formatCurrency(d.balanceDue, docLanguage),
                           }).save(`estimate-${clientName || "unknown"}.pdf`);
                         }}
                       >
@@ -1226,7 +1230,7 @@ function InvoiceRow({
 
                 <div className="flex items-center gap-6 text-sm">
                   <span className="text-muted-foreground">
-                    Client:{" "}
+                    {t("clientLabel")}{" "}
                     <span className="text-foreground font-medium">
                       {detail.data.clientFirstName}{" "}
                       {detail.data.clientLastName}
@@ -1268,7 +1272,7 @@ function InvoiceRow({
                         >
                           <td className="py-2">{item.description}</td>
                           <td className="py-2 capitalize text-muted-foreground">
-                            {item.itemType} · {item.taxable ? "taxable" : "not taxable"}
+                            {item.itemType} · {item.taxable ? t("taxableValue") : t("notTaxableValue")}
                           </td>
                           <td className="py-2 text-right tabular-nums">
                             {item.quantity}
@@ -1321,27 +1325,27 @@ function InvoiceRow({
                   <div className="flex items-center justify-between rounded-lg border border-border bg-background p-3 text-sm">
                     <div className="flex items-center gap-6">
                       <span>
-                        Total:{" "}
+                        {t("totalLabel")}{" "}
                         <span className="font-semibold">
                           {formatCurrency(detail.data.total)}
                         </span>
                       </span>
                       <span>
-                        Paid:{" "}
+                        {t("paidLabel")}{" "}
                         <span className="font-semibold text-green-600">
                           {formatCurrency(detail.data.paidAmount)}
                         </span>
                       </span>
                       {Number(detail.data.adjustedAmount ?? 0) > 0 && (
                         <span>
-                          Adjusted:{" "}
+                          {t("adjustedLabel")}{" "}
                           <span className="font-semibold text-teal-600">
                             {formatCurrency(detail.data.adjustedAmount)}
                           </span>
                         </span>
                       )}
                       <span>
-                        Balance:{" "}
+                        {t("balanceLabel")}{" "}
                         <span className="font-semibold text-red-600">
                           {formatCurrency(detail.data.balanceDue)}
                         </span>
@@ -1358,8 +1362,9 @@ function InvoiceRow({
                             .filter(Boolean)
                             .join(" ");
                           const { generateInvoicePdf } = await import("@/lib/pdf");
+                          const docLanguage = documentLanguage(d.clientPreferredLanguage);
                           generateInvoicePdf({
-                            language: documentLanguage(d.clientPreferredLanguage),
+                            language: docLanguage,
                             practiceName,
                             clientName,
                             clientEmail: d.clientEmail ?? undefined,
@@ -1367,31 +1372,31 @@ function InvoiceRow({
                             invoiceDate: d.createdAt
                               ? formatBillingInstantDate(
                                   d.createdAt,
-                                  billingTimeZone, locale
+                                  billingTimeZone, docLanguage
                                 )
                               : formatBillingInstantDate(
                                   new Date(),
-                                  billingTimeZone, locale
+                                  billingTimeZone, docLanguage
                                 ),
                             dueDate: d.dueDate
                               ? formatBillingDateInput(
                                   d.dueDate,
-                                  billingTimeZone, locale
+                                  billingTimeZone, docLanguage
                                 )
                               : undefined,
                             status: d.status,
                             items: d.items.map((item) => ({
                               description: item.description ?? "",
                               quantity: Number(item.quantity ?? 1),
-                              unitPrice: formatCurrency(item.unitPrice),
-                              total: formatCurrency(item.total),
+                              unitPrice: formatCurrency(item.unitPrice, docLanguage),
+                              total: formatCurrency(item.total, docLanguage),
                             })),
-                            subtotal: formatCurrency(d.subtotal),
-                            tax: formatCurrency(d.tax),
-                            total: formatCurrency(d.total),
-                            paidAmount: formatCurrency(d.paidAmount),
-                            adjustedAmount: formatCurrency(d.adjustedAmount),
-                            balanceDue: formatCurrency(d.balanceDue),
+                            subtotal: formatCurrency(d.subtotal, docLanguage),
+                            tax: formatCurrency(d.tax, docLanguage),
+                            total: formatCurrency(d.total, docLanguage),
+                            paidAmount: formatCurrency(d.paidAmount, docLanguage),
+                            adjustedAmount: formatCurrency(d.adjustedAmount, docLanguage),
+                            balanceDue: formatCurrency(d.balanceDue, docLanguage),
                           }).save(`invoice-${clientName || "unknown"}.pdf`);
                         }}
                       >
@@ -1675,7 +1680,7 @@ function PaymentSection({
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h4 className="text-sm font-medium">Payments &amp; Adjustments</h4>
+        <h4 className="text-sm font-medium">{t("paymentsAndAdjustments")}</h4>
         {canCollect && (
           <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-3">
             <Button
@@ -1730,9 +1735,9 @@ function PaymentSection({
       )}
 
       <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-        <span>Paid {formatCurrency(invoicePaidAmount)}</span>
-        <span>Adjusted {formatCurrency(invoiceAdjustedAmount)}</span>
-        <span>Balance {formatCurrency(invoiceBalanceDue)}</span>
+        <span>{t("paidAmount", { amount: formatCurrency(invoicePaidAmount) })}</span>
+        <span>{t("adjustedAmount", { amount: formatCurrency(invoiceAdjustedAmount) })}</span>
+        <span>{t("balanceAmount", { amount: formatCurrency(invoiceBalanceDue) })}</span>
       </div>
 
       {/* Payment form */}
@@ -1885,7 +1890,7 @@ function PaymentSection({
 
       {/* Payment list */}
       {paymentsQuery.isLoading ? (
-        <p className="text-xs text-muted-foreground">Loading payments...</p>
+        <p className="text-xs text-muted-foreground">{t("loadingPayments")}</p>
       ) : paymentsQuery.data && paymentsQuery.data.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -1933,7 +1938,7 @@ function PaymentSection({
                   {formatCurrency(payment.amount)}
                 </td>
                 <td className="py-2 capitalize text-muted-foreground">
-                  {payment.method?.replace(/_/g, " ") ?? "\u2014"}
+                  {payment.method ? codeLabel(t, "methods", payment.method) : "\u2014"}
                 </td>
                 <td className="py-2 text-muted-foreground">
                   {payment.receivedByName ?? "\u2014"}
@@ -1969,11 +1974,11 @@ function PaymentSection({
           </table>
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground">No payments recorded.</p>
+        <p className="text-xs text-muted-foreground">{t("noPaymentsRecorded")}</p>
       )}
 
       {adjustmentsQuery.isLoading ? (
-        <p className="text-xs text-muted-foreground">Loading adjustments...</p>
+        <p className="text-xs text-muted-foreground">{t("loadingAdjustments")}</p>
       ) : adjustmentsQuery.data && adjustmentsQuery.data.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -2011,7 +2016,7 @@ function PaymentSection({
                     : "\u2014"}
                 </td>
                 <td className="py-2 capitalize text-muted-foreground">
-                  {adjustment.type.replace(/_/g, " ")}
+                  {codeLabel(t, "adjustmentTypes", adjustment.type)}
                 </td>
                 <td className="py-2 text-right tabular-nums font-medium text-teal-600">
                   {formatCurrency(adjustment.amount)}

@@ -112,7 +112,7 @@ export function DemoWelcome() {
               <p className="rounded-lg bg-muted p-3 text-xs leading-5 text-muted-foreground">{selected.note}</p>
               <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <button type="button" onClick={() => setSelected(null)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-3 text-sm text-muted-foreground hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
-                  <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Choose another workflow
+                  <ArrowLeft className="h-4 w-4" aria-hidden="true" /> {t("chooseAnotherWorkflow")}
                 </button>
                 <Link href={selected.href} onClick={() => trackFunnelEvent(FUNNEL_EVENTS.demoWorkflowStarted, { tool: selected.id, path: "/demo-start" })} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
                   {selected.action} <ArrowRight className="h-4 w-4" aria-hidden="true" />

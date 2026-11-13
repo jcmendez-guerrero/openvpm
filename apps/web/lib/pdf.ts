@@ -72,6 +72,12 @@ export function pdfText(language?: Language): PdfText {
   return getTranslatorFor(language ?? "en");
 }
 
+/** A stored code (status, severity) in the document's language; unknown codes print as stored. */
+function codeLabel(t: PdfText, prefix: string, code: string): string {
+  const key = `${prefix}.${code}`;
+  return t.has(key as Parameters<PdfText>[0]) ? t(key as Parameters<PdfText>[0]) : code;
+}
+
 /**
  * Brand mark: a white paw print on a teal rounded square, drawn with
  * primitives so PDFs need no image asset. Matches the in-app brand color.
@@ -656,7 +662,7 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
       doc.setFont(FONT, "normal");
       setColor(doc, COLOR_GRAY);
       doc.text(
-        `(${allergy.severity})`,
+        `(${codeLabel(t, "patients.allergy.severity", allergy.severity)})`,
         PAGE_MARGIN + 2 + doc.getTextWidth(allergy.allergen + " "),
         y,
       );
@@ -689,7 +695,7 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
       doc.text(text, PAGE_MARGIN + 2, y);
       doc.setFont(FONT, "italic");
       setColor(doc, COLOR_GRAY);
-      doc.text(`[${problem.status}]`, PAGE_WIDTH - PAGE_MARGIN, y, {
+      doc.text(`[${codeLabel(t, "records.page.problems.statusLower", problem.status)}]`, PAGE_WIDTH - PAGE_MARGIN, y, {
         align: "right",
       });
       y += 6;
@@ -958,7 +964,7 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
       doc.text(rx.dosage, pColDose, y);
       doc.text(rx.frequency, pColFreq, y);
       setColor(doc, COLOR_GRAY);
-      doc.text(rx.status, pColStat - 2, y, { align: "right" });
+      doc.text(codeLabel(t, "records.page.rx.status", rx.status), pColStat - 2, y, { align: "right" });
       y += 6;
     }
   }

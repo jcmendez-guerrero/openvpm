@@ -819,7 +819,7 @@ function PracticeInfoTab() {
               </label>
               <label className="space-y-1.5">
                 <span className="text-sm font-medium">
-                  VAT number (optional)
+                  {t("vatNumberOptional")}
                 </span>
                 <Input
                   maxLength={SETTINGS_VAT_NUMBER_MAX_LENGTH}
@@ -1783,7 +1783,7 @@ function BillingTab() {
                   : "border-amber-200 bg-amber-50 text-amber-800",
               )}
             >
-              <span className="font-medium">Billing sync: </span>
+              <span className="font-medium">{t("billingSyncLabel")} </span>
               {data.billingSyncStatus!.message}
             </div>
           ) : null}
@@ -1974,8 +1974,7 @@ function ClientPaymentProcessingSection({
             <div className="sm:col-span-3">
               <p className="text-muted-foreground">{t("stripeRequirements")}</p>
               <p className="font-medium">
-                {data.requirementsCurrentlyDue.length} item
-                {data.requirementsCurrentlyDue.length === 1 ? "" : "s"} due
+                {t("itemsDue", { count: data.requirementsCurrentlyDue.length })}
               </p>
             </div>
           ) : null}
@@ -2117,7 +2116,7 @@ function PlanGrid({
                   {busyTier === p.tier ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : null}
-                  Choose {p.name}
+                  {t("choosePlan", { name: p.name })}
                 </Button>
               ) : !p.selfServe ? (
                 <a
@@ -4060,7 +4059,7 @@ function DataTab() {
 
                   {backupSummary.missingSections.length > 0 ? (
                     <p className="mt-2 text-xs text-destructive">
-                      Missing: {backupSummary.missingSections.join(", ")}
+                      {t("missingSectionsList", { sections: backupSummary.missingSections.join(", ") })}
                     </p>
                   ) : backupSummary.restoreErrors.length > 0 ? (
                     <div className="mt-2 space-y-1 text-xs text-destructive">
@@ -4388,7 +4387,7 @@ function DataTab() {
             {/* Server dry-run preview */}
             {csvFileName && (
               <p className="text-xs text-muted-foreground">
-                Selected file:{" "}
+                {t("selectedFileLabel")}{" "}
                 <span className="font-medium">{csvFileName}</span>
               </p>
             )}

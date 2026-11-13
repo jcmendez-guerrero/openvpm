@@ -336,7 +336,7 @@ export function ServicesTab() {
                           disabled={mutationPending}
                           onClick={resetEditState}
                         >
-                          <X className="mr-2 h-4 w-4" /> Cancel
+                          <X className="mr-2 h-4 w-4" /> {t("cancelEdit")}
                         </Button>
                       </div>
                     </td>
@@ -428,7 +428,7 @@ export function ServicesTab() {
 
       <details className="rounded-lg border border-border bg-card">
         <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
-          Archived services ({availableArchivedServices.length})
+          {t("archivedServicesCount", { count: availableArchivedServices.length })}
         </summary>
         <div className="border-t border-border">
           {availableArchivedServices.length === 0 ? (

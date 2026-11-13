@@ -116,7 +116,7 @@ export function TreatmentPlanDecisionClient({ token }: { token: string }) {
   if (state.kind === "loading") {
     return (
       <div className="flex items-center justify-center gap-2 py-20 text-sm text-gray-600">
-        <Loader2 className="h-5 w-5 animate-spin" /> Loading treatment plan…
+        <Loader2 className="h-5 w-5 animate-spin" /> {t("loadingPlan")}
       </div>
     );
   }
@@ -206,7 +206,7 @@ export function TreatmentPlanDecisionClient({ token }: { token: string }) {
       <div>
         <h1 className="text-xl font-semibold text-gray-950">{plan.title}</h1>
         <p className="mt-1 text-sm text-gray-600">
-          For {plan.patientName} · Revision {plan.revisionNumber}
+          {t("forPatientRevision", { patient: plan.patientName, revision: plan.revisionNumber })}
         </p>
       </div>
 
@@ -219,7 +219,7 @@ export function TreatmentPlanDecisionClient({ token }: { token: string }) {
               className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
             >
               <legend className="sr-only">
-                Decision for {line.description}
+                {t("decisionFor", { item: line.description })}
               </legend>
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -267,7 +267,7 @@ export function TreatmentPlanDecisionClient({ token }: { token: string }) {
               </div>
               {choice?.decision === "accepted" ? (
                 <label className="mt-3 block text-sm text-gray-700">
-                  Accepted quantity (maximum {line.offeredQuantity})
+                  {t("acceptedQuantity", { max: line.offeredQuantity })}
                   <input
                     inputMode="decimal"
                     value={choice.acceptedQuantity}
@@ -286,7 +286,7 @@ export function TreatmentPlanDecisionClient({ token }: { token: string }) {
               ) : null}
               {choice?.decision === "declined" ? (
                 <label className="mt-3 block text-sm text-gray-700">
-                  Reason (optional)
+                  {t("reasonOptional")}
                   <input
                     maxLength={2_000}
                     value={choice.declineReason}

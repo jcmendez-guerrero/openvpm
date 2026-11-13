@@ -203,12 +203,12 @@ export default function InvoicesPage() {
                   </div>
                   {inv.patientName && (
                     <p className="text-sm text-gray-500">
-                      Patient: {inv.patientName}
+                      {t("patientName", { name: inv.patientName })}
                     </p>
                   )}
                   <div className="flex justify-between mt-2 text-sm">
                     <span className="text-gray-400">
-                      Paid:{" "}
+                      {t("paidLabel")}{" "}
                       {formatCurrency(
                         inv.paidAmount,
                         inv.currency,
@@ -217,7 +217,7 @@ export default function InvoicesPage() {
                     </span>
                     {adjusted > 0 && (
                       <span className="text-gray-400">
-                        Adjusted:{" "}
+                        {t("adjustedLabel")}{" "}
                         {formatCurrency(
                           inv.adjustedAmount,
                           inv.currency,
@@ -227,7 +227,7 @@ export default function InvoicesPage() {
                     )}
                     {balance > 0 && (
                       <span className="font-medium text-red-600">
-                        Balance:{" "}
+                        {t("balanceLabel")}{" "}
                         {formatCurrency(balance, inv.currency, inv.country)}
                       </span>
                     )}
@@ -302,7 +302,7 @@ export default function InvoicesPage() {
                         )}
                         {adjusted > 0 && (
                           <span className="block text-xs text-gray-400">
-                            Adj{" "}
+                            {t("adjShort")}{" "}
                             {formatCurrency(
                               inv.adjustedAmount,
                               inv.currency,

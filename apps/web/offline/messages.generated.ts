@@ -137,7 +137,9 @@ export const OFFLINE_MESSAGES = {
         "underline": "Underline (Ctrl+U)",
         "bullets": "Bullet List",
         "numbered": "Ordered List",
-        "clear": "Clear Formatting"
+        "clear": "Clear Formatting",
+        "bulletList": "• List",
+        "numberedList": "1. List"
       }
     }
   },
@@ -271,14 +273,16 @@ export const OFFLINE_MESSAGES = {
     },
     "records": {
       "editor": {
-        "placeholder": "Escriba aquí...",
+        "placeholder": "Escribe aquí...",
         "ariaLabel": "Sección de la nota SOAP",
         "bold": "Negrita (Ctrl+B)",
         "italic": "Cursiva (Ctrl+I)",
         "underline": "Subrayado (Ctrl+U)",
         "bullets": "Lista con viñetas",
         "numbered": "Lista numerada",
-        "clear": "Quitar formato"
+        "clear": "Quitar formato",
+        "bulletList": "• Lista",
+        "numberedList": "1. Lista"
       }
     }
   }

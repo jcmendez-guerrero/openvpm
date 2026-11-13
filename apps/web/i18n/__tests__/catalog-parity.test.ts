@@ -35,6 +35,13 @@ describe("check-translations", () => {
     expect(check({ en, es }).errors.join("\n")).toMatch(/es: invalid message a\.hello/);
   });
 
+  it("fails Spanish that addresses the reader with usted", () => {
+    const es = { a: { hello: "Seleccione {name}", count: "{n, plural, one {# cosa} other {# cosas}}" } };
+    expect(check({ en, es }).errors.join("\n")).toMatch(/es: uses usted instead of tú in a\.hello/);
+    const tu = { a: { hello: "Selecciona {name}; que el cliente elija", count: "{n, plural, one {#} other {#}}" } };
+    expect(check({ en, es: tu }).errors).toEqual([]);
+  });
+
   it("the shipped catalogs pass", () => {
     expect(check(loadCatalogs()).errors).toEqual([]);
   });

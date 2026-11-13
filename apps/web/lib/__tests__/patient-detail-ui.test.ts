@@ -263,15 +263,18 @@ describe("patient detail UI states", () => {
     expect(source).toContain("formatClinicalDate(vax.administeredAt, timeZone");
     expect(source).toContain("formatClinicalDate(vax.nextDueDate, timeZone");
     expect(source).toContain(
-      "formatClinicalDate(v.administeredAt, recordsTimeZone",
+      "formatClinicalDate(\n                  v.administeredAt,\n                  recordsTimeZone,",
     );
-    expect(source).toContain("formatClinicalDate(n.createdAt, recordsTimeZone");
+    expect(source).toContain(
+      "formatClinicalDate(value, recordsTimeZone, fallback, pdfLocale)",
+    );
+    expect(source).toContain("pdfDate(n.createdAt, unknown)");
     expect(source).toContain("practiceName: recordsPracticeName");
     expect(source).toContain(
       "practicePhone: recordsPracticePhone ?? undefined",
     );
     expect(source).toContain(
-      "generatedDate: formatClinicalDate(new Date(), recordsTimeZone)",
+      "generatedDate: pdfDate(new Date(), unknown)",
     );
     expect(source).not.toContain(
       "const recordsTimeZone = recordsSettings?.timezone",

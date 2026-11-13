@@ -420,14 +420,14 @@ function NewInvoiceForm({
             onChange={(e) => setIsEstimate(e.target.checked)}
             className="rounded border-gray-300"
           />
-          <span className="font-medium">Estimate</span>
+          <span className="font-medium">{t("estimateLabel")}</span>
         </label>
       </div>
 
       {/* Client Search */}
       <div className="mt-6 space-y-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Client *</label>
+          <label className="block text-sm font-medium mb-1">{t("clientRequired")}</label>
           {selectedClient ? (
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">
@@ -545,7 +545,7 @@ function NewInvoiceForm({
 
         {/* Add Line Item */}
         <div>
-          <label className="block text-sm font-medium mb-1">Line Items</label>
+          <label className="block text-sm font-medium mb-1">{t("lineItems")}</label>
           <div className="rounded-lg border border-border p-4 space-y-3">
             {servicesQuery.error || servicesMissing ? (
               <InlineQueryMessage kind="error">
@@ -723,11 +723,11 @@ function NewInvoiceForm({
               </div>
             ) : null}
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Subtotal</span>
+              <span className="text-muted-foreground">{t("subtotal")}</span>
               <span className="tabular-nums">{fmt(subtotal)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Tax ({taxPercent}%)</span>
+              <span className="text-muted-foreground">{t("taxPercent", { percent: taxPercent })}</span>
               <span className="tabular-nums">{fmt(tax)}</span>
             </div>
             <div className="flex justify-between font-semibold border-t border-border pt-1">
@@ -739,7 +739,7 @@ function NewInvoiceForm({
 
         {/* Due Date */}
         <div>
-          <label className="block text-sm font-medium mb-1">Due Date</label>
+          <label className="block text-sm font-medium mb-1">{t("dueDate")}</label>
           <Input
             type="date"
             value={dueDate}

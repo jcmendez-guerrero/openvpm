@@ -113,7 +113,7 @@ export function PatientDocumentUpload({ patientId }: { patientId: string }) {
           {uploading ? t("uploading") : attempt ? t("retry") : t("upload")}
         </Button>
       </div>
-      {category === "lab-results" && <p className="mt-2 text-xs text-muted-foreground">The original report is saved in Documents. Results are not automatically entered into lab values.</p>}
+      {category === "lab-results" && <p className="mt-2 text-xs text-muted-foreground">{t("labReportNote")}</p>}
       {error && <p role="alert" className="mt-2 text-sm text-destructive">{error}</p>}
     </div>
   );

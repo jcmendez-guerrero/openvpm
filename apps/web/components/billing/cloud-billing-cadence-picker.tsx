@@ -89,7 +89,7 @@ export function CloudBillingCadencePicker({
                       <Icon className="size-4" aria-hidden="true" />
                     </span>
                     {savings > 0 ? (
-                      <Badge variant="success">Save {dollars(savings)}</Badge>
+                      <Badge variant="success">{t("saveAmount", { amount: dollars(savings) })}</Badge>
                     ) : null}
                   </div>
                   <div>
@@ -109,7 +109,7 @@ export function CloudBillingCadencePicker({
                     </span>
                     {normalizedLocationCount > 1 ? (
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {dollars(option.priceUsd)} per active location
+                        {t("perActiveLocation", { price: dollars(option.priceUsd) })}
                       </p>
                     ) : null}
                   </div>

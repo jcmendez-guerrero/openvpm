@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations, useLocale } from "use-intl";
+import { codeLabel } from "@/i18n/code-label";
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -101,6 +102,7 @@ function InlineLookupError({ message }: { message: string }) {
 
 function LogEntryForm({ onClose }: { onClose: () => void }) {
   const t = useTranslations("controlledSubstances");
+  const tRoles = useTranslations("shell.roles");
   const utils = trpc.useUtils();
   // A regulated entry must be written once. The ref blocks a second click
   // before React re-renders the disabled button, and the operation id lets
@@ -319,7 +321,7 @@ function LogEntryForm({ onClose }: { onClose: () => void }) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div>
           <label className="block text-xs font-medium text-muted-foreground mb-1">
-            Patient {form.action === "administered" && "*"}
+            {t("patientLabel")} {form.action === "administered" && "*"}
           </label>
           <select
             value={form.patientId}
@@ -364,7 +366,7 @@ function LogEntryForm({ onClose }: { onClose: () => void }) {
         </div>
         <div>
           <label className="block text-xs font-medium text-muted-foreground mb-1">
-            Witness {form.action === "wasted" && "*"}
+            {t("witnessLabel")} {form.action === "wasted" && "*"}
           </label>
           <select
             value={form.witnessedBy}
@@ -389,7 +391,7 @@ function LogEntryForm({ onClose }: { onClose: () => void }) {
             </option>
             {witnessOptions.map((user) => (
               <option key={user.id} value={user.id}>
-                {user.name} ({user.role.replace("_", " ")})
+                {user.name} ({codeLabel(tRoles, "", user.role)})
               </option>
             ))}
           </select>
@@ -763,9 +765,11 @@ function ControlledSubstancesLogPage() {
           {/* Pagination */}
           <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
             <p>
-              Showing {offset + 1}&ndash;
-              {Math.min(offset + limit, verifiedLogPayload.log.total)} of{" "}
-              {verifiedLogPayload.log.total}
+              {t("showingRange", {
+                from: offset + 1,
+                to: Math.min(offset + limit, verifiedLogPayload.log.total),
+                total: verifiedLogPayload.log.total,
+              })}
             </p>
             <div className="flex gap-2">
               <Button

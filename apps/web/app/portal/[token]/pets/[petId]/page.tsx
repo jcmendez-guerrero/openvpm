@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "use-intl";
+import { codeLabel } from "@/i18n/code-label";
 import { isSupportedLanguage } from "@/i18n/config";
 import { usePortalAge } from "@/components/portal/use-portal-age";
 
@@ -116,7 +117,7 @@ export default function PetDetailPage() {
         patientName: certificate.patient.name,
         species: certificate.patient.species,
         breed: certificate.patient.breed ?? undefined,
-        sex: certificate.patient.sex?.replace("_", " "),
+        sex: certificate.patient.sex ? codeLabel(t, "certificateSex", certificate.patient.sex) : undefined,
         dob: certificate.patient.dob
           ? shownDate(certificate.patient.dob, certificateTimeZone)
           : undefined,

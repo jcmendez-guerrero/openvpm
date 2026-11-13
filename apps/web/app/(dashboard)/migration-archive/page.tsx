@@ -394,7 +394,7 @@ export default function MigrationArchivePage() {
                                 {formatCurrency(item.amount)}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                {formatCurrency(item.balance)} balance
+                                {t("balanceAmount", { amount: formatCurrency(item.balance) })}
                               </p>
                             </div>
                           ) : null}
@@ -426,9 +426,11 @@ export default function MigrationArchivePage() {
               {list.data && list.data.total > 0 ? (
                 <div className="flex flex-col gap-2 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm text-muted-foreground">
-                    Showing {page * PAGE_SIZE + 1}–
-                    {Math.min((page + 1) * PAGE_SIZE, list.data.total)} of{" "}
-                    {metric(list.data.total, locale)}
+                    {t("showingRange", {
+                      from: metric(page * PAGE_SIZE + 1, locale),
+                      to: metric(Math.min((page + 1) * PAGE_SIZE, list.data.total), locale),
+                      total: metric(list.data.total, locale),
+                    })}
                   </p>
                   <div className="flex items-center gap-2">
                     <Button

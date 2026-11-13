@@ -168,7 +168,7 @@ export function DemoLogin() {
           OpenVPM
         </a>
         <a href="https://openvpm.com" className={styles.backLink}>
-          <ArrowLeft size={15} aria-hidden="true" /> Back to website
+          <ArrowLeft size={15} aria-hidden="true" /> {t("backToWebsite")}
         </a>
       </header>
       <div className={styles.split}>
@@ -187,7 +187,7 @@ export function DemoLogin() {
               </li>
               <li className={styles.progressLine} aria-hidden="true" />
               <li aria-current={step === "email" ? "step" : undefined}>
-                <span>2</span>Your email
+                <span>2</span>{t("stepYourEmail")}
               </li>
             </ol>
 
@@ -310,7 +310,7 @@ export function DemoLogin() {
               </>
             )}
             <p className={styles.startClinic}>
-              Ready for your own workspace?{" "}
+              {t("readyForOwnWorkspace")}{" "}
               <a
                 href={buildCloudSignupUrl({
                   appOrigin: cloudSignupAppOrigin(),
@@ -334,8 +334,8 @@ export function DemoLogin() {
 
         <aside className={styles.showcase} aria-label={t("aLookInsideOpenvpm")}>
           <div className={styles.showcaseCopy}>
-            <span className={styles.liveDot} aria-hidden="true" />A LITTLE LOOK
-            INSIDE
+            <span className={styles.liveDot} aria-hidden="true" />
+            {t("aLittleLookInside")}
             <h2>
               {t("aWholeClinic")}
               <br />

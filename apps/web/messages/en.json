@@ -15,7 +15,10 @@
       "error": "Something went wrong.",
       "retry": "Try again"
     },
-    "skipToContent": "Skip to main content"
+    "skipToContent": "Skip to main content",
+    "errorBoundaryTitle": "Something went wrong",
+    "unexpectedError": "An unexpected error occurred.",
+    "tryAgainButton": "Try Again"
   },
   "language": {
     "label": "Language",
@@ -336,7 +339,11 @@
     "importIssues": {
       "importIssuesToReview": "Import issues to review",
       "checkTheCsvFile": "Check the CSV file",
-      "fixTheFileLevelIssues": "Fix the file-level issues and check the CSV again before downloading rows."
+      "fixTheFileLevelIssues": "Fix the file-level issues and check the CSV again before downloading rows.",
+      "downloadRowsToReview": "Download rows to review",
+      "rowCount": "{count, plural, one {# row} other {# rows}}",
+      "dataRows": "Data rows: {rows}{remaining, plural, =0 {} other {, and # more}}",
+      "rowsHelp": "Data rows start at 1 after the header; blank lines do not count. The worksheet includes warnings and skipped rows. Correct the original file, then check it again before importing."
     },
     "bookingIntake": {
       "preVisitIntakeFields": "Pre-visit intake fields",
@@ -354,7 +361,8 @@
       "poundsFahrenheit": "Pounds / Fahrenheit",
       "bodyConditionScale": "Body condition scale",
       "compactCloseout": "Compact closeout",
-      "ambulatoryWorkspaceSettingsSaved": "Ambulatory workspace settings saved"
+      "ambulatoryWorkspaceSettingsSaved": "Ambulatory workspace settings saved",
+      "saveAmbulatorySettings": "Save ambulatory settings"
     },
     "providerHours": {
       "tryAgain": "Try again",
@@ -392,7 +400,9 @@
       "startTime": "{day} start time",
       "endTime": "{day} end time",
       "removeWindow": "Remove {day} working window",
-      "save": "Save provider hours"
+      "save": "Save provider hours",
+      "homeBase": "Home base: {name}",
+      "legacyWindows": "{count, plural, one {# legacy practice-wide working window} other {# legacy practice-wide working windows}}"
     },
     "services": {
       "retry": "Retry",
@@ -433,7 +443,9 @@
       "editService": "Edit {name}",
       "archiveService": "Archive {name}",
       "archiveConfirm": "Archive {name}? It will be removed from future charge pickers. Existing invoices stay unchanged, and treatment templates that reference it must be updated before use.",
-      "restore": "Restore"
+      "restore": "Restore",
+      "cancelEdit": "Cancel",
+      "archivedServicesCount": "Archived services ({count})"
     },
     "booking": {
       "appointmentRequestSettingsCouldNot": "Appointment request settings could not be loaded",
@@ -499,7 +511,13 @@
       "retrySettings": "Retry loading settings",
       "retryVisitTypes": "Retry loading visit types",
       "copyLink": "Copy link",
-      "copyButton": "Copy website button"
+      "copyButton": "Copy website button",
+      "slugPlaceholder": "your-clinic-name",
+      "slugTaken": "Taken",
+      "slugAvailable": "Available",
+      "timeRangeTo": "to",
+      "welcomeMessageLabel": "Welcome message",
+      "optionalField": "(optional)"
     },
     "messaging": {
       "numberSetupIsNotEnabled": "Number setup is not enabled for this clinic yet, so OpenVPM will not search for or purchase a number. Email appointment reminders remain available. Contact OpenVPM support when your clinic is ready to join the texting pilot.",
@@ -555,7 +573,9 @@
       "reconcile": "Reconcile provider setup",
       "sendTest": "Send test",
       "safetyCheckBody": "OpenVPM must verify the exact texting profile immediately before sending can be enabled. Your clinic does not need to repeat carrier registration; this operational check keeps the webhook, US-only destinations, and spend cap in the approved state.",
-      "spanishSegmentsHelp": "Texts to clients who prefer Spanish are sent in Spanish. A Spanish appointment reminder is longer, so it usually counts as two segments. Letters like á, í, ó and ú, in the message or in your registered clinic name, switch a text to shorter segments (70 characters instead of 160), in either language."
+      "spanishSegmentsHelp": "Texts to clients who prefer Spanish are sent in Spanish. A Spanish appointment reminder is longer, so it usually counts as two segments. Letters like á, í, ó and ú, in the message or in your registered clinic name, switch a text to shorter segments (70 characters instead of 160), in either language.",
+      "hoursBeforeAppointment": "{hours} hours before the appointment",
+      "existingPhoneOnFile": "Existing phone on file: {phone}"
     },
     "messagingRegistration": {
       "openvpmHostsThePrivacyPolicy": "OpenVPM hosts the privacy policy, messaging terms, and exact consent disclosure carriers need to review. You can use these links now or replace them with your own public HTTPS pages.",
@@ -592,7 +612,8 @@
       "messagingTerms": "Messaging terms",
       "consentDisclosure": "Consent disclosure",
       "taxId": "Federal tax ID",
-      "taxIdSaved": "Federal tax ID (saved ••••{last4})"
+      "taxIdSaved": "Federal tax ID (saved ••••{last4})",
+      "loadingCarrierRegistration": "Loading carrier registration…"
     },
     "messagingWizard": {
       "textingSetup": "Texting setup",
@@ -1081,7 +1102,13 @@
         "configured": "configured",
         "notConfigured": "not configured"
       },
-      "minutesShort": "{count} min"
+      "minutesShort": "{count} min",
+      "vatNumberOptional": "VAT number (optional)",
+      "billingSyncLabel": "Billing sync:",
+      "itemsDue": "{count, plural, one {# item due} other {# items due}}",
+      "choosePlan": "Choose {name}",
+      "missingSectionsList": "Missing: {sections}",
+      "selectedFileLabel": "Selected file:"
     }
   },
   "clients": {
@@ -1741,7 +1768,8 @@
       "rabiesPdf": "Rabies PDF",
       "editDetails": "Edit details",
       "enteredInError": "Entered in error",
-      "recorded": "Recorded"
+      "recorded": "Recorded",
+      "licenseMissingSuffix": " — license missing"
     },
     "soap": {
       "corrected": "SOAP note retained and marked entered in error",
@@ -1834,7 +1862,8 @@
       "paid": "Paid",
       "status": "Status",
       "open": "Open in Billing"
-    }
+    },
+    "latestWeight": "Latest weight: {weight}"
   },
   "records": {
     "soap": {
@@ -1889,7 +1918,8 @@
       "file": "File",
       "uploading": "Uploading…",
       "retry": "Retry upload",
-      "upload": "Upload document"
+      "upload": "Upload document",
+      "labReportNote": "The original report is saved in Documents. Results are not automatically entered into lab values."
     },
     "weightCorrection": {
       "saved": "Weight corrected; original preserved in the audit log",
@@ -1922,7 +1952,9 @@
       "underline": "Underline (Ctrl+U)",
       "bullets": "Bullet List",
       "numbered": "Ordered List",
-      "clear": "Clear Formatting"
+      "clear": "Clear Formatting",
+      "bulletList": "• List",
+      "numberedList": "1. List"
     },
     "inventoryPicker": {
       "label": "Inventory item",
@@ -2064,7 +2096,8 @@
       "loadFailed": "Unable to load visit vitals. Refresh before relying on this chart.",
       "loading": "Loading visit vitals...",
       "empty": "No vitals recorded for this visit.",
-      "mmCrt": "MM {mm} · CRT {crt}"
+      "mmCrt": "MM {mm} · CRT {crt}",
+      "offlineVitalsBanner": "Offline — keep this page open. Vitals stay only in this form until you reconnect and record them."
     },
     "visitRecords": {
       "leaveWarning": "Visit records have not been saved on the server. Leave and lose these values?",
@@ -2135,7 +2168,9 @@
       "cancel": "Cancel",
       "confirmFinalize": "Finalize this replacement SOAP now? It cannot be edited after signing; later clarification requires an attributed addendum.",
       "finalizing": "Finalizing...",
-      "finalize": "Finalize replacement"
+      "finalize": "Finalize replacement",
+      "checkingAccess": "Checking access...",
+      "loadingSignedSoap": "Loading signed SOAP..."
     },
     "newSoap": {
       "loadingEditor": "Loading editor...",
@@ -2476,7 +2511,8 @@
       "saving": "Saving...",
       "save": "Save",
       "searchPrompt": "Search for a patient above to view their medical records",
-      "loadingRecords": "Loading records..."
+      "loadingRecords": "Loading records...",
+      "offlineFormsBanner": "Offline — clinical forms stay only on this device. Keep this page open and reconnect before saving a record."
     }
   },
   "billing": {
@@ -2493,7 +2529,9 @@
       "oneCloudPlanWithUnlimited": "One Cloud plan with unlimited staff. Annual billing includes two months free.",
       "unlimitedStaffIncluded": "Unlimited staff included",
       "secureCheckoutPoweredByStripe": "Secure checkout powered by Stripe",
-      "temporarilyUnavailable": "Temporarily unavailable"
+      "temporarilyUnavailable": "Temporarily unavailable",
+      "saveAmount": "Save {amount}",
+      "perActiveLocation": "{price} per active location"
     },
     "servicePicker": {
       "retryProducts": "Retry products",
@@ -2502,7 +2540,8 @@
       "searchServices": "Search services",
       "searchServices2": "Search services...",
       "loadingProducts": "Loading products…",
-      "productsCouldNotBeLoaded": "Products could not be loaded."
+      "productsCouldNotBeLoaded": "Products could not be loaded.",
+      "noServicesMatch": "No services match \"{query}\"."
     },
     "newInvoice": {
       "checkingBillingAccess": "Checking billing access...",
@@ -2550,7 +2589,13 @@
       "add": "Add",
       "total": "Total",
       "remove": "Remove {name}",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "estimateLabel": "Estimate",
+      "clientRequired": "Client *",
+      "lineItems": "Line Items",
+      "subtotal": "Subtotal",
+      "taxPercent": "Tax ({percent}%)",
+      "dueDate": "Due Date"
     },
     "page": {
       "invoicesAndPayments": "Invoices and payments",
@@ -2694,6 +2739,34 @@
         "paid": "paid",
         "overdue": "overdue",
         "void": "void"
+      },
+      "billingTitle": "Billing",
+      "outstanding": "Outstanding",
+      "overdue": "Overdue",
+      "collectedThisMonth": "Collected this month",
+      "showingRange": "Showing {from}--{to} of {total}",
+      "medicationWorkFailed": "Unable to load medication billing work. {message}",
+      "dispenseLine": "{patient} · {client} · Qty {quantity} at {price} · dispensed {date}",
+      "recentlyWaivedCount": "Recently waived ({count})",
+      "wellnessInvoicesDue": "Wellness invoices due",
+      "adjAmount": "Adj {amount}",
+      "clientLabel": "Client:",
+      "totalLabel": "Total:",
+      "paidLabel": "Paid:",
+      "adjustedLabel": "Adjusted:",
+      "balanceLabel": "Balance:",
+      "paymentsAndAdjustments": "Payments & Adjustments",
+      "paidAmount": "Paid {amount}",
+      "adjustedAmount": "Adjusted {amount}",
+      "balanceAmount": "Balance {amount}",
+      "loadingPayments": "Loading payments...",
+      "noPaymentsRecorded": "No payments recorded.",
+      "loadingAdjustments": "Loading adjustments...",
+      "taxableValue": "taxable",
+      "notTaxableValue": "not taxable",
+      "adjustmentTypes": {
+        "credit": "credit",
+        "write_off": "write off"
       }
     }
   },
@@ -3453,7 +3526,66 @@
       "chargeLockRole": "Charge capture is read-only for your role. An admin or front desk teammate can add charges and create the invoice.",
       "chargeLockClosedOut": "Charge capture is closed because this visit's closeout is complete.",
       "chargeLockPreExam": "Charges open once the visit is in exam. This visit is currently {status}.",
-      "chargeLockNotInExam": "Charges can only be added while the visit is in exam. This visit is currently {status}."
+      "chargeLockNotInExam": "Charges can only be added while the visit is in exam. This visit is currently {status}.",
+      "noActivePatientMatched": "No active patient matched.",
+      "thenReturnToVisit": "and then return to this visit.",
+      "reactionValue": "Reaction: {reaction}",
+      "decisionsStillNeeded": "{count, plural, one {# decision still needed} other {# decisions still needed}}",
+      "visitMedicationCount": "{count, plural, one {# visit medication} other {# visit medications}}",
+      "priorFinalizedVersions": "Prior finalized versions ({count})",
+      "revisionReason": "Revision {revision} · {reason}",
+      "finalizedAndReopened": "Finalized by {finalizer} on {finalizedAt}. Correction opened by {reopener} on {reopenedAt}.",
+      "downloadRevision": "Download revision {revision}",
+      "billingAndHandoff": "Billing: {billing} · Owner handoff: {handoff}",
+      "clinicalHandoffStep": "1. Clinical handoff finalized",
+      "optionalField": "(optional)",
+      "homeCareInstructionsLabel": "Home-care instructions",
+      "noInstructionsReasonLabel": "If none, clinical reason",
+      "warningSignsWhenToCall": "Warning signs and when to call",
+      "prescriptionsLabel": "Prescriptions",
+      "followUpDueDateLabel": "Follow-up due date",
+      "accountableStaffOwner": "Accountable staff owner",
+      "billingHandoffStep": "2. Billing and owner handoff",
+      "invoiceFullyPaid": "Invoice fully paid{ready, select, yes {} other { — not ready}}",
+      "invoiceStatusSummary": "Invoice is <strong>{status}</strong>, has {count, plural, one {# line} other {# lines}}, and a balance of {balance}.",
+      "totalAndBalance": "Total {total} · Balance {balance}",
+      "appointmentId": "Appointment {id}",
+      "chargeOption": "{description} · qty {quantity} · {total}",
+      "prescriptionQuantity": "{description} · quantity {quantity}",
+      "taxPercent": "Tax ({percent}%)",
+      "chargeRemoved": "charge removed",
+      "codes": {
+        "chargeDisposition": {
+          "paid": "paid",
+          "accounts_receivable": "accounts receivable",
+          "no_charge": "no charge"
+        },
+        "followUpDisposition": {
+          "none": "none",
+          "needed": "needed",
+          "scheduled": "scheduled"
+        },
+        "handoffMethod": {
+          "print": "print",
+          "verbal": "verbal",
+          "declined": "declined"
+        },
+        "workStatus": {
+          "unresolved": "unresolved",
+          "charged": "charged",
+          "no_charge": "no charge",
+          "voided": "voided"
+        },
+        "invoiceStatus": {
+          "draft": "draft",
+          "sent": "sent",
+          "paid": "paid",
+          "overdue": "overdue",
+          "void": "void",
+          "estimate": "estimate"
+        }
+      },
+      "invoiceReadiness": "{status} · {count, plural, one {# line} other {# lines}}"
     }
   },
   "onboarding": {
@@ -3480,7 +3612,9 @@
       "chooseBillingPlan": "Choose billing plan",
       "openvpmCloud": "OpenVPM Cloud",
       "billingIsConnectedReviewYour": "Billing is connected. Review your trial end date and manage or cancel your subscription in Plan & Billing.",
-      "addPaymentDetailsSecurelyThrough": "Add payment details securely through Stripe. If your trial is already running, checkout preserves its original end date."
+      "addPaymentDetailsSecurelyThrough": "Add payment details securely through Stripe. If your trial is already running, checkout preserves its original end date.",
+      "perMonth": "/month",
+      "orPerYear": "or ${price}/year"
     },
     "choosePath": {
       "buildMyFirstDay": "Build my first day"
@@ -3539,7 +3673,10 @@
       "payBody": "Send an online invoice and let clients pay by card from their private link.",
       "payTag": "Get paid faster",
       "portalBody": "Share visits, vaccine history, and bills through a private client portal.",
-      "portalTag": "Fewer status calls"
+      "portalTag": "Fewer status calls",
+      "clientBillingTag": "Client billing",
+      "paySecurelyOnline": "Pay securely online",
+      "clientPortalTag": "Client portal"
     },
     "tryAgent": {
       "example": "Example",
@@ -3636,7 +3773,8 @@
       "yourClinicRole": "Your clinic role",
       "administrativeAccessAndVeterinarianSign": "Administrative access and veterinarian sign-off are separate. A clinic owner can use this same login for both.",
       "veterinaryLicenseNumberOptional": "Veterinary license number (optional)",
-      "stateLicenseNumber": "State license number"
+      "stateLicenseNumber": "State license number",
+      "practiceNameTooLong": "Practice name must be at most {max} characters."
     },
     "profile": {
       "models": {
@@ -3790,7 +3928,8 @@
       "iLlFinishLater": "I'll finish later",
       "finish": "Finish",
       "continue": "Continue",
-      "completedRecordsAreSavedReopen": "Completed records are saved. Reopen setup or use Settings, then Data, to finish the remaining files."
+      "completedRecordsAreSavedReopen": "Completed records are saved. Reopen setup or use Settings, then Data, to finish the remaining files.",
+      "stepOf": "Step {step} of {total}"
     },
     "bringData": {
       "earlierImportChangesAreAlready": "Earlier import changes are already saved. If you are unsure which file finished, reselecting it is safe because duplicate rows are skipped.",
@@ -3866,7 +4005,9 @@
       "pasteCsvText": "Paste {label} CSV text",
       "addedRecords": "Added {clients} clients, {patients} pets, {vaccinations} vaccine records, and {soapNotes} visit notes.",
       "connectedIds": " Connected {count} existing record IDs.",
-      "downloadIssues": "Download {count, plural, one {issue report} other {all # issues}}"
+      "downloadIssues": "Download {count, plural, one {issue report} other {all # issues}}",
+      "youOwnYourData": "You own your data and can export it any time.",
+      "optionalField": "(optional)"
     }
   },
   "welcome": {
@@ -3886,7 +4027,8 @@
       "biscuit": "Biscuit",
       "exampleTodaySScheduleWith": "Example: today's schedule with Biscuit checked in at 9:00",
       "exampleAPetParentS": "Example: a pet parent's portal with visits and bills",
-      "exampleTheClinicScheduleInside": "Example: the clinic schedule inside your own calendar app"
+      "exampleTheClinicScheduleInside": "Example: the clinic schedule inside your own calendar app",
+      "jordansPortal": "Jordan's portal"
     },
     "surface": {
       "openvpm": "OpenVPM",
@@ -4188,7 +4330,9 @@
       "loadingSection": "Loading {section}…",
       "couldNotLoadSection": "Could not load {section}",
       "noSectionRecords": "No {section} have been added to this archive.",
-      "quantityValue": "Quantity {quantity}"
+      "quantityValue": "Quantity {quantity}",
+      "balanceAmount": "{amount} balance",
+      "showingRange": "Showing {from}–{to} of {total}"
     }
   },
   "inventory": {
@@ -4264,7 +4408,8 @@
     "markup": {
       "applyMarkup": "Apply markup",
       "enterCostPerUnitAnd": "Enter cost per unit and a markup percentage.",
-      "sellingPrice": "Selling price per unit: {price}. Save the product to keep this price."
+      "sellingPrice": "Selling price per unit: {price}. Save the product to keep this price.",
+      "markupOnCost": "Markup on cost (%)"
     },
     "categories": {
       "all": "All Categories",
@@ -4297,7 +4442,15 @@
     "lotNumberShort": "Lot {lot}",
     "expShort": "Exp {date}",
     "adjustStockFor": "Adjust stock for {name}",
-    "startTrackingFor": "Start stock tracking for {name}"
+    "startTrackingFor": "Start stock tracking for {name}",
+    "startTrackingProduct": "Start tracking {name}",
+    "adjustStockLabel": "Adjust stock: {name}",
+    "addStock": "Add",
+    "removeStock": "Remove",
+    "productCount": "{count, plural, one {# product} other {# products}}",
+    "addProductButton": "Add Product",
+    "supplierCount": "{count, plural, one {# supplier} other {# suppliers}}",
+    "addSupplierButton": "Add Supplier"
   },
   "controlledSubstances": {
     "drugName": "Drug Name *",
@@ -4380,7 +4533,10 @@
       "vial": "vial"
     },
     "balancesLoadError": "Unable to load controlled-substance balances. Please retry.",
-    "entriesLoadError": "Unable to load controlled-substance entries. Please retry."
+    "entriesLoadError": "Unable to load controlled-substance entries. Please retry.",
+    "patientLabel": "Patient",
+    "witnessLabel": "Witness",
+    "showingRange": "Showing {from}–{to} of {total}"
   },
   "inbox": {
     "newMessage": "New Message",
@@ -4537,7 +4693,12 @@
       "saveReminder": "Save reminder",
       "dismissSelectedIntro": "{count} selected. They will leave the active queue but remain in an auditable dismissed view.",
       "selectedCount": "{count, plural, one {# reminder selected} other {# reminders selected}}",
-      "selectItem": "Select {title} for {patient}"
+      "selectItem": "Select {title} for {patient}",
+      "loadingCareReminders": "Loading care reminders...",
+      "addReminderButton": "Add reminder",
+      "dismissCount": "Dismiss {count}",
+      "contactClientName": "Contact {name}",
+      "sendChannel": "Send {channel, select, sms {text} other {email}}"
     },
     "recalls": {
       "checkingRecallAccess": "Checking recall access...",
@@ -4574,14 +4735,19 @@
       "confirmSend": "Send vaccination reminders to {count, plural, one {# patient} other {# patients}} now? Delivery will use each client's eligible channel and will be logged in Communications.",
       "previewIntro": "Select up to {max} eligible patients. Sending is always a deliberate action and requires confirmation. The same exact overdue-vaccine set can only be sent once; a newly overdue or newly recorded vaccine creates a new recall snapshot.",
       "selectPatient": "Select {name}",
-      "dueOn": "due {date}"
+      "dueOn": "due {date}",
+      "sendSelectedCount": "Send selected ({count})",
+      "emailBadge": "Email"
     }
   },
   "templates": {
     "catalogPicker": {
       "catalogSearchFailedEditThe": "Catalog search failed. Edit the query to retry.",
       "clearSearch": "Clear search",
-      "noCodeOrCategory": "No code or category"
+      "noCodeOrCategory": "No code or category",
+      "clearSelected": "Clear selected {label}",
+      "searching": "Searching...",
+      "noActiveMatch": "No active {label}s match \"{query}\"."
     }
   },
   "reports": {
@@ -4662,7 +4828,10 @@
         "metric": "Metric",
         "period": "Period",
         "amount": "Amount"
-      }
+      },
+      "lowStockAlertsCount": "Low Stock Alerts ({count})",
+      "expiredProductsCount": "Expired Products ({count})",
+      "expiringSoonCount": "Expiring Soon ({count})"
     }
   },
   "agent": {
@@ -4736,7 +4905,8 @@
       "exploreTheFollowUpQueue": "Explore the follow-up queue and see who owns the next step.",
       "chooseASampleInvoiceFrom": "Choose a sample invoice from the list.",
       "lookThroughItsLineItems": "Look through its line items, balance, and payment history.",
-      "seeHowTheInvoiceConnects": "See how the invoice connects back to the client and patient."
+      "seeHowTheInvoiceConnects": "See how the invoice connects back to the client and patient.",
+      "chooseAnotherWorkflow": "Choose another workflow"
     },
     "roleSwitcher": {
       "exploreAs": "Explore as",
@@ -4784,7 +4954,11 @@
       "tabs": {
         "whiteboard": "The clinic board",
         "visit-clinical-work": "The patient record"
-      }
+      },
+      "backToWebsite": "Back to website",
+      "stepYourEmail": "Your email",
+      "readyForOwnWorkspace": "Ready for your own workspace?",
+      "aLittleLookInside": "A LITTLE LOOK INSIDE"
     },
     "roles": {
       "admin": "Practice Admin",
@@ -4909,7 +5083,8 @@
         "saved": "{name}'s progress is saved for {email}.",
         "label": "Save {name}'s progress",
         "skipConfirm": "Continue without saving? {name} will only live in this browser."
-      }
+      },
+      "sceneProgress": "{step} of {total} · {label}"
     },
     "scenes": {
       "upcomingAppointments": "Upcoming Appointments",
@@ -5072,7 +5247,15 @@
         "paper": "Paper or spreadsheets",
         "other": "Something else"
       },
-      "importFrom": "Import from {source}"
+      "importFrom": "Import from {source}",
+      "visitWithDoctor": "{type} with {doctor}",
+      "petVisitTomorrow": "{pet}'s visit is tomorrow",
+      "welcomeBackOwner": "Welcome back, {owner}",
+      "recommendedFor": "Recommended for {group}",
+      "serviceLimit": "That's {max} services. Add the rest inside your clinic.",
+      "willConfirmShortly": "{name} will confirm shortly.",
+      "payAmount": "Pay {amount}",
+      "alreadySetUp": "Already set up: {logo, select, yes {your logo and color} other {your color}}, {count, plural, one {# service} other {# services}}, and your booking page at /book/{slug}."
     },
     "mockups": {
       "petPortal": "Pet Portal",
@@ -5922,7 +6105,11 @@
       "agreement": "By creating a workspace you agree to the <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>.",
       "haveAccount": "Already have an account?",
       "readyIntro": "Here’s a useful starting point for {practice}. You can change any of it once you’re inside.",
-      "builtAround": "Built around {care} care and the first outcome you chose. You can change any of it once you’re inside."
+      "builtAround": "Built around {care} care and the first outcome you chose. You can change any of it once you’re inside.",
+      "nextExploreSample": " Next, explore your workspace with sample data. Add a card when you're ready to start your free trial.",
+      "nextAddCard": " Next, add your card securely through Stripe to start your free trial.",
+      "trialStartsNow": " Your free trial starts immediately.",
+      "selfHostedFree": " Your self-hosted workspace is free."
     }
   },
   "errorPages": {
@@ -6012,7 +6199,8 @@
         "checked_out": "Completed",
         "no_show": "No show",
         "cancelled": "Cancelled"
-      }
+      },
+      "withDoctor": "with {name}"
     },
     "invoices": {
       "onlinePaymentIsTemporarilyUnavailable": "Online payment is temporarily unavailable. Please contact the clinic to pay.",
@@ -6040,7 +6228,12 @@
       "unableToStartPayment": "Unable to start payment",
       "openingSecureCheckout": "Opening secure checkout...",
       "paySecurelyOnline": "Pay securely online",
-      "due": "Due: {date}"
+      "due": "Due: {date}",
+      "patientName": "Patient: {name}",
+      "paidLabel": "Paid:",
+      "adjustedLabel": "Adjusted:",
+      "balanceLabel": "Balance:",
+      "adjShort": "Adj"
     },
     "pet": {
       "backToPortal": "Back to portal",
@@ -6070,7 +6263,13 @@
       "upToDate": "Up to date",
       "checking": "Checking...",
       "download": "Download",
-      "thisCertificateIsNoLonger": "This certificate is no longer available. Refresh to see current vaccination records."
+      "thisCertificateIsNoLonger": "This certificate is no longer available. Refresh to see current vaccination records.",
+      "certificateSex": {
+        "male": "male",
+        "female": "female",
+        "male_neutered": "male neutered",
+        "female_spayed": "female spayed"
+      }
     },
     "book": {
       "requestedNotYetConfirmed": "Requested — not yet confirmed",
@@ -6106,7 +6305,9 @@
       "thisVisitTypeIsLonger": "This visit type is longer than the online booking window.",
       "sending": "Sending…",
       "requestAppointment": "Request appointment",
-      "timeRange": "Choose a start time from {min} to {max}."
+      "timeRange": "Choose a start time from {min} to {max}.",
+      "dateAtTime": "{date} at {time}",
+      "suggestedTimes": "Suggested request times on {date} (tap to pick)"
     }
   },
   "booking": {
@@ -6143,7 +6344,14 @@
       "appointment": "Appointment",
       "contactTheClinic": "Contact the clinic.",
       "sendingRequest": "Sending request…",
-      "requestAppointment": "Request appointment"
+      "requestAppointment": "Request appointment",
+      "dateAtTime": "{date} at {time}",
+      "sentQuestions": "We sent the details to the clinic. Questions?",
+      "callPhone": "Call {phone}.",
+      "phoneLabel": "Phone",
+      "optionalField": "(optional)",
+      "callPhoneInline": " Call {phone}.",
+      "contactClinicInline": " Contact the clinic."
     },
     "intake": {
       "visitLocationAndHealthDetails": "Visit location and health details",
@@ -6232,7 +6440,8 @@
       "alreadyFinalizing": "Signing is already being finalized. Please retry.",
       "attemptMismatch": "This signing attempt does not match the in-progress request",
       "integrityFailed": "Signed document failed integrity verification"
-    }
+    },
+    "forPatient": "{practice} · For {patient}"
   },
   "treatmentPlan": {
     "theClinicHasYourDecisions": "The clinic has your decisions and signed document.",
@@ -6253,7 +6462,12 @@
     "apiErrors": {
       "decideEveryLine": "Decide every line using a valid quantity",
       "decisionsMismatch": "These decisions do not match the saved response"
-    }
+    },
+    "loadingPlan": "Loading treatment plan…",
+    "forPatientRevision": "For {patient} · Revision {revision}",
+    "decisionFor": "Decision for {item}",
+    "acceptedQuantity": "Accepted quantity (maximum {max})",
+    "reasonOptional": "Reason (optional)"
   },
   "emailPreferences": {
     "emailPreferences": "Email preferences",
@@ -6369,7 +6583,8 @@
       "dobValue": "DOB: {value}",
       "certificateId": "Certificate ID: {id}",
       "unknown": "Unknown",
-      "unknownDate": "Unknown date"
+      "unknownDate": "Unknown date",
+      "unknownTime": "Unknown time"
     },
     "invoice": {
       "title": "INVOICE",
@@ -6441,7 +6656,14 @@
       "dosage": "Dosage",
       "frequency": "Frequency",
       "status": "Status",
-      "footer": "Generated on {date} — This document is for reference only"
+      "footer": "Generated on {date} — This document is for reference only",
+      "unknownDateInline": "unknown date",
+      "soapNoteDated": "SOAP note dated {date}",
+      "replacementFinalizedBy": "SOAP note dated {date}, finalized by {name}",
+      "replacementRetained": "Replacement SOAP retained in chart",
+      "allergyRecorded": "Allergy “{allergen}” recorded {date}",
+      "reasonUnavailable": "Reason unavailable",
+      "chartNote": "Chart note"
     },
     "certificate": {
       "title": "VACCINATION CERTIFICATE",

@@ -366,6 +366,7 @@ export function PracticeControls({ draft, update }: SceneProps) {
 }
 
 function AppointmentRow({ visit }: { visit: DayVisit }) {
+  const t = useTranslations("build.scenes");
   return (
     <div className="flex items-center gap-3 rounded-md border border-slate-200 px-3 py-2">
       <span className="flex w-[70px] shrink-0 items-center gap-1 text-[10.5px] text-slate-500">
@@ -381,7 +382,7 @@ function AppointmentRow({ visit }: { visit: DayVisit }) {
         </span>{" "}
         <span className="text-slate-500">({visit.owner})</span>
         <span className="block truncate text-[10.5px] text-slate-500">
-          {visit.type} with {DOCTOR}
+          {t("visitWithDoctor", { type: visit.type, doctor: DOCTOR })}
         </span>
       </span>
     </div>
@@ -606,7 +607,7 @@ export function BrandStage({ draft }: SceneProps) {
           <div className="min-w-0 text-[11px] leading-4">
             <div className="truncate font-semibold">{name}</div>
             <div className="truncate text-slate-500">
-              {sample.pet}&apos;s visit is tomorrow
+              {t("petVisitTomorrow", { pet: sample.pet })}
             </div>
           </div>
           <span className="ml-auto text-[10px] text-slate-400">8:00 AM</span>
@@ -643,7 +644,7 @@ export function BrandStage({ draft }: SceneProps) {
         <PortalHeader clinicName={name} logo={draft.logo} />
         <div className="space-y-2 p-2.5">
           <div className="px-0.5 text-[12px] font-semibold">
-            Welcome back, {sample.owner}
+            {t("welcomeBackOwner", { owner: sample.owner })}
           </div>
           <div className="rounded-lg border border-slate-200 bg-white p-2.5">
             <div className="text-[9.5px] font-medium text-slate-500">{t("upcoming")}</div>
@@ -754,7 +755,7 @@ export function ServicesControls({ draft, update }: SceneProps) {
 
   return (
     <div>
-      <Label>Recommended for {profile.plural}</Label>
+      <Label>{t("recommendedFor", { group: profile.plural })}</Label>
       <div className="space-y-1.5">
         {recommended.map(({ service, index }) => (
           <label
@@ -815,8 +816,7 @@ export function ServicesControls({ draft, update }: SceneProps) {
         ))}
         {full ? (
           <p className="text-sm text-slate-500">
-            That&apos;s {BUILD_SERVICE_MAX} services. Add the rest inside your
-            clinic.
+            {t("serviceLimit", { max: BUILD_SERVICE_MAX })}
           </p>
         ) : (
           <form
@@ -1030,7 +1030,7 @@ export function BookStage({ draft, playId, still }: SceneProps) {
               <>
                 Tue, 9:00 AM · {first}
                 <br />
-                {name} will confirm shortly.
+                {t("willConfirmShortly", { name })}
               </>
             }
           />
@@ -1478,7 +1478,7 @@ export function PaidStage({ draft, playId, still }: SceneProps) {
             style={{ background: "var(--b)" }}
             animate={{ scale: beat === 1 ? 0.96 : 1 }}
           >
-            Pay {money(total)}
+            {t("payAmount", { amount: money(total) })}
           </motion.div>
         </div>
       </Phone>
@@ -1668,9 +1668,7 @@ export function GateSummary({ draft }: SceneProps) {
       <p className="mb-3 text-sm font-medium text-slate-700">{t("everythingIncluded")}</p>
       <ScenePoints points={included} />
       <p className="mt-6 border-t border-slate-100 pt-4 text-sm leading-6 text-slate-500">
-        Already set up: {draft.logo ? "your logo and color" : "your color"},{" "}
-        {offered} service{offered === 1 ? "" : "s"}, and your booking page at
-        /book/{bookingSlug(draft)}.
+        {t("alreadySetUp", { logo: draft.logo ? "yes" : "no", count: offered, slug: bookingSlug(draft) })}
       </p>
     </div>
   );

@@ -215,7 +215,7 @@ export function MessagingTab() {
           >
             {APPOINTMENT_REMINDER_LEAD_OPTIONS.map((hours) => (
               <option key={hours} value={hours}>
-                {hours} hours before the appointment
+                {t("hoursBeforeAppointment", { hours })}
               </option>
             ))}
           </select>
@@ -589,7 +589,7 @@ function UnconfiguredLocation({
           </p>
           {loc.existingPhone ? (
             <p className="text-xs text-muted-foreground">
-              Existing phone on file: {loc.existingPhone}
+              {t("existingPhoneOnFile", { phone: loc.existingPhone })}
             </p>
           ) : null}
         </div>

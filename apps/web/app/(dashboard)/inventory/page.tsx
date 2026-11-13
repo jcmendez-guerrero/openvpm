@@ -603,7 +603,7 @@ function StartTrackingPopover({
 
   return (
     <div className="absolute right-0 top-9 z-20 w-72 rounded-lg border border-border bg-popover p-4 shadow-lg">
-      <p className="text-sm font-medium">Start tracking {productName}</p>
+      <p className="text-sm font-medium">{t("startTrackingProduct", { name: productName })}</p>
       <p className="mt-1 text-xs text-muted-foreground">
         {t("enterAReviewedOpeningQuantity")}
       </p>
@@ -727,7 +727,7 @@ function StockAdjustPopover({
   return (
     <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-lg border border-border bg-card p-3 shadow-lg">
       <p className="text-xs font-medium text-muted-foreground mb-2">
-        Adjust stock: {productName}
+        {t("adjustStockLabel", { name: productName })}
       </p>
       <Input
         type="number"
@@ -755,7 +755,7 @@ function StockAdjustPopover({
           onClick={() => handleAdjust(1)}
           disabled={!canAddStock}
         >
-          <Plus className="h-3 w-3 mr-1" /> Add
+          <Plus className="h-3 w-3 mr-1" /> {t("addStock")}
         </Button>
         <Button
           size="sm"
@@ -764,7 +764,7 @@ function StockAdjustPopover({
           onClick={() => handleAdjust(-1)}
           disabled={!canRemoveStock}
         >
-          <Minus className="h-3 w-3 mr-1" /> Remove
+          <Minus className="h-3 w-3 mr-1" /> {t("removeStock")}
         </Button>
       </div>
       <Button
@@ -1171,8 +1171,7 @@ export default function InventoryPage() {
             </select>
             {productsQuery.data && (
               <p className="text-sm text-muted-foreground">
-                {productsQuery.data.total} product
-                {productsQuery.data.total !== 1 ? "s" : ""}
+                {t("productCount", { count: productsQuery.data.total })}
               </p>
             )}
             {canManagePricing && (
@@ -1181,7 +1180,7 @@ export default function InventoryPage() {
                 onClick={() => setShowAddProduct(true)}
                 className="ml-auto"
               >
-                <Plus className="h-4 w-4 mr-1" /> Add Product
+                <Plus className="h-4 w-4 mr-1" /> {t("addProductButton")}
               </Button>
             )}
           </div>
@@ -1493,8 +1492,7 @@ export default function InventoryPage() {
           <div className="mt-4 flex items-center justify-between">
             {suppliersQuery.data && (
               <p className="text-sm text-muted-foreground">
-                {suppliersQuery.data.length} supplier
-                {suppliersQuery.data.length !== 1 ? "s" : ""}
+                {t("supplierCount", { count: suppliersQuery.data.length })}
               </p>
             )}
             {canManageInventory && (
@@ -1503,7 +1501,7 @@ export default function InventoryPage() {
                 onClick={() => setShowAddSupplier(true)}
                 className="ml-auto"
               >
-                <Plus className="h-4 w-4 mr-1" /> Add Supplier
+                <Plus className="h-4 w-4 mr-1" /> {t("addSupplierButton")}
               </Button>
             )}
           </div>

@@ -188,7 +188,7 @@ export default function PublicBookingPage() {
             <div className="flex justify-between gap-4">
               <dt>{t("preferredTime")}</dt>
               <dd className="font-medium text-gray-900">
-                {date} at {time}
+                {t("dateAtTime", { date, time })}
               </dd>
             </div>
             <div className="flex justify-between gap-4">
@@ -200,9 +200,9 @@ export default function PublicBookingPage() {
           </dl>
         </div>
         <p className="text-gray-500 text-sm mt-4">
-          We sent the details to the clinic. Questions?{" "}
+          {t("sentQuestions")}{" "}
           {data.practice.phone
-            ? `Call ${data.practice.phone}.`
+            ? t("callPhone", { phone: data.practice.phone })
             : t("contactTheClinic")}
         </p>
       </div>
@@ -476,8 +476,8 @@ export default function PublicBookingPage() {
                 htmlFor={phoneFieldId}
                 className="block text-sm font-medium text-gray-700 mb-1.5"
               >
-                Phone{" "}
-                <span className="text-gray-400 font-normal">(optional)</span>
+                {t("phoneLabel")}{" "}
+                <span className="text-gray-400 font-normal">{t("optionalField")}</span>
               </label>
               <input
                 id={phoneFieldId}
@@ -595,8 +595,8 @@ export default function PublicBookingPage() {
         <p className="text-center text-xs text-gray-400">
           {t("preferToTalkToA")}
           {data.practice.phone
-            ? ` Call ${data.practice.phone}.`
-            : " Contact the clinic."}
+            ? t("callPhoneInline", { phone: data.practice.phone })
+            : t("contactClinicInline")}
         </p>
       </form>
     </div>

@@ -194,7 +194,7 @@ export default function BookAppointmentPage() {
             <div className="flex justify-between gap-4">
               <dt>{t("preferredTime")}</dt>
               <dd className="font-medium text-gray-900">
-                {preferredDate} at {preferredTime}
+                {t("dateAtTime", { date: preferredDate, time: preferredTime })}
               </dd>
             </div>
             <div className="flex justify-between gap-4">
@@ -419,7 +419,7 @@ export default function BookAppointmentPage() {
             slots.data.length > 0 && (
               <div>
                 <p className="text-xs font-medium text-gray-500 mb-2">
-                  Suggested request times on {preferredDate} (tap to pick)
+                  {t("suggestedTimes", { date: preferredDate })}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {slots.data.map((s) => (

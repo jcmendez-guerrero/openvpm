@@ -765,7 +765,20 @@ export default function PatientDetailPage() {
       const { generateMedicalSummaryPdf, pdfText } = await import("@/lib/pdf");
       const pdfLanguage = documentLanguage(patientData.clientPreferredLanguage);
       const pdfLocale = pdfLanguage === "es" ? "es" : "en-US";
-      const unknown = pdfText(pdfLanguage)("pdf.common.unknown");
+      const tPdf = pdfText(pdfLanguage);
+      const unknown = tPdf("pdf.common.unknown");
+      const unknownDate = tPdf("pdf.common.unknownDate");
+      const unknownTime = tPdf("pdf.common.unknownTime");
+      const unknownClinician = tPdf("pdf.summary.unknownClinician");
+      const reasonUnavailable = tPdf("pdf.summary.reasonUnavailable");
+      const pdfDate = (value: Date | string | null | undefined, fallback?: string) =>
+        formatClinicalDate(value, recordsTimeZone, fallback, pdfLocale);
+      const pdfDateTime = (value: Date | string | null | undefined, fallback?: string) =>
+        formatClinicalDateTime(value, recordsTimeZone, fallback, pdfLocale);
+      const soapNoteDated = (value: Date | string | null | undefined) =>
+        tPdf("pdf.summary.soapNoteDated", {
+          date: pdfDate(value, tPdf("pdf.summary.unknownDateInline")),
+        });
 
       generateMedicalSummaryPdf({
         language: pdfLanguage,
@@ -816,9 +829,7 @@ export default function PatientDetailPage() {
           .filter((note) => note.status === "finalized" && !note.correctionId)
           .slice(0, 5)
           .map((n) => ({
-            date: n.createdAt
-              ? formatClinicalDate(n.createdAt, recordsTimeZone, "Unknown")
-              : "Unknown",
+            date: n.createdAt ? pdfDate(n.createdAt, unknown) : unknown,
             subjective: n.subjective ?? undefined,
             objective: n.objective ?? undefined,
             assessment: n.assessment ?? undefined,
@@ -826,38 +837,29 @@ export default function PatientDetailPage() {
             imported: n.imported,
             authorName: n.authorName,
             finalizerName: n.finalizerName ?? undefined,
-            finalizedAt: n.finalizedAt
-              ? formatClinicalDateTime(n.finalizedAt, recordsTimeZone)
-              : undefined,
+            finalizedAt: n.finalizedAt ? pdfDateTime(n.finalizedAt) : undefined,
             replacementForLabel: n.replacesSoapNoteId
-              ? `SOAP note dated ${formatClinicalDate(
+              ? soapNoteDated(
                   soapNotes.find((source) => source.id === n.replacesSoapNoteId)
                     ?.createdAt,
-                  recordsTimeZone,
-                  "unknown date",
-                )}`
+                )
               : undefined,
             addenda: n.addenda.map((addendum) => ({
               content: soapSectionText(addendum.content),
               authorName: addendum.authorName,
-              createdAt: formatClinicalDateTime(
-                addendum.createdAt,
-                recordsTimeZone,
-              ),
+              createdAt: pdfDateTime(addendum.createdAt),
             })),
           })),
         chartNotes: chartNotesResult
           ? {
               items: chartNotesResult.items.map((note) => ({
-                date: formatClinicalDateTime(note.createdAt, recordsTimeZone),
+                date: pdfDateTime(note.createdAt),
                 type: PATIENT_NOTE_TYPES.includes(
                   note.noteType as (typeof PATIENT_NOTE_TYPES)[number],
                 )
-                  ? PATIENT_NOTE_LABELS[
-                      note.noteType as keyof typeof PATIENT_NOTE_LABELS
-                    ]
-                  : "Chart note",
-                authorName: note.authorName ?? "Unknown clinician",
+                  ? tPdf(`patients.notes.types.${note.noteType as keyof typeof PATIENT_NOTE_LABELS}`)
+                  : tPdf("pdf.summary.chartNote"),
+                authorName: note.authorName ?? unknownClinician,
                 content: note.content,
               })),
               hasMore: Boolean(chartNotesResult.nextCursor),
@@ -872,16 +874,15 @@ export default function PatientDetailPage() {
                 Boolean(allergy.correctedAt),
             )
             .map((allergy) => ({
-              recordLabel: `Allergy “${allergy.allergen}” recorded ${formatClinicalDate(
-                allergy.notedAt,
-                recordsTimeZone,
-                "Unknown date",
-              )}`,
-              reason: allergy.correctionReason ?? "Reason unavailable",
-              correctedByName: allergy.correctedByName ?? "Unknown clinician",
+              recordLabel: tPdf("pdf.summary.allergyRecorded", {
+                allergen: allergy.allergen,
+                date: pdfDate(allergy.notedAt, unknownDate),
+              }),
+              reason: allergy.correctionReason ?? reasonUnavailable,
+              correctedByName: allergy.correctedByName ?? unknownClinician,
               correctedAt: allergy.correctedAt
-                ? formatClinicalDateTime(allergy.correctedAt, recordsTimeZone)
-                : "Unknown time",
+                ? pdfDateTime(allergy.correctedAt)
+                : unknownTime,
             })),
           ...soapNotes
             .filter(
@@ -889,16 +890,14 @@ export default function PatientDetailPage() {
                 note.status === "finalized" && Boolean(note.correctionId),
             )
             .map((note) => ({
-              recordLabel: `SOAP note dated ${formatClinicalDate(
-                note.createdAt,
-                recordsTimeZone,
-                "Unknown date",
-              )}`,
-              reason: note.correctionReason ?? "Reason unavailable",
-              correctedByName: note.correctedByName ?? "Unknown clinician",
+              recordLabel: tPdf("pdf.summary.soapNoteDated", {
+                date: pdfDate(note.createdAt, unknownDate),
+              }),
+              reason: note.correctionReason ?? reasonUnavailable,
+              correctedByName: note.correctedByName ?? unknownClinician,
               correctedAt: note.correctedAt
-                ? formatClinicalDateTime(note.correctedAt, recordsTimeZone)
-                : "Unknown time",
+                ? pdfDateTime(note.correctedAt)
+                : unknownTime,
               replacementLabel: note.replacementSoapNoteId
                 ? (() => {
                     const replacement = soapNotes.find(
@@ -906,12 +905,14 @@ export default function PatientDetailPage() {
                         candidate.id === note.replacementSoapNoteId,
                     );
                     return replacement
-                      ? `SOAP note dated ${formatClinicalDate(
-                          replacement.createdAt,
-                          recordsTimeZone,
-                          "unknown date",
-                        )}, finalized by ${replacement.finalizerName ?? "Unknown clinician"}`
-                      : "Replacement SOAP retained in chart";
+                      ? tPdf("pdf.summary.replacementFinalizedBy", {
+                          date: pdfDate(
+                            replacement.createdAt,
+                            tPdf("pdf.summary.unknownDateInline"),
+                          ),
+                          name: replacement.finalizerName ?? unknownClinician,
+                        })
+                      : tPdf("pdf.summary.replacementRetained");
                   })()
                 : undefined,
             })),
@@ -922,7 +923,7 @@ export default function PatientDetailPage() {
           frequency: rx.frequency ?? "",
           status: rx.effectiveStatus ?? "active",
         })),
-        generatedDate: formatClinicalDate(new Date(), recordsTimeZone),
+        generatedDate: pdfDate(new Date(), unknown),
       }).save(`${patientData.name.replace(/\s+/g, "_")}_medical_summary.pdf`);
 
       toast.success(t("chart.summaryDownloaded"));
@@ -1204,7 +1205,7 @@ export default function PatientDetailPage() {
               </p>
             </div>
             <span className="text-xs font-medium text-muted-foreground">
-              Latest weight: {latestWeight}
+              {t("latestWeight", { weight: latestWeight })}
             </span>
           </div>
           {problemsQuery.isLoading ||
@@ -2555,7 +2556,7 @@ function VaccinationsTab({
                     {provider.name}
                     {provider.licenseNumber
                       ? ` — ${provider.licenseNumber}`
-                      : " — license missing"}
+                      : t("licenseMissingSuffix")}
                   </option>
                 ))}
               </select>

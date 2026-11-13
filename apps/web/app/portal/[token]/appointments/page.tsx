@@ -158,7 +158,7 @@ export default function AppointmentsPage() {
                     </p>
                     {appt.doctorName && (
                       <p className="text-sm text-gray-400 mt-0.5">
-                        with {appt.doctorName}
+                        {t("withDoctor", { name: appt.doctorName })}
                       </p>
                     )}
                     {appt.locationName && (
@@ -222,7 +222,7 @@ export default function AppointmentsPage() {
                     </p>
                     {appt.doctorName && (
                       <p className="text-sm text-gray-400 mt-0.5">
-                        with {appt.doctorName}
+                        {t("withDoctor", { name: appt.doctorName })}
                       </p>
                     )}
                     {appt.locationName && (

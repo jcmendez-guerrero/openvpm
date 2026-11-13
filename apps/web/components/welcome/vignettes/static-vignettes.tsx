@@ -70,7 +70,7 @@ export function PortalVignette() {
         <div className="leading-tight">
           <p className="text-xs font-semibold">{t("biscuit")}</p>
           <p className="text-[10px] text-muted-foreground">
-            Jordan&apos;s portal
+            {t("jordansPortal")}
           </p>
         </div>
         <Globe

@@ -482,7 +482,7 @@ function JourneyShell({
                 </div>
                 <div className="flex min-w-[132px] items-center gap-3 sm:min-w-[230px]">
                   <span className="shrink-0 text-xs font-medium text-slate-500">
-                    Step {index + 1} of {total}
+                    {t("stepOf", { step: index + 1, total })}
                   </span>
                   <div className="flex flex-1 gap-1.5" aria-hidden="true">
                     {steps.map((s, i) => (

@@ -179,7 +179,7 @@ export function ServicePicker({
           >
             {results.length === 0 && !loading && !searchError ? (
               <p className="px-3 py-6 text-center text-sm text-muted-foreground">
-                No services match &quot;{query}&quot;.
+                {t("noServicesMatch", { query })}
               </p>
             ) : (
               results.map((service, index) => (

@@ -351,8 +351,7 @@ export function EncounterVitalsCard({
                 className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-950 dark:text-amber-100"
                 role="status"
               >
-                Offline — keep this page open. Vitals stay only in this form
-                until you reconnect and record them.
+                {t("offlineVitalsBanner")}
               </div>
             ) : null}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

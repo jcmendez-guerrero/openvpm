@@ -133,7 +133,7 @@ export function AmbulatoryWorkspaceSettingsCard({
           ) : (
             <Save className="mr-2 h-4 w-4" />
           )}
-          Save ambulatory settings
+          {t("saveAmbulatorySettings")}
         </Button>
       </div>
     </section>

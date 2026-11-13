@@ -588,7 +588,7 @@ export function BringDataStep({ register, state, setState }: StepProps) {
   return (
     <div className="space-y-4">
       <p className="text-sm leading-6 text-slate-600">
-        {pathwayIntro} You own your data and can export it any time.
+        {pathwayIntro} {t("youOwnYourData")}
       </p>
 
       <div className="grid gap-3">
@@ -709,7 +709,7 @@ export function BringDataStep({ register, state, setState }: StepProps) {
                 <span>
                   {t("alsoBringVaccineAndVisit")}
                   <span className="ml-1 font-normal text-slate-500">
-                    (optional)
+                    {t("optionalField")}
                   </span>
                 </span>
                 <ChevronDown className="h-4 w-4 text-slate-500 transition-transform group-open:rotate-180" />

@@ -553,7 +553,7 @@ export function BuildFlow({
             ))}
           </div>
           <span className="ml-auto whitespace-nowrap text-xs text-slate-500 sm:ml-0">
-            {index + 1} of {BUILD_SCENES.length} · {BUILD_SCENE_LABELS[scene]}
+            {t("sceneProgress", { step: index + 1, total: BUILD_SCENES.length, label: BUILD_SCENE_LABELS[scene] })}
           </span>
         </header>
 

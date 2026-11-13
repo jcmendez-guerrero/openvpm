@@ -199,7 +199,7 @@ export function TemplateCatalogPicker({
                 inputRef.current?.focus();
               }}
             >
-              <X className="h-4 w-4" /> Clear selected {label}
+              <X className="h-4 w-4" /> {t("clearSelected", { label })}
             </button>
           ) : null}
 
@@ -213,7 +213,7 @@ export function TemplateCatalogPicker({
           >
             {queryIsStale || catalogQuery.isFetching ? (
               <div className="flex items-center justify-center gap-2 px-3 py-6 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Searching...
+                <Loader2 className="h-4 w-4 animate-spin" /> {t("searching")}
               </div>
             ) : catalogQuery.error ? (
               <div role="alert" className="px-3 py-6 text-sm text-destructive">
@@ -221,7 +221,7 @@ export function TemplateCatalogPicker({
               </div>
             ) : results.length === 0 ? (
               <p className="px-3 py-6 text-center text-sm text-muted-foreground">
-                No active {label}s match &quot;{query.trim()}&quot;.
+                {t("noActiveMatch", { label, query: query.trim() })}
               </p>
             ) : (
               results.map((item, index) => (

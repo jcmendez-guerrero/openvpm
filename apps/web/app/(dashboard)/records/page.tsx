@@ -1425,8 +1425,7 @@ function RecordsPageContent() {
           className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-950 dark:text-amber-100"
           role="status"
         >
-          Offline — clinical forms stay only on this device. Keep this page
-          open and reconnect before saving a record.
+          {t("offlineFormsBanner")}
         </div>
       ) : null}
 

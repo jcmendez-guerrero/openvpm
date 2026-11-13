@@ -184,16 +184,12 @@ export function ProviderHours() {
                     </p>
                     {homeLocation ? (
                       <p className="text-xs text-muted-foreground">
-                        Home base: {homeLocation.name}
+                        {t("homeBase", { name: homeLocation.name })}
                       </p>
                     ) : null}
                     {provider.unspecifiedWindowCount > 0 ? (
                       <p className="text-xs text-amber-700">
-                        {provider.unspecifiedWindowCount} legacy practice-wide
-                        working{" "}
-                        {provider.unspecifiedWindowCount === 1
-                          ? "window"
-                          : "windows"}
+                        {t("legacyWindows", { count: provider.unspecifiedWindowCount })}
                       </p>
                     ) : null}
                   </div>

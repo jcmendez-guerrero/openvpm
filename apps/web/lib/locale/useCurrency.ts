@@ -17,6 +17,7 @@ export function useCurrencyFormatter() {
   const language = useLocale();
   const currency = data?.currency ?? "usd";
   const country = data?.country ?? "US";
-  return (value: number | string | null | undefined) =>
-    formatCurrency(value, currency, country, language);
+  // Documents for a client pass the client's language; screens use the viewer's.
+  return (value: number | string | null | undefined, documentLanguage: string = language) =>
+    formatCurrency(value, currency, country, documentLanguage);
 }

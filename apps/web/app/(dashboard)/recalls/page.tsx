@@ -202,7 +202,7 @@ export default function VaccinationRecallsPage() {
             ) : (
               <Send className="h-4 w-4" />
             )}
-            Send selected ({selectedEligibleIds.length})
+            {t("sendSelectedCount", { count: selectedEligibleIds.length })}
           </Button>
         </CardHeader>
         <CardContent>
@@ -301,7 +301,7 @@ export default function VaccinationRecallsPage() {
                             </Badge>
                           ) : recipient.channel === "email" ? (
                             <Badge variant="secondary" className="gap-1">
-                              <Mail className="h-3 w-3" /> Email
+                              <Mail className="h-3 w-3" /> {t("emailBadge")}
                             </Badge>
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>

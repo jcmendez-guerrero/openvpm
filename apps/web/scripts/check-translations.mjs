@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Fails when a translation catalog drifts from the English source:
 // missing or extra keys, different {placeholders}, or invalid ICU syntax.
+// Spanish also fails on *usted* forms: docs/i18n/glossary-es.md addresses everyone with *tú*.
 // Contract: specs/001-spanish-translation/contracts/message-catalog.md
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -9,6 +10,8 @@ import { parse, TYPE } from "@formatjs/icu-messageformat-parser";
 
 const MESSAGES_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "messages");
 const SOURCE = "en";
+// Capitalized commands only: lowercase "elija"/"agregue" is valid third person ("que el cliente elija").
+const USTED = /(^|[^\p{L}])(usted|ustedes|[Ii]nténtelo|Seleccione|Elija|Agregue|Ingrese|Verifique)(?![\p{L}])/u;
 
 export function loadCatalogs(dir = MESSAGES_DIR) {
   return Object.fromEntries(
@@ -74,6 +77,9 @@ export function checkCatalogs(catalogs) {
       if (translated.invalid) {
         errors.push(`${language}: invalid message ${key}`);
         continue;
+      }
+      if (language === "es" && USTED.test(target[key])) {
+        errors.push(`${language}: uses usted instead of tú in ${key}`);
       }
       const original = analyse(source[key]);
       if (!original.invalid && original.names !== translated.names) {

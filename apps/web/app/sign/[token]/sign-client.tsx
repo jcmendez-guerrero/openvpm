@@ -471,7 +471,7 @@ export function SignClient({ token }: { token: string }) {
       <div>
         <h1 className="text-lg font-semibold text-gray-900">{consent.title}</h1>
         <p className="mt-1 text-sm text-gray-500">
-          {consent.practiceName} · For {consent.patientName}
+          {t("forPatient", { practice: consent.practiceName, patient: consent.patientName })}
         </p>
       </div>
 

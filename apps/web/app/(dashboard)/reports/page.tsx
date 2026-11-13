@@ -774,7 +774,7 @@ function InventoryTab() {
           <div className="mb-4 flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
             <h3 className="text-sm font-medium text-amber-800 dark:text-amber-300">
-              Low Stock Alerts ({data.lowStock.length})
+              {t("lowStockAlertsCount", { count: data.lowStock.length })}
             </h3>
           </div>
           <div className="overflow-x-auto">
@@ -811,7 +811,7 @@ function InventoryTab() {
           <div className="mb-4 flex items-center gap-2">
             <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
             <h3 className="text-sm font-medium text-red-800 dark:text-red-300">
-              Expired Products ({data.expired.length})
+              {t("expiredProductsCount", { count: data.expired.length })}
             </h3>
           </div>
           <div className="overflow-x-auto">
@@ -848,7 +848,7 @@ function InventoryTab() {
           <div className="mb-4 flex items-center gap-2">
             <Activity className="h-5 w-5 text-orange-600 dark:text-orange-400" />
             <h3 className="text-sm font-medium text-orange-800 dark:text-orange-300">
-              Expiring Soon ({data.expiringSoon.length})
+              {t("expiringSoonCount", { count: data.expiringSoon.length })}
             </h3>
           </div>
           <div className="overflow-x-auto">

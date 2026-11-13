@@ -703,12 +703,12 @@ function RegisterPageInner({
           <p className="mt-2 text-sm leading-6 text-slate-600">
             {t("chooseYourClinicCountryAnd")}
             {previewFirst
-              ? " Next, explore your workspace with sample data. Add a card when you're ready to start your free trial."
+              ? t("nextExploreSample")
               : cardFirst
-              ? " Next, add your card securely through Stripe to start your free trial."
+              ? t("nextAddCard")
               : hostedBilling
-                ? " Your free trial starts immediately."
-                : " Your self-hosted workspace is free."}
+                ? t("trialStartsNow")
+                : t("selfHostedFree")}
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 grid min-w-0 gap-4">

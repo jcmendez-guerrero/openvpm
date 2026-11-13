@@ -428,4 +428,12 @@ describe("medication dispense billing queue", () => {
     expect(source).toContain("canWaive={canWaiveDispenseCharges}");
     expect(source).toContain("Recently waived");
   });
+
+  it("formats invoice PDF dates and amounts in the client's language", () => {
+    // Text, dates and amounts in one language, whoever prints it.
+    expect(source.match(/const docLanguage = documentLanguage\(d\.clientPreferredLanguage\)/g)).toHaveLength(2);
+    expect(source).toContain("formatCurrency(d.total, docLanguage)");
+    expect(source).toContain("billingTimeZone, docLanguage");
+    expect(source).not.toMatch(/generateInvoicePdf\(\{[\s\S]*?billingTimeZone, locale[\s\S]*?\}\)\.save/);
+  });
 });

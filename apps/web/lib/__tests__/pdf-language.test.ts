@@ -55,11 +55,11 @@ const documents: Record<string, (language?: Language) => string> = {
       patientName: "Luna",
       species: "Canino",
       clientName: "Ana Peña",
-      allergies: [],
-      problems: [],
+      allergies: [{ allergen: "Penicilina", severity: "mild" }],
+      problems: [{ description: "Otitis", status: "active" }],
       vaccinations: [{ name: "Rabia", date: "2026-03-03" }],
       recentNotes: [],
-      prescriptions: [],
+      prescriptions: [{ medication: "Carprofeno", dosage: "25 mg", frequency: "BID", status: "completed" }],
       generatedDate: "3 de marzo de 2026",
     } as never).output(),
   discharge: (language) =>
@@ -87,8 +87,9 @@ const expected: Record<string, { en: string[]; es: string[] }> = {
     es: ["Historial de vacunas", "Aplicada por"],
   },
   medicalSummary: {
-    en: ["MEDICAL RECORD SUMMARY", "Patient Information"],
-    es: ["RESUMEN DEL HISTORIAL MÉDICO", "Datos del paciente"],
+    // Stored codes print through the catalog: severity, problem status, prescription status.
+    en: ["MEDICAL RECORD SUMMARY", "Patient Information", "\\(mild\\)", "[active]", "completed"],
+    es: ["RESUMEN DEL HISTORIAL MÉDICO", "Datos del paciente", "\\(leve\\)", "[activo]", "completada"],
   },
   discharge: {
     en: ["DISCHARGE INSTRUCTIONS", "Diagnosis", "Visit Date:"],

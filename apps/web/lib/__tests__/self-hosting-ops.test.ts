@@ -259,4 +259,13 @@ describe("self-hosting operations docs", () => {
       expect(subscriptionSection).toContain(`- \`${event}\``);
     }
   });
+
+  it("passes the language flag into the Docker build", () => {
+    // Pages built with the flag off are prerendered in English.
+    const dockerfile = readFileSync("Dockerfile", "utf8");
+    const compose = readFileSync("../../docker/docker-compose.yml", "utf8");
+    expect(dockerfile).toContain("ARG LANGUAGE_SELECTION_ENABLED=false");
+    expect(dockerfile).toContain('LANGUAGE_SELECTION_ENABLED="$LANGUAGE_SELECTION_ENABLED" pnpm --filter @openpims/web build');
+    expect(compose.match(/LANGUAGE_SELECTION_ENABLED: "\$\{LANGUAGE_SELECTION_ENABLED:-false\}"/g)).toHaveLength(2);
+  });
 });

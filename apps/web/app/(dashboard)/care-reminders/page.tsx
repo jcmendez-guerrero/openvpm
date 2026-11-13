@@ -162,7 +162,7 @@ export default function CareRemindersPage() {
   if (query.isLoading) {
     return (
       <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-5 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading care reminders...
+        <Loader2 className="h-4 w-4 animate-spin" /> {t("loadingCareReminders")}
       </div>
     );
   }
@@ -236,7 +236,7 @@ export default function CareRemindersPage() {
           </Button>
           {manageable ? (
             <Button className="gap-2" onClick={() => setShowCreate(true)}>
-              <Plus className="h-4 w-4" /> Add reminder
+              <Plus className="h-4 w-4" /> {t("addReminderButton")}
             </Button>
           ) : null}
         </div>
@@ -490,7 +490,7 @@ export default function CareRemindersPage() {
                   ) : (
                     <Trash2 className="mr-2 h-4 w-4" />
                   )}
-                  Dismiss {selectedItems.length}
+                  {t("dismissCount", { count: selectedItems.length })}
                 </Button>
               </div>
             </form>
@@ -502,7 +502,7 @@ export default function CareRemindersPage() {
         <Card>
           <CardHeader className="flex-row items-start justify-between space-y-0">
             <div>
-              <CardTitle>Contact {outreachTarget.clientName}</CardTitle>
+              <CardTitle>{t("contactClientName", { name: outreachTarget.clientName })}</CardTitle>
               <p className="mt-1 text-sm text-muted-foreground">
                 {t("sendingIsDeliberateAndSeparate")}
               </p>
@@ -595,7 +595,7 @@ export default function CareRemindersPage() {
                   ) : (
                     <Send className="mr-2 h-4 w-4" />
                   )}
-                  Send {outreachChannel === "sms" ? "text" : "email"}
+                  {t("sendChannel", { channel: outreachChannel })}
                 </Button>
               </div>
             </form>

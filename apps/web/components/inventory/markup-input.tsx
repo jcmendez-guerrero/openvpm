@@ -19,7 +19,7 @@ export function MarkupInput({
   return (
     <div className="mt-2 space-y-1">
       <label className="block text-xs text-muted-foreground">
-        Markup on cost (%)
+        {t("markupOnCost")}
         <Input
           type="number"
           min="0"

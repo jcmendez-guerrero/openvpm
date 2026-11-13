@@ -520,7 +520,7 @@ describe("clinical correction consumers", () => {
     );
     expect(patientPage).toContain("Reaction: {reaction}");
     expect(encounterPage).toContain(
-      'Reaction: {allergy.reaction || "Not documented"}',
+      'Reaction: {reaction}',
     );
     expect(backup).toContain('"patientAllergyId"');
     expect(backup).toContain('row.recordType === "patient_allergy"');
