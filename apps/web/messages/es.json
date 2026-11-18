@@ -3585,7 +3585,65 @@
           "estimate": "presupuesto"
         }
       },
-      "invoiceReadiness": "{status} · {count, plural, one {# línea} other {# líneas}}"
+      "invoiceReadiness": "{status} · {count, plural, one {# línea} other {# líneas}}",
+      "completion": {
+        "complete": {
+          "title": "Visita completa",
+          "description": "La entrega clínica, la decisión de cobro y el cierre están registrados."
+        },
+        "attachPatient": {
+          "title": "Asigna el paciente",
+          "description": "Confirma el paciente y el cliente antes de documentar la atención clínica."
+        },
+        "startExam": {
+          "title": "Inicia la consulta",
+          "description": "Usa la acción de estado de la visita de arriba antes de documentar o cobrar esta visita."
+        },
+        "confirmingState": {
+          "title": "Confirmando el estado de la visita",
+          "description": "OpenVPM está verificando la documentación, las facturas y el trabajo realizado antes de sugerir el siguiente paso."
+        },
+        "documentVisit": {
+          "title": "Documenta la visita clínica",
+          "description": "Escribe y finaliza la nota SOAP, o registra una excepción de documentación acotada para una visita exenta."
+        },
+        "documentationNeedsVet": {
+          "title": "La documentación clínica necesita un veterinario",
+          "description": "Un veterinario o administrador debe completar la nota SOAP o la excepción documentada."
+        },
+        "captureCharges": {
+          "title": "Registra los cargos de la visita",
+          "description": "Agrega los servicios realizados y los productos despachados, y luego guarda la factura borrador vinculada a la visita."
+        },
+        "billingNeedsFrontDesk": {
+          "title": "La facturación necesita a recepción",
+          "description": "Un administrador o alguien de recepción debe registrar los cargos o documentar la decisión sin cargo."
+        },
+        "reconcileWork": {
+          "title": "Concilia el trabajo realizado",
+          "description": "Vincula cada ítem realizado con su línea de factura guardada o registra una excepción con autoría."
+        },
+        "reconciliationNeedsTeammate": {
+          "title": "El trabajo realizado necesita conciliación",
+          "description": "Alguien del equipo de la visita debe vincular cada ítem realizado con la facturación o registrar una excepción con autoría."
+        },
+        "finalizeHandoff": {
+          "title": "Finaliza la entrega al propietario",
+          "description": "Confirma las indicaciones, las recetas y el seguimiento antes de firmar el registro de alta permanente."
+        },
+        "handoffNeedsTeammate": {
+          "title": "La entrega al propietario necesita a alguien del equipo clínico",
+          "description": "Alguien con permiso debe terminar y finalizar las indicaciones de alta."
+        },
+        "completeCheckout": {
+          "title": "Completa el cierre",
+          "description": "Confirma el pago o la decisión de pago posterior y registra cómo recibió el propietario la entrega."
+        },
+        "checkoutNeedsTeammate": {
+          "title": "El cierre necesita a alguien autorizado",
+          "description": "Alguien con permiso debe registrar la decisión de cobro y la entrega al propietario."
+        }
+      }
     }
   },
   "onboarding": {
@@ -5084,7 +5142,18 @@
         "label": "Guardar el progreso de {name}",
         "skipConfirm": "¿Continuar sin guardar? {name} solo existirá en este navegador."
       },
-      "sceneProgress": "{step} de {total} · {label}"
+      "sceneProgress": "{step} de {total} · {label}",
+      "sceneLabels": {
+        "practice": "Tu clínica",
+        "brand": "Tu marca",
+        "services": "Servicios",
+        "book": "Reservas",
+        "remind": "Recordatorios",
+        "visit": "La visita",
+        "paid": "Pagos",
+        "records": "Tus registros",
+        "gate": "Empezar"
+      }
     },
     "scenes": {
       "upcomingAppointments": "Próximas citas",

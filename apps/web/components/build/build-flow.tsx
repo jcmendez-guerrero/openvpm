@@ -43,7 +43,6 @@ import type { BillingCadence } from "@/lib/billing/catalog";
 import { trpc } from "@/lib/trpc";
 import {
   BUILD_PRACTICE_PROFILES,
-  BUILD_SCENE_LABELS,
   BUILD_SCENES,
   BUILD_SYSTEM_LABELS,
   BUILD_SYSTEMS,
@@ -553,7 +552,7 @@ export function BuildFlow({
             ))}
           </div>
           <span className="ml-auto whitespace-nowrap text-xs text-slate-500 sm:ml-0">
-            {t("sceneProgress", { step: index + 1, total: BUILD_SCENES.length, label: BUILD_SCENE_LABELS[scene] })}
+            {t("sceneProgress", { step: index + 1, total: BUILD_SCENES.length, label: t(`sceneLabels.${scene}`) })}
           </span>
         </header>
 

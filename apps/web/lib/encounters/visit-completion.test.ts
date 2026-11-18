@@ -3,6 +3,7 @@ import {
   getVisitCompletionAction,
   requiresPrescriptionInventoryUnitReview,
 } from "./visit-completion";
+import en from "@/messages/en.json";
 
 const readyVisit = {
   appointmentStatus: "in_exam",
@@ -84,5 +85,26 @@ describe("visit completion next action", () => {
         closeoutStatus: "completed",
       }).target,
     ).toBe("complete");
+  });
+
+  it("keeps every action's English catalog text equal to its source text", () => {
+    // The page shows encounters.page.completion.<key>; English must not drift from the helper.
+    const completion = en.encounters.page.completion as Record<string, { title: string; description: string }>;
+    const flags = [true, false];
+    const seen = new Set<string>();
+    for (const appointmentStatus of ["in_exam", "checked_in", "checked_out"])
+      for (const hasPatient of flags) for (const stateReady of flags)
+        for (const linkedSoapCount of [0, 1]) for (const hasActiveInvoice of flags)
+          for (const unresolvedWorkCount of [0, 1]) for (const can of flags)
+            for (const closeoutStatus of ["draft", "clinical_finalized", "completed"]) {
+              const action = getVisitCompletionAction({
+                appointmentStatus, hasPatient, closeoutStatus, stateReady, linkedSoapCount,
+                hasActiveInvoice, unresolvedWorkCount,
+                canCreateSoap: can, canManageBilling: can, canManageVisit: can,
+              });
+              expect(completion[action.key]).toEqual({ title: action.title, description: action.description });
+              seen.add(action.key);
+            }
+    expect(seen.size).toBe(Object.keys(completion).length);
   });
 });

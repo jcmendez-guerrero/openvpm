@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "use-intl";
+import { useLocale, useTranslations } from "use-intl";
 
 import { Suspense, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
@@ -151,6 +151,7 @@ function RegisterPageInner({
 }: RegisterFormProps) {
   const t = useTranslations("auth.register");
   const pt = useTranslations("onboarding.profile");
+  const regionNames = new Intl.DisplayNames([useLocale()], { type: "region" });
   const router = useRouter();
   const searchParams = useSearchParams();
   const cloudIntent = searchParams.get("intent") === "cloud";
@@ -762,7 +763,7 @@ function RegisterPageInner({
                 <option value="">{t("chooseYourClinicCountry")}</option>
                 {CLINIC_REGION_OPTIONS.map((option) => (
                   <option key={option.code} value={option.code}>
-                    {option.label}
+                    {regionNames.of(option.code) ?? option.label}
                   </option>
                 ))}
                 <option value="OTHER">{t("anotherCountry")}</option>

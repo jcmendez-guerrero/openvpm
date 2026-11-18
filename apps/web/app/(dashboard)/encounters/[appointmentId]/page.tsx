@@ -1111,9 +1111,9 @@ function VisitCompletionGuide({
             <p className="text-xs font-semibold uppercase tracking-wide text-primary">
               {t("finishThisVisit")}
             </p>
-            <CardTitle className="mt-1">{action.title}</CardTitle>
+            <CardTitle className="mt-1">{t(`completion.${action.key}.title`)}</CardTitle>
             <CardDescription className="mt-1 max-w-2xl">
-              {action.description}
+              {t(`completion.${action.key}.description`)}
             </CardDescription>
           </div>
           {actionHref && actionLabel ? (
