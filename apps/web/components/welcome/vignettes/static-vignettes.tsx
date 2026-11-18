@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { CalendarPlus, ClipboardList, Globe, PawPrint } from "lucide-react";
 
 /**
@@ -11,14 +13,15 @@ import { CalendarPlus, ClipboardList, Globe, PawPrint } from "lucide-react";
 
 /** Mini day sheet: today's schedule with a live visit and a checked-in pet. */
 export function DayVignette() {
+  const t = useTranslations("welcome.vignettes");
   return (
     <div
       className="vignette-stagger flex h-full w-full flex-col justify-center gap-1.5 bg-gradient-to-br from-orange-50 to-violet-50 p-3"
-      aria-label="Example: today's schedule with Biscuit checked in at 9:00"
+      aria-label={t("exampleTodaySScheduleWith")}
     >
       <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
         <ClipboardList className="h-3 w-3" aria-hidden="true" />
-        Today
+        {t("today")}
       </div>
       <div className="flex items-center gap-2">
         <span className="w-8 text-right text-[10px] tabular-nums text-muted-foreground">
@@ -26,9 +29,9 @@ export function DayVignette() {
         </span>
         <span className="flex flex-1 items-center gap-1.5 rounded-md bg-primary/15 px-2 py-1 text-xs font-medium text-primary">
           <PawPrint className="h-3 w-3" aria-hidden="true" />
-          Biscuit · Wellness
+          {t("biscuitWellness")}
           <span className="ml-auto rounded-full bg-white px-1.5 py-0.5 text-[9px] font-semibold text-primary shadow-sm">
-            Here
+            {t("here")}
           </span>
         </span>
       </div>
@@ -37,7 +40,7 @@ export function DayVignette() {
           11:30
         </span>
         <span className="flex-1 rounded-md bg-white px-2 py-1 text-xs text-foreground shadow-sm">
-          Luna · Vaccines
+          {t("lunaVaccines")}
         </span>
       </div>
       <div className="flex items-center gap-2">
@@ -45,7 +48,7 @@ export function DayVignette() {
           2:00
         </span>
         <span className="flex-1 rounded-md border border-dashed border-border bg-white/60 px-2 py-1 text-xs text-muted-foreground">
-          Open slot
+          {t("openSlot")}
         </span>
       </div>
     </div>
@@ -54,19 +57,20 @@ export function DayVignette() {
 
 /** Mini portal: what a pet parent sees from their private link. */
 export function PortalVignette() {
+  const t = useTranslations("welcome.vignettes");
   return (
     <div
       className="vignette-stagger flex h-full w-full flex-col justify-center gap-2 bg-gradient-to-br from-pink-50 to-emerald-50 p-3"
-      aria-label="Example: a pet parent's portal with visits and bills"
+      aria-label={t("exampleAPetParentS")}
     >
       <div className="flex items-center gap-2">
         <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-primary">
           <PawPrint className="h-3.5 w-3.5" aria-hidden="true" />
         </span>
         <div className="leading-tight">
-          <p className="text-xs font-semibold">Biscuit</p>
+          <p className="text-xs font-semibold">{t("biscuit")}</p>
           <p className="text-[10px] text-muted-foreground">
-            Jordan&apos;s portal
+            {t("jordansPortal")}
           </p>
         </div>
         <Globe
@@ -89,9 +93,9 @@ export function PortalVignette() {
         ))}
       </div>
       <div className="rounded-md bg-white px-2 py-1.5 text-[11px] leading-4 text-foreground shadow-sm">
-        Next visit: Tuesday 9:00
+        {t("nextVisitTuesday900")}
         <span className="mt-0.5 block text-[10px] text-muted-foreground">
-          Request a new visit any time
+          {t("requestANewVisitAny")}
         </span>
       </div>
     </div>
@@ -100,15 +104,16 @@ export function PortalVignette() {
 
 /** Mini month calendar with a clinic event landed in it. */
 export function CalendarVignette() {
+  const t = useTranslations("welcome.vignettes");
   const days = Array.from({ length: 28 }, (_, i) => i + 1);
   return (
     <div
       className="vignette-stagger flex h-full w-full flex-col justify-center gap-1.5 bg-gradient-to-br from-emerald-50 to-violet-50 p-3"
-      aria-label="Example: the clinic schedule inside your own calendar app"
+      aria-label={t("exampleTheClinicScheduleInside")}
     >
       <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
         <CalendarPlus className="h-3 w-3" aria-hidden="true" />
-        Your calendar
+        {t("yourCalendar")}
       </div>
       <div className="grid grid-cols-7 gap-1">
         {days.map((d) => (
@@ -129,7 +134,7 @@ export function CalendarVignette() {
           className="h-2 w-2 rounded-full bg-primary"
           aria-hidden="true"
         />
-        Biscuit · Wellness · 9:00
+        {t("biscuitWellness900")}
       </div>
     </div>
   );

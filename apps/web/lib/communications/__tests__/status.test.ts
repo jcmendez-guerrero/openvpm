@@ -81,3 +81,14 @@ describe("communicationStatusLabel", () => {
     expect(communicationStatusLabel({ status: "" })).toBe("");
   });
 });
+
+describe("communicationStatusLabel translation", () => {
+  it("passes the status key to the translator and keeps unknown statuses raw", () => {
+    const t = (key: string) => `es:${key}`;
+    expect(communicationStatusLabel({ status: "sent" }, t)).toBe("es:sent");
+    expect(
+      communicationStatusLabel({ status: "read", direction: "inbound" }, t),
+    ).toBe("es:readByClinic");
+    expect(communicationStatusLabel({ status: "queued" }, t)).toBe("queued");
+  });
+});

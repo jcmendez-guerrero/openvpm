@@ -1,3 +1,5 @@
+import type { Language } from "@/i18n/config";
+import { messageLanguage } from "@/i18n/message-language";
 import { and, eq, isNull } from "drizzle-orm";
 import { clients, invoices, patients, practices } from "@openpims/db";
 import { db as systemDb, type Database } from "@openpims/db/client";
@@ -23,6 +25,8 @@ export type ClientReceipt = {
   country: string;
   amountPaidCents: number;
   balanceRemainingCents: number;
+  /** The client's language for the receipt; English when omitted. */
+  language?: Language;
 };
 
 /**
@@ -45,6 +49,8 @@ export async function loadClientReceipt(
       practicePhone: practices.phone,
       currency: practices.currency,
       country: practices.country,
+      clientLanguage: clients.preferredLanguage,
+      clinicDefaultLanguage: practices.defaultLanguage,
     })
     .from(invoices)
     .innerJoin(
@@ -86,6 +92,10 @@ export async function loadClientReceipt(
     country: row.country ?? "US",
     amountPaidCents: amounts.amountPaidCents,
     balanceRemainingCents: Math.max(0, amounts.balanceRemainingCents),
+    language: messageLanguage("message", {
+      clientLanguage: row.clientLanguage,
+      clinicDefault: row.clinicDefaultLanguage,
+    }),
   };
 }
 
@@ -112,16 +122,19 @@ export async function deliverClientReceipt(
         amountPaid: formatCurrency(
           centsToMoney(receipt.amountPaidCents),
           receipt.currency,
-          receipt.country
+          receipt.country,
+          receipt.language
         ),
         balanceRemaining: formatCurrency(
           centsToMoney(receipt.balanceRemainingCents),
           receipt.currency,
-          receipt.country
+          receipt.country,
+          receipt.language
         ),
         fullyPaid: receipt.balanceRemainingCents <= 0,
         practiceName: receipt.practiceName,
         practicePhone: receipt.practicePhone,
+        language: receipt.language,
       });
       if (!result.success) {
         console.error("[client-receipt] send failed:", result.error);

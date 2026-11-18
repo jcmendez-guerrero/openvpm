@@ -1,9 +1,9 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("client detail communication log UI", () => {
   it("uses shared top-level load and error states for client detail", () => {
-    const source = readFileSync("app/(dashboard)/clients/[id]/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/clients/[id]/page.tsx");
 
     expect(source).toContain('import { EmptyState } from "@/components/common/empty-state"');
     expect(source).toContain("AlertCircle");
@@ -20,7 +20,7 @@ describe("client detail communication log UI", () => {
   });
 
   it("renders the client communication log from the tenant-scoped communications API", () => {
-    const source = readFileSync("app/(dashboard)/clients/[id]/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/clients/[id]/page.tsx");
 
     expect(source).toContain("CommunicationLogPanel");
     expect(source).toContain("trpc.communications.getByClient.useQuery");
@@ -28,7 +28,7 @@ describe("client detail communication log UI", () => {
     expect(source).toContain(
       'import { communicationStatusLabel } from "@/lib/communications/status"'
     );
-    expect(source).toContain("const statusLabel = communicationStatusLabel(message)");
+    expect(source).toContain("const statusLabel = communicationStatusLabel(message, statusT)");
     expect(source).not.toContain("const communicationStatusLabels =");
     expect(source).toContain("{ clientId }");
     expect(source).toContain('title="No communication log yet"');
@@ -38,7 +38,7 @@ describe("client detail communication log UI", () => {
   });
 
   it("surfaces communication log errors before empty states", () => {
-    const source = readFileSync("app/(dashboard)/clients/[id]/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/clients/[id]/page.tsx");
 
     expect(source).toContain("const communicationLogError = error ?? settingsError");
     expect(source).toContain(
@@ -57,7 +57,7 @@ describe("client detail communication log UI", () => {
   });
 
   it("formats communication timestamps through the practice timezone contract", () => {
-    const source = readFileSync("app/(dashboard)/clients/[id]/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/clients/[id]/page.tsx");
 
     expect(source).toContain("const verifiedCommunicationSettings =");
     expect(source).toContain(

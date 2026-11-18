@@ -697,6 +697,7 @@ export const appointmentsRouter = createRouter({
           patientId: appointments.patientId,
           clientFirstName: clients.firstName,
           clientLastName: clients.lastName,
+          clientPreferredLanguage: clients.preferredLanguage,
           clientId: appointments.clientId,
           doctorName: users.name,
           doctorId: appointments.doctorId,

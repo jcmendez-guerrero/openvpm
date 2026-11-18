@@ -34,6 +34,8 @@ export type VaccinationRecallCandidate = {
   preferredContactMethod: string | null;
   smsConsent: boolean;
   emailSuppressionReason: string | null;
+  /** clients.preferred_language; null follows the clinic default. */
+  clientLanguage?: string | null;
   vaccines: VaccinationRecallVaccine[];
 };
 

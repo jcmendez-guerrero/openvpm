@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { tokenPageLanguage } from "@/i18n/token-page";
 import { and, asc, desc, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import {
   consentForms,
+  clients,
   consentRequests,
   patients,
   practices,
@@ -85,6 +87,8 @@ type PresentationLookup = {
   tier: string | null;
   billingStatus: string | null;
   trialEndsAt: Date | null;
+  clientLanguage: string | null;
+  clinicDefaultLanguage: string | null;
 };
 
 function notFound(): NextResponse {
@@ -173,6 +177,8 @@ async function lookupPresentation(
       tier: practices.subscriptionTier,
       billingStatus: practices.billingStatus,
       trialEndsAt: practices.trialEndsAt,
+      clientLanguage: clients.preferredLanguage,
+      clinicDefaultLanguage: practices.defaultLanguage,
     })
     .from(visitTreatmentPlanPresentations)
     .innerJoin(
@@ -204,6 +210,14 @@ async function lookupPresentation(
         eq(patients.practiceId, visitTreatmentPlanPresentations.practiceId),
         eq(patients.id, visitTreatmentPlans.patientId),
         isNull(patients.deletedAt),
+      ),
+    )
+    .leftJoin(
+      clients,
+      and(
+        eq(clients.id, patients.clientId),
+        eq(clients.practiceId, patients.practiceId),
+        isNull(clients.deletedAt),
       ),
     )
     .innerJoin(
@@ -314,14 +328,23 @@ async function handleGet(
     ) {
       return notFound();
     }
+    const language = tokenPageLanguage(
+      request,
+      {
+        clientLanguage: found.session.clientLanguage,
+        clinicDefault: found.session.clinicDefaultLanguage,
+      },
+      "treatmentPlan",
+    );
     if (found.session.status !== "pending") {
       if (found.session.status === "completed") {
-        return NextResponse.json({ status: "completed", signUrl: null });
+        return NextResponse.json({ status: "completed", signUrl: null, ...language });
       }
       const url = await signUrl(systemTx, found.session, token);
       return NextResponse.json({
         status: found.session.status,
         signUrl: url,
+        ...language,
       });
     }
     return NextResponse.json({
@@ -334,6 +357,7 @@ async function handleGet(
       tax: found.session.tax,
       total: found.session.total,
       lines: found.lines,
+      ...language,
     });
   });
 }

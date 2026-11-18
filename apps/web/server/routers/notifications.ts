@@ -1,3 +1,5 @@
+import { messageLanguage } from "@/i18n/message-language";
+import { getTranslatorFor } from "@/i18n/messages";
 import { z } from "zod";
 import { eq, and, isNull, gte, lte, lt, inArray, or, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -71,7 +73,6 @@ import {
 } from "@/lib/recovery-hold";
 import { assertOutboundEmailAllowed } from "@/lib/outbound-email-security";
 
-const DEFAULT_PRACTICE_NAME = "your clinic";
 
 function assertStaffOutboundEmailAllowed(
   ctx: {
@@ -139,8 +140,13 @@ export const REMINDER_BATCH_MAX_TARGETS = 100;
 
 type NotificationsDb = Pick<Database, "select">;
 
-function practiceDisplayName(name?: string | null): string {
-  return name?.trim() || DEFAULT_PRACTICE_NAME;
+// shortcut: the fallback follows the clinic default, not each client's language; only hit when the clinic has no name.
+function practiceDisplayName(
+  name: string | null | undefined,
+  clinicDefault: string | null | undefined,
+): string {
+  if (name?.trim()) return name.trim();
+  return getTranslatorFor(messageLanguage("message", { clinicDefault }))("email.yourClinic");
 }
 
 function activePracticeWhere(practiceId: string) {
@@ -196,6 +202,7 @@ async function practiceNotificationSettings(ctx: {
   timezone: string | null;
   currency: string;
   country: string;
+  defaultLanguage: string;
 }> {
   const [practice] = await ctx.db
     .select({
@@ -204,6 +211,7 @@ async function practiceNotificationSettings(ctx: {
       timezone: practices.timezone,
       currency: practices.currency,
       country: practices.country,
+      defaultLanguage: practices.defaultLanguage,
     })
     .from(practices)
     .where(activePracticeWhere(ctx.practiceId))
@@ -214,11 +222,12 @@ async function practiceNotificationSettings(ctx: {
   }
 
   return {
-    name: practiceDisplayName(practice.name),
+    name: practiceDisplayName(practice.name, practice.defaultLanguage),
     phone: practice.phone ?? null,
     timezone: practice.timezone ?? null,
     currency: practice.currency ?? "usd",
     country: practice.country ?? "US",
+    defaultLanguage: practice.defaultLanguage,
   };
 }
 
@@ -309,6 +318,8 @@ export const notificationsRouter = createRouter({
           clientPhone: clients.phone,
           preferredContactMethod: clients.preferredContactMethod,
           smsConsent: clients.smsConsent,
+          clientLanguage: clients.preferredLanguage,
+          clinicDefaultLanguage: practices.defaultLanguage,
           emailSuppressionReason: emailSuppressions.reason,
           practiceName: practices.name,
           practicePhone: practices.phone,
@@ -392,13 +403,15 @@ export const notificationsRouter = createRouter({
       let failureChannel: "sms" | "email" = "email";
       // Shared with the hourly sweep so a resend under the same provider
       // idempotency key is byte-identical.
-      const message = appointmentReminderMessageFields({
+      const messageInput = {
         startTime: appt.startTime,
         timeZone: appt.practiceTimezone,
         patientName: appt.patientName,
         practiceName: appt.practiceName,
         practicePhone: appt.practicePhone,
-      });
+      };
+      // English: this one only feeds the staff timeline.
+      const message = appointmentReminderMessageFields(messageInput);
       const reminderDate = message.appointmentDate;
       const logReminder = async (
         channel: "sms" | "email",
@@ -475,7 +488,9 @@ export const notificationsRouter = createRouter({
               patientName: appt.patientName,
               practiceName: appt.practiceName,
               practicePhone: appt.practicePhone,
+              language: reminderClaim!.language,
             }),
+            language: reminderClaim!.language,
             idempotencyKey: appointmentReminderEmailIdempotencyKey(
               appt,
               reminderClaim!.attempt,
@@ -575,6 +590,10 @@ export const notificationsRouter = createRouter({
         channel,
         patientName: appt.patientName,
         startTime: new Date(appt.startTime),
+        language: messageLanguage("message", {
+          clientLanguage: appt.clientLanguage,
+          clinicDefault: appt.clinicDefaultLanguage,
+        }),
       };
       // The claim and every outcome commit on their own, outside the request
       // transaction: once a provider may have sent the reminder, a rolled-back
@@ -614,7 +633,11 @@ export const notificationsRouter = createRouter({
           try {
             result = await sendAppointmentReminderSms({
               to: appt.clientPhone!,
-              ...message,
+              ...appointmentReminderMessageFields({
+                ...messageInput,
+                language: reminderClaim.language,
+              }),
+              language: reminderClaim.language,
               practiceId: ctx.practiceId,
               locationId: smsSender!.locationId,
               clientId: appt.clientId!,
@@ -711,6 +734,7 @@ export const notificationsRouter = createRouter({
           clientFirstName: clients.firstName,
           clientLastName: clients.lastName,
           clientEmail: clients.email,
+          clientLanguage: clients.preferredLanguage,
           emailSuppressionReason: emailSuppressions.reason,
         })
         .from(invoices)
@@ -809,10 +833,15 @@ export const notificationsRouter = createRouter({
 
       // Format the live balance in the practice's region currency.
       const practice = await practiceNotificationSettings(ctx);
+      const language = messageLanguage("message", {
+        clientLanguage: invoice.clientLanguage,
+        clinicDefault: practice.defaultLanguage,
+      });
       const totalFormatted = formatCurrency(
         amountDue,
         practice.currency,
         practice.country,
+        language,
       );
 
       await assertStaffOutboundEmailAllowed(ctx, "invoice");
@@ -825,10 +854,12 @@ export const notificationsRouter = createRouter({
               invoice.dueDate,
               practice.timezone,
               invoice.dueDate,
+              language === "es" ? "es" : "en-US",
             )
           : undefined,
         practiceName: practice.name,
         practicePhone: practice.phone ?? undefined,
+        language,
       });
       if (!emailResult.success) {
         throw new TRPCError({
@@ -944,6 +975,8 @@ export const notificationsRouter = createRouter({
           clientPhone: clients.phone,
           preferredContactMethod: clients.preferredContactMethod,
           smsConsent: clients.smsConsent,
+          clientLanguage: clients.preferredLanguage,
+          clinicDefaultLanguage: practices.defaultLanguage,
           emailSuppressionReason: emailSuppressions.reason,
           practiceName: practices.name,
           practicePhone: practices.phone,
@@ -1027,13 +1060,15 @@ export const notificationsRouter = createRouter({
       for (const appt of appts) {
         // Shared with the hourly sweep so a resend under the same provider
         // idempotency key is byte-identical.
-        const message = appointmentReminderMessageFields({
+        const messageInput = {
           startTime: appt.startTime,
           timeZone: appt.practiceTimezone,
           patientName: appt.patientName,
           practiceName: appt.practiceName,
           practicePhone: appt.practicePhone,
-        });
+        };
+        // English: this one only feeds the staff timeline.
+        const message = appointmentReminderMessageFields(messageInput);
         const appointmentDate = message.appointmentDate;
 
         let reminderClaim: AppointmentReminderClaim | null = null;
@@ -1115,7 +1150,9 @@ export const notificationsRouter = createRouter({
                   patientName: appt.patientName,
                   practiceName: appt.practiceName,
                   practicePhone: appt.practicePhone,
+                  language: reminderClaim!.language,
                 }),
+                language: reminderClaim!.language,
                 idempotencyKey: appointmentReminderEmailIdempotencyKey(
                   appt,
                   reminderClaim!.attempt,
@@ -1197,6 +1234,10 @@ export const notificationsRouter = createRouter({
           channel,
           patientName: appt.patientName,
           startTime: new Date(appt.startTime),
+          language: messageLanguage("message", {
+            clientLanguage: appt.clientLanguage,
+            clinicDefault: appt.clinicDefaultLanguage,
+          }),
         };
         // Committed outside the request transaction (see sendAppointmentReminder).
         reminderClaim = await withDurableSmsCommunication(
@@ -1222,7 +1263,11 @@ export const notificationsRouter = createRouter({
           try {
             result = await sendAppointmentReminderSms({
               to: appt.clientPhone!,
-              ...message,
+              ...appointmentReminderMessageFields({
+                ...messageInput,
+                language: reminderClaim.language,
+              }),
+              language: reminderClaim.language,
               practiceId: ctx.practiceId,
               locationId: smsSender!.locationId,
               clientId: appt.clientId!,

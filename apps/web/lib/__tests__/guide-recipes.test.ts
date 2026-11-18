@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
   AGENT_GUIDE_QUESTION,
@@ -7,6 +8,7 @@ import {
 } from "@/components/tour/guide-recipes";
 import { GUIDE_SIGNALS } from "@/components/tour/guide-signals";
 import { buildTourSteps } from "@/components/tour/tour-steps";
+import { getTranslatorFor } from "@/i18n/messages";
 import type { GuideId } from "../welcome/cards";
 
 const ALL_GUIDES: GuideId[] = [
@@ -63,7 +65,7 @@ describe("guide recipes", () => {
       if (!step.anchor) continue;
       if (step.anchor.startsWith("nav-")) {
         // Sidebar nav anchors are emitted dynamically per nav item.
-        const sidebar = readFileSync("components/layout/sidebar.tsx", "utf8");
+        const sidebar = readTranslatedSource("components/layout/sidebar.tsx");
         expect(sidebar).toContain("data-tour={`nav-${");
         continue;
       }
@@ -161,6 +163,24 @@ describe("guide recipes", () => {
       ...allSteps({}),
       ...allSteps({ agentConfigured: false }),
     ]) {
+      expect(step.title).not.toMatch(/[—–]/);
+      expect(step.body).not.toMatch(/[—–]/);
+    }
+  });
+
+  it("builds every guide in Spanish when given the Spanish translator", () => {
+    const es = getTranslatorFor("es");
+    const t = (key: string, values?: Record<string, string>) =>
+      es(`tour.${key}` as never, values as never);
+    const steps = [
+      ...ALL_GUIDES.flatMap((id) => buildGuideSteps(id, RICH_CONTEXT, t)),
+      ...buildTourSteps(DEEP_TOUR_CONTEXT, t),
+    ];
+    expect(steps.find((s) => s.id === "welcome")!.title).toBe(
+      "Te damos la bienvenida a OpenVPM",
+    );
+    expect(buildGuideSteps("your-day", RICH_CONTEXT, t)[0]!.body).toContain("Biscuit");
+    for (const step of steps) {
       expect(step.title).not.toMatch(/[—–]/);
       expect(step.body).not.toMatch(/[—–]/);
     }

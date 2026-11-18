@@ -2,14 +2,9 @@
 
 import { useRef, useState } from "react";
 import { AlertCircle, Camera, CheckCircle2, Loader2 } from "lucide-react";
-import {
-  IMAGE_UPLOAD_POLICY_MESSAGE,
-  isImageUploadFileValid,
-} from "@/lib/upload-policy";
+import { useTranslations } from "use-intl";
+import { isImageUploadFileValid } from "@/lib/upload-policy";
 import { isRetryableUploadStatus } from "@/lib/managed-upload-attempt";
-
-const EXPIRED_MESSAGE =
-  "This link has expired. Ask the front desk for a new code.";
 
 type UploadStatus = "uploading" | "done" | "error";
 
@@ -24,14 +19,13 @@ interface UploadItem {
   message?: string;
 }
 
-function errorMessageForStatus(status: number): string {
-  if (status === 404) return EXPIRED_MESSAGE;
-  if (status === 429)
-    return "Too many uploads right now. Wait a minute and try again.";
-  if (status === 409)
-    return "This capture link cannot accept another photo. Ask the clinic for a new link.";
-  if (status === 400 || status === 413) return IMAGE_UPLOAD_POLICY_MESSAGE;
-  return "The upload failed. Please try again.";
+/** Catalog key under `capture` for a failed upload status. */
+function errorKeyForStatus(status: number) {
+  if (status === 404) return "expired";
+  if (status === 429) return "tooMany";
+  if (status === 409) return "linkFull";
+  if (status === 400 || status === 413) return "imagePolicy";
+  return "uploadFailed";
 }
 
 /** Upload one file with progress via XHR (fetch has no upload progress). */
@@ -63,6 +57,7 @@ function uploadWithProgress(
 }
 
 export function CaptureClient({ token }: { token: string }) {
+  const t = useTranslations("capture");
   const inputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<UploadItem[]>([]);
   const [linkExpired, setLinkExpired] = useState(false);
@@ -102,7 +97,7 @@ export function CaptureClient({ token }: { token: string }) {
     updateItem(item.id, {
       status: "error",
       retryable: isRetryableUploadStatus(result.status),
-      message: errorMessageForStatus(result.status),
+      message: t(errorKeyForStatus(result.status)),
     });
   }
 
@@ -120,7 +115,7 @@ export function CaptureClient({ token }: { token: string }) {
           progress: 0,
           status: "error",
           retryable: false,
-          message: IMAGE_UPLOAD_POLICY_MESSAGE,
+          message: t("imagePolicy"),
         },
       ]);
       return;
@@ -151,18 +146,15 @@ export function CaptureClient({ token }: { token: string }) {
     <div className="space-y-4">
       <div className="text-center">
         <h1 className="text-lg font-semibold text-gray-900">
-          Add photos to the visit record
+          {t("title")}
         </h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Take a photo or pick one from your phone. It goes straight to the
-          clinic.
-        </p>
+        <p className="mt-1 text-sm text-gray-500">{t("intro")}</p>
       </div>
 
       {linkExpired ? (
         <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4">
           <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
-          <p className="text-sm text-amber-800">{EXPIRED_MESSAGE}</p>
+          <p className="text-sm text-amber-800">{t("expired")}</p>
         </div>
       ) : (
         <>
@@ -182,7 +174,7 @@ export function CaptureClient({ token }: { token: string }) {
           >
             <Camera className="h-8 w-8" />
             <span className="text-sm font-medium">
-              {items.length > 0 ? "Add more photos" : "Take or choose photos"}
+              {items.length > 0 ? t("addMore") : t("takeOrChoose")}
             </span>
           </button>
         </>
@@ -231,7 +223,7 @@ export function CaptureClient({ token }: { token: string }) {
                       onClick={() => void performUpload(item)}
                       className="shrink-0 text-xs font-medium text-teal-700 hover:text-teal-800"
                     >
-                      Try again
+                      {t("tryAgain")}
                     </button>
                   )}
                 </div>
@@ -245,12 +237,9 @@ export function CaptureClient({ token }: { token: string }) {
         <div className="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
           <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
           <div>
-            <p className="text-sm font-medium text-emerald-800">All set.</p>
+            <p className="text-sm font-medium text-emerald-800">{t("allSet")}</p>
             <p className="text-sm text-emerald-700">
-              {doneCount === 1
-                ? "Your photo was added to the visit record."
-                : `Your ${doneCount} photos were added to the visit record.`}{" "}
-              You can close this page or add more.
+              {t("added", { count: doneCount })}
             </p>
           </div>
         </div>

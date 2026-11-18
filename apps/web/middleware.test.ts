@@ -509,3 +509,26 @@ describe("middleware NEXTAUTH_SECRET guard", () => {
     expect(response.status).toBe(200);
   });
 });
+
+describe("middleware request path header", () => {
+  function spoofed(path: string) {
+    return new Request(`https://openvpm.test${path}`, {
+      headers: { "x-openvpm-path": "/portal/forged" },
+    }) as never;
+  }
+  const forwardedPath = (response: Response) =>
+    response.headers.get("x-middleware-request-x-openvpm-path");
+
+  it.each([
+    ["public", "/login"],
+    ["capability", "/sign/some-token"],
+    ["portal", "/portal/home"],
+  ])("overwrites a browser-sent path header on %s pages", async (_kind, path) => {
+    expect(forwardedPath(await middleware(spoofed(path)))).toBe(path);
+  });
+
+  it("overwrites a browser-sent path header for signed-in staff", async () => {
+    mocks.getToken.mockResolvedValue({ sub: "user-1" });
+    expect(forwardedPath(await middleware(spoofed("/patients")))).toBe("/patients");
+  });
+});

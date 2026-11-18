@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
   isTreatmentTemplateItemTotalValid,
@@ -14,7 +14,7 @@ import {
 } from "../templates/policy";
 
 describe("treatment template settings UI", () => {
-  const source = readFileSync("app/(dashboard)/settings/page.tsx", "utf8");
+  const source = readTranslatedSource("app/(dashboard)/settings/page.tsx");
 
   it("keeps treatment template setup reachable from Settings", () => {
     expect(source).toContain('"templates"');
@@ -84,7 +84,7 @@ describe("treatment template settings UI", () => {
     expect(source).toContain(
       'className="grid grid-cols-2 items-center gap-2 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto]"',
     );
-    expect(source).toContain("aria-label={`Remove item ${index + 1}`}");
+    expect(source).toContain("Remove item {n}");
     expect(source).toContain('className="w-full lg:w-20"');
     expect(source).toContain('className="w-full lg:w-28"');
   });

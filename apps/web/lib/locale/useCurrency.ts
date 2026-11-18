@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "use-intl";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "./format";
 
@@ -13,8 +14,10 @@ export function useCurrencyFormatter() {
   const { data } = trpc.billing.getTaxConfig.useQuery(undefined, {
     staleTime: 5 * 60 * 1000,
   });
+  const language = useLocale();
   const currency = data?.currency ?? "usd";
   const country = data?.country ?? "US";
-  return (value: number | string | null | undefined) =>
-    formatCurrency(value, currency, country);
+  // Documents for a client pass the client's language; screens use the viewer's.
+  return (value: number | string | null | undefined, documentLanguage: string = language) =>
+    formatCurrency(value, currency, country, documentLanguage);
 }

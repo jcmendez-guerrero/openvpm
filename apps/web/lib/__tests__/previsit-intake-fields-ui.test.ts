@@ -2,6 +2,8 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
+import { IntlProvider } from "use-intl";
+import en from "@/messages/en.json";
 import { PrevisitIntakeFields } from "@/components/booking/previsit-intake-fields";
 import {
   PREVISIT_INTAKE_FIELD_MAX_LENGTH,
@@ -10,10 +12,14 @@ import {
 
 function renderFields(enabledFieldKeys: readonly PrevisitIntakeFieldKey[]) {
   return renderToStaticMarkup(
-    createElement(PrevisitIntakeFields, {
-      enabledFieldKeys,
-      value: {},
-      onChange: vi.fn(),
+    createElement(IntlProvider, {
+      locale: "en",
+      messages: en,
+      children: createElement(PrevisitIntakeFields, {
+        enabledFieldKeys,
+        value: {},
+        onChange: vi.fn(),
+      }),
     }),
   );
 }

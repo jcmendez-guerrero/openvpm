@@ -1,7 +1,7 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
-const read = (path: string) => readFileSync(path, "utf8");
+const read = (path: string) => readTranslatedSource(path);
 
 function sourceSection(source: string, start: string, end: string): string {
   const startAt = source.indexOf(start);
@@ -240,7 +240,7 @@ describe("lab result clinical safety contract", () => {
     expect(records).toContain("formatClinicalDateTime(");
     expect(records).toContain('"Time unavailable"');
     expect(records).toContain("Show evidence history");
-    expect(records).toContain("event.eventType.replaceAll");
+    expect(records).toContain("t(`events.${event.eventType}`)");
   });
 
   it("supports deliberate cross-patient repair and exact bidirectional navigation", () => {

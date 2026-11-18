@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import {
@@ -14,7 +14,7 @@ import {
 } from "@openpims/db";
 
 function readRepoFile(path: string): string {
-  return readFileSync(new URL(`../../../../${path}`, import.meta.url), "utf8");
+  return readTranslatedSource(new URL(`../../../../${path}`, import.meta.url));
 }
 
 describe("clinical correction schema and migration", () => {
@@ -518,11 +518,10 @@ describe("clinical correction consumers", () => {
     expect(patientPage).toContain(
       'triggerLabel="Mark allergy entered in error"',
     );
-    for (const source of [patientPage, encounterPage]) {
-      expect(source).toContain(
-        'Reaction: {allergy.reaction || "Not documented"}',
-      );
-    }
+    expect(patientPage).toContain("Reaction: {reaction}");
+    expect(encounterPage).toContain(
+      'Reaction: {reaction}',
+    );
     expect(backup).toContain('"patientAllergyId"');
     expect(backup).toContain('row.recordType === "patient_allergy"');
   });

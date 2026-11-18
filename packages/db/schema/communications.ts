@@ -47,6 +47,8 @@ export const communications = pgTable(
     direction: directionEnum("direction").notNull(),
     subject: varchar("subject", { length: 255 }),
     content: text("content"),
+    // Language a send attempt was built in; every resend of the attempt reuses it.
+    language: varchar("language", { length: 8 }),
     status: commStatusEnum("status").notNull().default("pending"),
     assignedTo: uuid("assigned_to").references(() => users.id),
     readAt: timestamp("read_at", { withTimezone: true }),

@@ -4,7 +4,9 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { AlertCircle, ArrowLeft, Check, Loader2 } from "lucide-react";
+import { useTranslations } from "use-intl";
 import { trpc } from "@/lib/trpc";
+import { useSpeciesLabel } from "@/lib/patients/use-species-label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EmptyState } from "@/components/common/empty-state";
@@ -21,26 +23,20 @@ import {
   isOptionalPatientTextValid,
   isRequiredPatientTextValid,
 } from "@/lib/patients/policy";
-import { PATIENT_SPECIES_OPTIONS } from "@/lib/patients/species";
+import { PATIENT_SPECIES } from "@/lib/patients/species";
 
-const speciesOptions = PATIENT_SPECIES_OPTIONS;
-
-const sexOptions = [
-  { value: "male", label: "Male (Intact)" },
-  { value: "female", label: "Female (Intact)" },
-  { value: "male_neutered", label: "Male (Neutered)" },
-  { value: "female_spayed", label: "Female (Spayed)" },
-] as const;
+const sexOptions = ["male", "female", "male_neutered", "female_spayed"] as const;
 
 export default function NewPatientPage() {
   const router = useRouter();
+  const t = useTranslations("patients.form");
   const { data: session, status } = useSession();
 
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card p-8 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Checking patient access...
+        {t("checkingAccess")}
       </div>
     );
   }
@@ -55,14 +51,14 @@ export default function NewPatientPage() {
           className="mb-4"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Patients
+          {t("back")}
         </Button>
         <EmptyState
           icon={AlertCircle}
-          title="Patient actions are read-only"
-          description="Only staff roles with patient write access can create patients."
+          title={t("readOnlyTitle")}
+          description={t("readOnlyCreate")}
           action={{
-            label: "Back to Patients",
+            label: t("back"),
             onClick: () => router.push("/patients"),
           }}
         />
@@ -75,7 +71,7 @@ export default function NewPatientPage() {
       fallback={
         <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card p-8 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading patient form...
+          {t("loading")}
         </div>
       }
     >
@@ -95,6 +91,8 @@ function canManagePatientFormRole(role?: string | null): boolean {
 
 function NewPatientForm() {
   const router = useRouter();
+  const t = useTranslations("patients");
+  const speciesLabel = useSpeciesLabel();
   const searchParams = useSearchParams();
   const [form, setForm] = useState({
     clientId: "",
@@ -151,7 +149,7 @@ function NewPatientForm() {
 
   const createPatient = trpc.patients.create.useMutation({
     onSuccess: (patient) => {
-      toast.success("Patient created");
+      toast.success(t("form.created"));
       if (firstClinicDay) {
         router.push(
           `/schedule?setup=first-visit&patient=${encodeURIComponent(patient.name)}`,
@@ -185,15 +183,15 @@ function NewPatientForm() {
         ?.value ?? form.dob;
 
     if (!form.clientId) {
-      setError("Please select an owner (client).");
+      setError(t("form.ownerRequired"));
       return;
     }
     if (!form.name.trim()) {
-      setError("Patient name is required.");
+      setError(t("form.nameRequired"));
       return;
     }
     if (!canSubmit) {
-      setError("Check required fields and field lengths.");
+      setError(t("form.checkFields"));
       return;
     }
 
@@ -233,14 +231,14 @@ function NewPatientForm() {
         className="mb-4"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Patients
+        {t("form.back")}
       </Button>
 
-      <h2 className="font-heading text-xl font-semibold">New Patient</h2>
+      <h2 className="font-heading text-xl font-semibold">{t("list.new")}</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         {firstClinicDay
-          ? "First clinic day, step 2 of 3: add this owner's pet. Booking is next."
-          : "Add a new patient record"}
+          ? t("form.firstDayIntro")
+          : t("form.newIntro")}
       </p>
 
       {error && (
@@ -252,7 +250,7 @@ function NewPatientForm() {
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         {/* Client Search */}
         <div>
-          <label className="text-sm font-medium">Owner (Client) *</label>
+          <label className="text-sm font-medium">{t("form.owner")}</label>
           {selectedClientName ? (
             <div className="mt-1 flex items-center gap-2">
               <div className="flex h-10 flex-1 items-center rounded-md border border-input bg-muted/50 px-3 text-sm">
@@ -268,13 +266,13 @@ function NewPatientForm() {
                   setSelectedClientName("");
                 }}
               >
-                Change
+                {t("form.change")}
               </Button>
             </div>
           ) : (
             <div className="relative mt-1">
               <Input
-                placeholder="Search clients by name or email..."
+                placeholder={t("form.clientSearchPlaceholder")}
                 value={clientSearch}
                 maxLength={CLIENT_SEARCH_MAX_LENGTH}
                 onChange={(e) => {
@@ -292,12 +290,12 @@ function NewPatientForm() {
                   {clientSearchError || clientSearchMissing ? (
                     <div className="p-3 text-sm text-destructive">
                       {clientSearchError?.message ??
-                        "Unable to search clients. Please retry."}
+                        t("form.clientSearchFailed")}
                     </div>
                   ) : isSearchingClients ? (
                     <div className="flex items-center gap-2 p-3 text-sm text-muted-foreground">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Searching clients...
+                      {t("form.searchingClients")}
                     </div>
                   ) : clientResults && clientResults.length > 0 ? (
                     clientResults.map((client) => (
@@ -318,7 +316,7 @@ function NewPatientForm() {
                     ))
                   ) : (
                     <div className="p-3 text-center text-sm text-muted-foreground">
-                      No clients found
+                      {t("form.noClients")}
                     </div>
                   )}
                 </div>
@@ -329,13 +327,13 @@ function NewPatientForm() {
 
         <div>
           <label className="text-sm font-medium" htmlFor="name">
-            Patient Name *
+            {t("form.name")}
           </label>
           <Input
             id="name"
             value={form.name}
             onChange={(e) => updateField("name", e.target.value)}
-            placeholder="Patient name"
+            placeholder={t("form.namePlaceholder")}
             className="mt-1"
             maxLength={PATIENT_NAME_MAX_LENGTH}
             required
@@ -345,7 +343,7 @@ function NewPatientForm() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="text-sm font-medium" htmlFor="species">
-              Species *
+              {t("form.species")}
             </label>
             <select
               id="species"
@@ -353,22 +351,22 @@ function NewPatientForm() {
               onChange={(e) => updateField("species", e.target.value)}
               className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              {speciesOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
+              {PATIENT_SPECIES.map((value) => (
+                <option key={value} value={value}>
+                  {speciesLabel(value)}
                 </option>
               ))}
             </select>
           </div>
           <div>
             <label className="text-sm font-medium" htmlFor="breed">
-              Breed
+              {t("form.breed")}
             </label>
             <Input
               id="breed"
               value={form.breed}
               onChange={(e) => updateField("breed", e.target.value)}
-              placeholder="Breed"
+              placeholder={t("form.breed")}
               className="mt-1"
               maxLength={PATIENT_BREED_MAX_LENGTH}
             />
@@ -378,7 +376,7 @@ function NewPatientForm() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="text-sm font-medium" htmlFor="sex">
-              Sex
+              {t("form.sex")}
             </label>
             <select
               id="sex"
@@ -386,17 +384,17 @@ function NewPatientForm() {
               onChange={(e) => updateField("sex", e.target.value)}
               className="mt-1 flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <option value="">Select sex...</option>
-              {sexOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
+              <option value="">{t("form.selectSex")}</option>
+              {sexOptions.map((value) => (
+                <option key={value} value={value}>
+                  {t(`sex.${value}`)}
                 </option>
               ))}
             </select>
           </div>
           <div>
             <label className="text-sm font-medium" htmlFor="dob">
-              Date of Birth
+              {t("form.dob")}
             </label>
             <Input
               id="dob"
@@ -412,26 +410,26 @@ function NewPatientForm() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="text-sm font-medium" htmlFor="color">
-              Color/Markings
+              {t("form.color")}
             </label>
             <Input
               id="color"
               value={form.color}
               onChange={(e) => updateField("color", e.target.value)}
-              placeholder="e.g., Black and white"
+              placeholder={t("form.colorPlaceholder")}
               className="mt-1"
               maxLength={PATIENT_COLOR_MAX_LENGTH}
             />
           </div>
           <div>
             <label className="text-sm font-medium" htmlFor="microchipNumber">
-              Microchip Number
+              {t("form.microchip")}
             </label>
             <Input
               id="microchipNumber"
               value={form.microchipNumber}
               onChange={(e) => updateField("microchipNumber", e.target.value)}
-              placeholder="Microchip ID"
+              placeholder={t("form.microchipPlaceholder")}
               className="mt-1"
               maxLength={PATIENT_MICROCHIP_NUMBER_MAX_LENGTH}
             />
@@ -443,14 +441,14 @@ function NewPatientForm() {
             type="submit"
             disabled={!canSubmit || createPatient.isPending}
           >
-            {createPatient.isPending ? "Creating..." : "Create Patient"}
+            {createPatient.isPending ? t("form.creating") : t("form.create")}
           </Button>
           <Button
             type="button"
             variant="outline"
             onClick={() => router.push("/patients")}
           >
-            Cancel
+            {t("form.cancel")}
           </Button>
         </div>
       </form>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -30,21 +32,18 @@ import { trackFunnelEvent } from "@/lib/track-funnel-event";
 import { getFunnelVisitorId, useFunnelVisitorId } from "@/lib/funnel-visitor";
 import styles from "./demo-login.module.css";
 
+// Role, description, alt and tab text live in the catalog under demo.
 const roleDetails = {
   admin: {
-    description: "See the whole practice, from the team to the numbers.",
     icon: ShieldCheck,
   },
   veterinarian: {
-    description: "Get to know a patient and explore their care.",
     icon: Stethoscope,
   },
   technician: {
-    description: "Follow the treatment floor and keep visits moving.",
     icon: HeartPulse,
   },
   front_desk: {
-    description: "Welcome patients and keep the day on track.",
     icon: Phone,
   },
 };
@@ -56,22 +55,20 @@ const demoRoles = DEMO_ROLE_OPTIONS.map(({ value, label }) => ({
 const shots = {
   whiteboard: {
     src: "/demo/whiteboard.jpg",
-    alt: "OpenVPM sample clinic: the clinic board",
     width: 1280,
     height: 800,
     fit: styles.productImageFill,
   },
   "visit-clinical-work": {
     src: "/demo/patient-record.jpg",
-    alt: "OpenVPM sample clinic: a patient record",
     width: 1040,
     height: 448,
     fit: styles.productImageTop,
   },
 };
 const previewTabs = [
-  { id: "whiteboard", label: "The clinic board" },
-  { id: "visit-clinical-work", label: "The patient record" },
+  { id: "whiteboard" },
+  { id: "visit-clinical-work" },
 ] as const;
 function ProductImage({
   id,
@@ -80,11 +77,12 @@ function ProductImage({
   id: keyof typeof shots;
   priority?: boolean;
 }) {
+  const demoT = useTranslations("demo");
   const shot = shots[id];
   return (
     <Image
       src={shot.src}
-      alt={shot.alt}
+      alt={demoT(`login.shots.${id}`)}
       width={shot.width}
       height={shot.height}
       sizes="(max-width: 760px) 100vw, 65vw"
@@ -95,6 +93,8 @@ function ProductImage({
 }
 
 export function DemoLogin() {
+  const demoT = useTranslations("demo");
+  const t = useTranslations("demo.login");
   const router = useRouter();
   const searchParams = useSearchParams();
   const visitorId = useFunnelVisitorId();
@@ -145,7 +145,7 @@ export function DemoLogin() {
       setError(
         cause instanceof Error
           ? cause.message
-          : "The demo is temporarily unavailable. Please try again.",
+          : t("theDemoIsTemporarilyUnavailable"),
       );
     } finally {
       submitting.current = false;
@@ -159,7 +159,7 @@ export function DemoLogin() {
       <header className={styles.header}>
         <a
           href="https://openvpm.com"
-          aria-label="OpenVPM home"
+          aria-label={t("openvpmHome")}
           className={styles.brand}
         >
           <span>
@@ -168,13 +168,13 @@ export function DemoLogin() {
           OpenVPM
         </a>
         <a href="https://openvpm.com" className={styles.backLink}>
-          <ArrowLeft size={15} aria-hidden="true" /> Back to website
+          <ArrowLeft size={15} aria-hidden="true" /> {t("backToWebsite")}
         </a>
       </header>
       <div className={styles.split}>
-        <section className={styles.formPanel} aria-label="Demo setup">
+        <section className={styles.formPanel} aria-label={t("demoSetup")}>
           <div className={styles.formInner}>
-            <ol className={styles.progress} aria-label="Your demo setup">
+            <ol className={styles.progress} aria-label={t("yourDemoSetup")}>
               <li aria-current={step === "role" ? "step" : undefined}>
                 <span>
                   {step === "email" ? (
@@ -183,22 +183,21 @@ export function DemoLogin() {
                     "1"
                   )}
                 </span>
-                Choose a role
+                {t("chooseARole")}
               </li>
               <li className={styles.progressLine} aria-hidden="true" />
               <li aria-current={step === "email" ? "step" : undefined}>
-                <span>2</span>Your email
+                <span>2</span>{t("stepYourEmail")}
               </li>
             </ol>
 
             {step === "role" ? (
               <>
                 <h1 ref={heading} tabIndex={-1}>
-                  A day in your shoes.
+                  {t("aDayInYourShoes")}
                 </h1>
                 <p className={styles.intro}>
-                  Walk through OpenVPM with a clinic full of sample data. Who
-                  would you like to be?
+                  {t("walkThroughOpenvpmWithA")}
                 </p>
                 <div className={styles.roles}>
                   {demoRoles.map((item) => {
@@ -217,9 +216,9 @@ export function DemoLogin() {
                           />
                         </span>
                         <span>
-                          <strong>{item.label}</strong>
+                          <strong>{demoT(`roles.${item.id}`)}</strong>
                           <span className={styles.roleDescription}>
-                            {item.description}
+                            {demoT(`login.roleDescriptions.${item.id}`)}
                           </span>
                         </span>
                         <ArrowRight
@@ -233,7 +232,7 @@ export function DemoLogin() {
                 </div>
                 <p className={styles.reassurance}>
                   <Check size={15} aria-hidden="true" />
-                  No setup. No credit card. Just explore.
+                  {t("noSetupNoCreditCard")}
                 </p>
               </>
             ) : (
@@ -247,23 +246,23 @@ export function DemoLogin() {
                   }}
                 >
                   <ArrowLeft size={15} aria-hidden="true" />
-                  Choose a different role
+                  {t("chooseADifferentRole")}
                 </button>
                 <h1 ref={heading} tabIndex={-1}>
-                  One last thing.
+                  {t("oneLastThing")}
                   <br />
-                  Drop your email.
+                  {t("dropYourEmail")}
                 </h1>
                 <p className={styles.intro}>
-                  Your sample clinic is ready. Let’s get you in.
+                  {t("yourSampleClinicIsReady")}
                 </p>
                 <div className={styles.selectedRole}>
                   <span className={styles.roleIcon}>
                     <RoleIcon size={22} aria-hidden="true" />
                   </span>
                   <div>
-                    <small>YOU’RE EXPLORING AS</small>
-                    <strong>{role?.label}</strong>
+                    <small>{t("youReExploringAs")}</small>
+                    <strong>{role ? demoT(`roles.${role.id}`) : null}</strong>
                   </div>
                   <CheckCircle2 size={19} aria-hidden="true" />
                 </div>
@@ -277,7 +276,7 @@ export function DemoLogin() {
                       {error}
                     </p>
                   )}
-                  <label htmlFor="demo-email">Email address</label>
+                  <label htmlFor="demo-email">{t("emailAddress")}</label>
                   <input
                     id="demo-email"
                     type="email"
@@ -300,18 +299,18 @@ export function DemoLogin() {
                     type="submit"
                     disabled={loading}
                   >
-                    {loading ? "Opening demo…" : "Enter the demo"}
+                    {loading ? t("openingDemo") : t("enterTheDemo")}
                     <ArrowRight size={18} aria-hidden="true" />
                   </button>
                 </form>
                 <p className={styles.reassurance}>
                   <LockKeyhole size={14} aria-hidden="true" />
-                  No password or credit card needed.
+                  {t("noPasswordOrCreditCard")}
                 </p>
               </>
             )}
             <p className={styles.startClinic}>
-              Ready for your own workspace?{" "}
+              {t("readyForOwnWorkspace")}{" "}
               <a
                 href={buildCloudSignupUrl({
                   appOrigin: cloudSignupAppOrigin(),
@@ -327,25 +326,25 @@ export function DemoLogin() {
                   })
                 }
               >
-                Start my clinic
+                {t("startMyClinic")}
               </a>
             </p>
           </div>
         </section>
 
-        <aside className={styles.showcase} aria-label="A look inside OpenVPM">
+        <aside className={styles.showcase} aria-label={t("aLookInsideOpenvpm")}>
           <div className={styles.showcaseCopy}>
-            <span className={styles.liveDot} aria-hidden="true" />A LITTLE LOOK
-            INSIDE
+            <span className={styles.liveDot} aria-hidden="true" />
+            {t("aLittleLookInside")}
             <h2>
-              A whole clinic.
+              {t("aWholeClinic")}
               <br />
-              Ready to explore.
+              {t("readyToExplore")}
             </h2>
             <p>
-              Patients to meet. Visits to follow.
+              {t("patientsToMeetVisitsTo")}
               <br />
-              See how the day comes together in OpenVPM.
+              {t("seeHowTheDayComes")}
             </p>
           </div>
           <div className={styles.previewWindow}>
@@ -358,7 +357,7 @@ export function DemoLogin() {
               <div
                 className={styles.previewTabs}
                 role="group"
-                aria-label="Product preview"
+                aria-label={t("productPreview")}
               >
                 {previewTabs.map((tab) => (
                   <button
@@ -366,7 +365,7 @@ export function DemoLogin() {
                     aria-pressed={previewTab === tab.id}
                     onClick={() => setPreviewTab(tab.id)}
                   >
-                    {tab.label}
+                    {demoT(`login.tabs.${tab.id}`)}
                   </button>
                 ))}
               </div>

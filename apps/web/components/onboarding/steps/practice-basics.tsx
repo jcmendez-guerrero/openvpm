@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "use-intl";
+
 import { useEffect, useState } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -45,6 +47,8 @@ export function PracticeBasicsStep({
 }: {
   register: (h: StepHandle) => void;
 }) {
+  const t = useTranslations("onboarding.basics");
+  const regionNames = new Intl.DisplayNames([useLocale()], { type: "region" });
   const {
     data: practice,
     isLoading,
@@ -144,7 +148,7 @@ export function PracticeBasicsStep({
   if (error || clinicalProfileError) {
     return (
       <OnboardingStepError
-        title="Practice details could not load"
+        title={t("practiceDetailsCouldNotLoad")}
         message={(error ?? clinicalProfileError)!.message}
         onRetry={() => {
           void refetch();
@@ -165,11 +169,10 @@ export function PracticeBasicsStep({
   return (
     <div className="space-y-5">
       <p className="text-sm leading-6 text-slate-600">
-        This is your clinic, and your data. Add a few basics so OpenVPM feels
-        right. You can change all of this later in settings.
+        {t("thisIsYourClinicAnd")}
       </p>
 
-      <FormField label="Practice name" htmlFor="ob-practice-name">
+      <FormField label={t("practiceName")} htmlFor="ob-practice-name">
         <Input
           id="ob-practice-name"
           value={name}
@@ -179,18 +182,18 @@ export function PracticeBasicsStep({
           aria-describedby={
             practiceNameInvalid ? "ob-practice-name-error" : undefined
           }
-          placeholder="Neighborhood Veterinary"
+          placeholder={t("neighborhoodVeterinary")}
           autoFocus
         />
         {practiceNameInvalid ? (
           <p id="ob-practice-name-error" className="text-xs text-destructive">
-            Practice name must be at most {PRACTICE_NAME_MAX_LENGTH} characters.
+            {t("practiceNameTooLong", { max: PRACTICE_NAME_MAX_LENGTH })}
           </p>
         ) : null}
       </FormField>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Country" htmlFor="ob-country">
+        <FormField label={t("country")} htmlFor="ob-country">
           <select
             id="ob-country"
             className={selectClass}
@@ -206,16 +209,16 @@ export function PracticeBasicsStep({
             }}
             required
           >
-            <option value="">Choose your clinic country</option>
+            <option value="">{t("chooseYourClinicCountry")}</option>
             {CLINIC_REGION_OPTIONS.map((c) => (
               <option key={c.code} value={c.code}>
-                {c.label}
+                {regionNames.of(c.code) ?? c.label}
               </option>
             ))}
           </select>
         </FormField>
 
-        <FormField label="Time zone" htmlFor="ob-timezone">
+        <FormField label={t("timeZone")} htmlFor="ob-timezone">
           <select
             id="ob-timezone"
             className={selectClass}
@@ -235,18 +238,16 @@ export function PracticeBasicsStep({
         <div className="flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-950">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            The supported design-partner rollout is currently limited to US
-            clinics. This workspace is for sample-data evaluation only until
-            your region is supported.
+            {t("theSupportedDesignPartnerRollout")}
           </p>
         </div>
       ) : null}
 
       <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50/70 p-4">
         <FormField
-          label="Your clinic role"
+          label={t("yourClinicRole")}
           htmlFor="ob-owner-role"
-          description="Administrative access and veterinarian sign-off are separate. A clinic owner can use this same login for both."
+          description={t("administrativeAccessAndVeterinarianSign")}
         >
           <select
             id="ob-owner-role"
@@ -263,19 +264,19 @@ export function PracticeBasicsStep({
               setOwnerRoleMissing(false);
             }}
           >
-            <option value="">Choose your role</option>
-            <option value="veterinarian">I am a veterinarian</option>
-            <option value="non_clinical">I manage or support the clinic</option>
+            <option value="">{t("chooseYourRole")}</option>
+            <option value="veterinarian">{t("iAmAVeterinarian")}</option>
+            <option value="non_clinical">{t("iManageOrSupportThe")}</option>
           </select>
         </FormField>
         {ownerRoleMissing ? (
           <p id="ob-owner-role-error" className="text-xs text-destructive">
-            Choose your clinic role so visits are assigned safely.
+            {t("chooseYourClinicRoleSo")}
           </p>
         ) : null}
         {ownerRole === "veterinarian" ? (
           <FormField
-            label="Veterinary license number (optional)"
+            label={t("veterinaryLicenseNumberOptional")}
             htmlFor="ob-license-number"
           >
             <Input
@@ -283,7 +284,7 @@ export function PracticeBasicsStep({
               value={licenseNumber}
               onChange={(event) => setLicenseNumber(event.target.value)}
               maxLength={STAFF_LICENSE_NUMBER_MAX_LENGTH}
-              placeholder="State license number"
+              placeholder={t("stateLicenseNumber")}
             />
           </FormField>
         ) : null}
@@ -301,6 +302,7 @@ function OnboardingStepError({
   message: string;
   onRetry: () => void;
 }) {
+  const t = useTranslations("onboarding.basics");
   return (
     <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
       <div className="flex items-start gap-3">
@@ -309,7 +311,7 @@ function OnboardingStepError({
           <p className="font-medium text-destructive">{title}</p>
           <p className="mt-1 text-slate-600">{message}</p>
           <Button variant="outline" size="sm" onClick={onRetry} className="mt-3">
-            Retry
+            {t("retry")}
           </Button>
         </div>
       </div>

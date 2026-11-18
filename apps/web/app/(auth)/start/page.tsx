@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { getRequestLanguage } from "@/i18n/request";
+import { getTranslatorFor } from "@/i18n/messages";
 import { redirect } from "next/navigation";
 import { BuildFlow } from "@/components/build/build-flow";
 import {
@@ -11,11 +13,13 @@ import {
 } from "@/lib/billing/plans";
 import { newSubscriptionBillingAccount } from "@/lib/billing/stripe-accounts";
 
-export const metadata: Metadata = {
-  title: "Build your clinic - OpenVPM",
-  description:
-    "See OpenVPM with your clinic's name, colors, and services before you start your free trial.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = getTranslatorFor(await getRequestLanguage());
+  return {
+    title: t("meta.start.title"),
+    description: t("meta.start.description"),
+  };
+}
 
 // Reads hosted billing configuration at request time, like registration.
 export const dynamic = "force-dynamic";

@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useState } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
@@ -11,6 +13,7 @@ import {
 import { isValidEmail } from "@/lib/utils";
 
 export default function ForgotPasswordPage() {
+  const t = useTranslations("auth");
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
 
@@ -25,13 +28,12 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-sm rounded-lg border border-border bg-card p-8">
         <div className="mb-6 text-center">
           <h1 className="font-heading text-2xl font-bold text-foreground">OpenVPM</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Reset your password</p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("forgot.subtitle")}</p>
         </div>
 
         {sent ? (
           <p className="text-center text-sm text-muted-foreground">
-            If an account exists for <strong>{email}</strong>, we&apos;ve sent a reset link.
-            Check your inbox.
+            {t.rich("forgot.sent", { email, strong: (chunks) => <strong>{chunks}</strong> })}
           </p>
         ) : (
           <form
@@ -44,7 +46,7 @@ export default function ForgotPasswordPage() {
           >
             <div>
               <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">
-                Email
+                {t("common.email")}
               </label>
               <input
                 id="email"
@@ -54,7 +56,7 @@ export default function ForgotPasswordPage() {
                 required
                 maxLength={AUTH_EMAIL_MAX_LENGTH}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="you@clinic.com"
+                placeholder={t("common.emailPlaceholder")}
               />
             </div>
             <button
@@ -62,14 +64,14 @@ export default function ForgotPasswordPage() {
               disabled={!canSubmit || request.isPending}
               className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
-              {request.isPending ? "Sending…" : "Send reset link"}
+              {request.isPending ? t("forgot.submitting") : t("forgot.submit")}
             </button>
           </form>
         )}
 
         <p className="mt-4 text-center text-sm text-muted-foreground">
           <Link href="/login" className="text-primary hover:underline">
-            Back to sign in
+            {t("forgot.back")}
           </Link>
         </p>
       </div>

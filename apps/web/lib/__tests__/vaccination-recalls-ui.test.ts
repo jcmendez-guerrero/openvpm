@@ -1,18 +1,9 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
-const pageSource = readFileSync(
-  new URL("../../app/(dashboard)/recalls/page.tsx", import.meta.url),
-  "utf8"
-);
-const routerSource = readFileSync(
-  new URL("../../server/routers/notifications.ts", import.meta.url),
-  "utf8"
-);
-const serviceSource = readFileSync(
-  new URL("../../server/vaccination-recalls.ts", import.meta.url),
-  "utf8"
-);
+const pageSource = readTranslatedSource(new URL("../../app/(dashboard)/recalls/page.tsx", import.meta.url));
+const routerSource = readTranslatedSource(new URL("../../server/routers/notifications.ts", import.meta.url));
+const serviceSource = readTranslatedSource(new URL("../../server/vaccination-recalls.ts", import.meta.url));
 
 describe("vaccination recall operator UI", () => {
   it("shows server-computed eligibility and only selects eligible recipients", () => {
@@ -27,7 +18,7 @@ describe("vaccination recall operator UI", () => {
 
   it("requires an explicit final confirmation for single and batch sends", () => {
     expect(pageSource).toContain("window.confirm(");
-    expect(pageSource).toContain("Send selected ({selectedEligibleIds.length})");
+    expect(pageSource).toContain("Send selected ({count})");
     expect(pageSource).toContain("sendPatients([recipient.patientId])");
     expect(pageSource).toContain("same exact");
     expect(pageSource).toContain("recall snapshot");

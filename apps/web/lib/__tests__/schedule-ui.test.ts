@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
   APPOINTMENT_DURATION_MAX_MINUTES,
@@ -20,7 +20,7 @@ import {
 
 describe("schedule appointment form UX", () => {
   it("offers a direct handoff from a saved appointment into the visit workflow", () => {
-    const source = readFileSync("app/(dashboard)/schedule/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/schedule/page.tsx");
 
     expect(source).toContain("onSuccess: (appointment) => {");
     expect(source).toContain('toast.success("Appointment created", {');
@@ -31,7 +31,7 @@ describe("schedule appointment form UX", () => {
   });
 
   it("opens a bounded booking handoff for the first clinic day", () => {
-    const source = readFileSync("app/(dashboard)/schedule/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/schedule/page.tsx");
 
     expect(source).toContain('searchParams.get("setup") === "first-visit"');
     expect(source).toContain("<Suspense");
@@ -48,7 +48,7 @@ describe("schedule appointment form UX", () => {
   });
 
   it("bounds New Appointment inputs before creating appointments", () => {
-    const source = readFileSync("app/(dashboard)/schedule/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/schedule/page.tsx");
 
     expect(APPOINTMENT_PATIENT_SEARCH_MAX_LENGTH).toBe(128);
     expect(APPOINTMENT_NOTES_MAX_LENGTH).toBe(2000);
@@ -92,7 +92,7 @@ describe("schedule appointment form UX", () => {
   });
 
   it("builds booking instants from the practice timezone instead of the browser timezone", () => {
-    const source = readFileSync("app/(dashboard)/schedule/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/schedule/page.tsx");
 
     expect(source).toContain('import { dateInputTimeUtcInstant } from "@/lib/date-input"');
     expect(source).toContain("function appointmentInstantFromDateAndTime(");
@@ -114,12 +114,12 @@ describe("schedule appointment form UX", () => {
   });
 
   it("renders schedule appointments and now-line in the practice timezone", () => {
-    const source = readFileSync("app/(dashboard)/schedule/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/schedule/page.tsx");
 
-    expect(source).toContain("function formatTime(date: Date, timeZone?: string | null)");
+    expect(source).toContain('function formatTime(date: Date, timeZone?: string | null, locale = "en-US")');
     expect(source).toContain("function getZonedHourMinute(");
     expect(source).toContain("getAppointmentLayout(start, end, timeZone)");
-    expect(source).toContain("formatTime(start, timeZone)");
+    expect(source).toContain("formatTime(start, timeZone, locale)");
     expect(source).toContain("groupByCalendarDate(");
     expect(source).toContain("calendarTimeZone");
     expect(source).toContain("const todayKey = toISODate(now, calendarTimeZone)");
@@ -129,7 +129,7 @@ describe("schedule appointment form UX", () => {
   });
 
   it("gates timezone-sensitive schedule rendering on calendar settings", () => {
-    const source = readFileSync("app/(dashboard)/schedule/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/schedule/page.tsx");
 
     expect(source).toContain("const scheduleError =");
     expect(source).toContain(
@@ -187,7 +187,7 @@ describe("schedule appointment form UX", () => {
   });
 
   it("creates recurring appointments from the booking modal with bounded inputs", () => {
-    const source = readFileSync("app/(dashboard)/schedule/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/schedule/page.tsx");
 
     expect(source).toContain("const [isRecurring, setIsRecurring] = useState(false)");
     expect(source).toContain("trpc.appointments.createRecurring.useMutation");
@@ -201,11 +201,11 @@ describe("schedule appointment form UX", () => {
     expect(source).toContain("APPOINTMENT_RECURRENCE_OCCURRENCES_MAX");
     expect(source).toContain("hasRecurringPatient");
     expect(source).toContain("Select a patient for recurring appointments.");
-    expect(source).toContain("Created ${result.created} recurring appointments");
+    expect(source).toContain("Created {created, plural, one {# recurring appointment} other {# recurring appointments}}");
   });
 
   it("surfaces patient search loading, error, and empty states in the modal", () => {
-    const source = readFileSync("app/(dashboard)/schedule/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/schedule/page.tsx");
 
     expect(source).toContain("isLoading: isSearchingPatients");
     expect(source).toContain("error: patientSearchError");
@@ -221,7 +221,7 @@ describe("schedule appointment form UX", () => {
   });
 
   it("keeps schedule write actions aligned to appointment role gates", () => {
-    const source = readFileSync("app/(dashboard)/schedule/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/schedule/page.tsx");
 
     expect(source).toContain('import { useSession } from "next-auth/react"');
     expect(source).toContain("function canCreateAppointmentsRole");
@@ -257,7 +257,7 @@ describe("schedule appointment form UX", () => {
   });
 
   it("surfaces optional booking reference-data lookup failures", () => {
-    const source = readFileSync("app/(dashboard)/schedule/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/schedule/page.tsx");
 
     expect(source).toContain(
       "const appointmentTypesQuery = trpc.appointments.listTypes.useQuery()"
@@ -294,7 +294,7 @@ describe("schedule appointment form UX", () => {
   });
 
   it("surfaces recurring appointment lifecycle actions in the detail popover", () => {
-    const source = readFileSync("app/(dashboard)/schedule/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/schedule/page.tsx");
 
     expect(source).toContain("recurringSeriesId: string | null");
     expect(source).toContain("Recurring series");
@@ -307,7 +307,7 @@ describe("schedule appointment form UX", () => {
   });
 
   it("reschedules appointments from the detail popover with bounded practice-time inputs", () => {
-    const source = readFileSync("app/(dashboard)/schedule/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/schedule/page.tsx");
 
     expect(source).toContain("function formatTimeInput(");
     expect(source).toContain("function appointmentDurationMinutes(");

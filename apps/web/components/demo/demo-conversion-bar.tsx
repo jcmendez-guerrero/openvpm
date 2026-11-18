@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import {
   buildCloudSignupUrl,
   cloudSignupAppOrigin,
@@ -18,6 +20,7 @@ import { DemoRoleSwitcher } from "@/components/demo/demo-role-switcher";
  * workflow they just tried, not a full PIMS rip-replace.
  */
 export function DemoConversionBar() {
+  const t = useTranslations("demo.conversionBar");
   const pathname = usePathname();
   const visitorId = useFunnelVisitorId();
   if (!isDemoMode()) return null;
@@ -35,14 +38,14 @@ export function DemoConversionBar() {
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-primary/20 bg-primary/5 px-3 py-2 sm:px-6">
       <p className="text-sm text-foreground">
-        <span className="font-medium">Shared demo.</span>{" "}
+        <span className="font-medium">{t("sharedDemo")}</span>{" "}
         <span className="text-muted-foreground">
-          Use sample information only.
+          {t("useSampleInformationOnly")}
         </span>
       </p>
       <div className="flex flex-wrap items-center gap-3">
         <Link href="/demo-start" className="inline-flex min-h-11 items-center text-sm text-primary hover:underline">
-          Choose a workflow
+          {t("chooseAWorkflow")}
         </Link>
         <DemoRoleSwitcher />
         <a
@@ -55,7 +58,7 @@ export function DemoConversionBar() {
           }
           className="inline-flex h-8 shrink-0 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
-          Start my clinic
+          {t("startMyClinic")}
         </a>
       </div>
     </div>

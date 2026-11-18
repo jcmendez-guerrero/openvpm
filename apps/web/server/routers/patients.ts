@@ -739,6 +739,7 @@ const patientDetailSelection = {
   clientLastName: clients.lastName,
   clientEmail: clients.email,
   clientPhone: clients.phone,
+  clientPreferredLanguage: clients.preferredLanguage,
 };
 
 async function selectActivePatientDetail(
@@ -943,6 +944,7 @@ export const patientsRouter = createRouter({
           breed: patients.breed,
           clientFirstName: clients.firstName,
           clientLastName: clients.lastName,
+          clientPreferredLanguage: clients.preferredLanguage,
         })
         .from(patients)
         .leftJoin(

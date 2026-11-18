@@ -76,7 +76,8 @@ export function parsePortalDate(value: string | Date | null | undefined): Date |
 export function formatPortalDate(
   value: string | Date | null | undefined,
   country?: string | null,
-  timeZone?: string | null
+  timeZone?: string | null,
+  language: string = "en"
 ): string {
   const date = parsePortalDate(value);
   if (!date) return "N/A";
@@ -92,7 +93,7 @@ export function formatPortalDate(
     !(typeof value === "string" && DATE_ONLY_RE.test(value.trim()))
   ) {
     try {
-      return date.toLocaleDateString(localeForCountry(country), {
+      return date.toLocaleDateString(localeForCountry(country, language), {
         ...options,
         timeZone,
       });
@@ -101,13 +102,14 @@ export function formatPortalDate(
     }
   }
 
-  return date.toLocaleDateString(localeForCountry(country), options);
+  return date.toLocaleDateString(localeForCountry(country, language), options);
 }
 
 export function formatPortalDateTime(
   value: string | Date | null | undefined,
   country?: string | null,
-  timeZone?: string | null
+  timeZone?: string | null,
+  language: string = "en"
 ): string {
   if (!value) return "N/A";
 
@@ -124,12 +126,12 @@ export function formatPortalDateTime(
   };
 
   try {
-    return date.toLocaleString(localeForCountry(country), {
+    return date.toLocaleString(localeForCountry(country, language), {
       ...options,
       timeZone: timeZone ?? undefined,
     });
   } catch {
-    return date.toLocaleString(localeForCountry(country), options);
+    return date.toLocaleString(localeForCountry(country, language), options);
   }
 }
 
@@ -150,12 +152,13 @@ export function portalCalendarDayDifference(
   return dateInputDayNumber(dateInput) - dateInputDayNumber(todayInput);
 }
 
-export function calculatePortalAge(
+/** Age as a count of whole months (under a year) or years, for translated labels. */
+export function portalAge(
   dob: string | Date | null | undefined,
   now = new Date()
-): string {
+): { unit: "months" | "years"; count: number } | null {
   const birth = parsePortalDate(dob);
-  if (!birth) return "Unknown age";
+  if (!birth) return null;
 
   let totalMonths =
     (now.getFullYear() - birth.getFullYear()) * 12 +
@@ -165,9 +168,17 @@ export function calculatePortalAge(
   }
   totalMonths = Math.max(0, totalMonths);
 
-  if (totalMonths < 12) {
-    return `${totalMonths} month${totalMonths !== 1 ? "s" : ""} old`;
-  }
-  const years = Math.floor(totalMonths / 12);
-  return `${years} year${years !== 1 ? "s" : ""} old`;
+  return totalMonths < 12
+    ? { unit: "months", count: totalMonths }
+    : { unit: "years", count: Math.floor(totalMonths / 12) };
+}
+
+export function calculatePortalAge(
+  dob: string | Date | null | undefined,
+  now = new Date()
+): string {
+  const age = portalAge(dob, now);
+  if (!age) return "Unknown age";
+  const unit = age.unit === "months" ? "month" : "year";
+  return `${age.count} ${unit}${age.count !== 1 ? "s" : ""} old`;
 }

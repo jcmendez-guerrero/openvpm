@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { useLocale, useTranslations } from "use-intl";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { useUnsavedChangesGuard } from "@/lib/use-unsaved-changes-guard";
@@ -11,7 +12,6 @@ import { useOfflineNoteDraft } from "@/lib/records/use-offline-note-draft";
 import type { NoteDraftScope } from "@/lib/records/offline-note-draft";
 import { OfflineNoteDraftControls } from "./offline-note-draft-controls";
 import {
-  PATIENT_NOTE_LABELS,
   PATIENT_NOTE_MAX_LENGTH,
   PATIENT_NOTE_TYPES,
 } from "@/lib/records/patient-note-policy";
@@ -27,6 +27,8 @@ export function PatientNotes({
   canWrite: boolean;
   draftScope?: NoteDraftScope | null;
 }) {
+  const t = useTranslations("patients.notes");
+  const locale = useLocale();
   const recovery = useOfflineNoteDraft(canWrite ? draftScope : null);
   const { content, noteType, operationId } = recovery.draft;
   const isOnline = useOnlineStatus();
@@ -45,7 +47,7 @@ export function PatientNotes({
   });
   useUnsavedChangesGuard(
     Boolean(content) || saving,
-    "This note has not been saved to the chart. Leave this page?",
+    t("leaveWarning"),
   );
   const tooLong = content.trim().length > PATIENT_NOTE_MAX_LENGTH;
   const editorLocked =
@@ -76,7 +78,7 @@ export function PatientNotes({
         ...pending,
       });
       await recovery.acknowledgeSave();
-      toast.success("Chart note saved");
+      toast.success(t("saved"));
       await Promise.all([
         notes.refetch(),
         utils.records.searchPatientHistory.invalidate({ patientId }),
@@ -97,10 +99,10 @@ export function PatientNotes({
     >
       <div>
         <h3 id="patient-notes-heading" className="font-heading font-semibold">
-          Chart notes
+          {t("title")}
         </h3>
         <p className="text-sm text-muted-foreground">
-          General updates, phone calls and follow-ups. No appointment needed.
+          {t("intro")}
         </p>
       </div>
       {canWrite ? (
@@ -117,12 +119,11 @@ export function PatientNotes({
           />
           {!isOnline ? (
             <p role="status" className="text-sm text-muted-foreground">
-              You are offline. Keep writing here, then save to the chart when
-              your connection returns.
+              {t("offline")}
             </p>
           ) : null}
           <label className="block text-sm font-medium">
-            Note type
+            {t("noteType")}
             <select
               value={noteType}
               onChange={(event) =>
@@ -135,7 +136,7 @@ export function PatientNotes({
             >
               {PATIENT_NOTE_TYPES.map((type) => (
                 <option key={type} value={type}>
-                  {PATIENT_NOTE_LABELS[type]}
+                  {t(`types.${type}`)}
                 </option>
               ))}
             </select>
@@ -144,7 +145,7 @@ export function PatientNotes({
             className="block text-sm font-medium"
             htmlFor="patient-note-content"
           >
-            Chart note
+            {t("note")}
           </label>
           <textarea
             id="patient-note-content"
@@ -154,31 +155,26 @@ export function PatientNotes({
             }
             readOnly={editorLocked}
             rows={6}
-            placeholder="Type or paste the note here..."
+            placeholder={t("placeholder")}
             className="block w-full rounded-md border border-input bg-background p-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-describedby="patient-note-help"
           />
           <p id="patient-note-help" className="text-xs text-muted-foreground">
-            Saved with your name and the current date. Saved notes stay in the
-            chart; use a new note for a correction. Visit SOAP notes remain in
-            Medical Records.
+            {t("help")}
           </p>
           {tooLong ? (
             <p role="alert" className="text-sm text-destructive">
-              The note exceeds {PATIENT_NOTE_MAX_LENGTH.toLocaleString()}{" "}
-              characters. Shorten it before saving; your text has been kept.
+              {t("tooLong", { max: PATIENT_NOTE_MAX_LENGTH.toLocaleString(locale) })}
             </p>
           ) : null}
           {create.error ? (
             <p role="alert" className="text-sm text-destructive">
-              {create.error.message} Your note has been kept. You can retry
-              saving.
+              {t("saveFailed", { message: create.error.message })}
             </p>
           ) : null}
           {operationId && !saving ? (
             <p role="status" className="text-sm text-muted-foreground">
-              Save not yet confirmed. Retry this same note before making
-              changes; a previous attempt may already have reached the chart.
+              {t("unconfirmed")}
             </p>
           ) : null}
           <Button
@@ -194,26 +190,26 @@ export function PatientNotes({
             }
           >
             {saving
-              ? "Saving note..."
+              ? t("saving")
               : operationId
-                ? "Retry chart note save"
-                : "Save chart note"}
+                ? t("retry")
+                : t("save")}
           </Button>
         </form>
       ) : null}
       {notes.isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading chart notes...</p>
+        <p className="text-sm text-muted-foreground">{t("loading")}</p>
       ) : notes.error ? (
         <div role="alert">
           <p className="text-sm text-destructive">
-            Unable to load chart notes. {notes.error.message}
+            {t("loadFailed", { message: notes.error.message })}
           </p>
           <Button variant="outline" onClick={() => void notes.refetch()}>
-            Retry loading notes
+            {t("retryLoad")}
           </Button>
         </div>
       ) : !notes.data?.pages[0]?.items.length ? (
-        <p className="text-sm text-muted-foreground">No chart notes yet.</p>
+        <p className="text-sm text-muted-foreground">{t("empty")}</p>
       ) : (
         notes.data.pages
           .flatMap((page) => page.items)
@@ -223,10 +219,10 @@ export function PatientNotes({
               className="space-y-2 border-t border-border pt-4"
             >
               <div className="flex flex-wrap justify-between gap-2 text-sm">
-                <strong>{PATIENT_NOTE_LABELS[note.noteType]}</strong>
+                <strong>{t(`types.${note.noteType}`)}</strong>
                 <span className="text-muted-foreground">
-                  {note.authorName ?? "Unknown author"} ·{" "}
-                  {formatClinicalDateTime(note.createdAt, timeZone)}
+                  {note.authorName ?? t("unknownAuthor")} ·{" "}
+                  {formatClinicalDateTime(note.createdAt, timeZone, undefined, locale)}
                 </span>
               </div>
               <p className="whitespace-pre-wrap break-words text-sm">
@@ -241,7 +237,7 @@ export function PatientNotes({
           disabled={notes.isFetchingNextPage}
           onClick={() => void notes.fetchNextPage()}
         >
-          {notes.isFetchingNextPage ? "Loading..." : "Load older notes"}
+          {notes.isFetchingNextPage ? t("loadingMore") : t("loadOlder")}
         </Button>
       ) : null}
     </section>

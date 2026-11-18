@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -114,6 +116,7 @@ export function Coachmark({
   onBack,
   onSkip,
 }: CoachmarkProps) {
+  const t = useTranslations("tour.coachmark");
   const isCentered = !rect;
   const isLast = index === total - 1;
 
@@ -160,7 +163,7 @@ export function Coachmark({
         <button
           type="button"
           onClick={onSkip}
-          aria-label="Skip tour"
+          aria-label={t("skipTour")}
           className="absolute right-3 top-3 text-muted-foreground transition-colors hover:text-foreground"
         >
           <X className="h-4 w-4" />
@@ -186,7 +189,7 @@ export function Coachmark({
           <div className="flex items-center gap-2">
             {index > 0 ? (
               <Button variant="ghost" size="sm" onClick={onBack}>
-                Back
+                {t("back")}
               </Button>
             ) : null}
             {/* On do-it steps (advanceOn) the page owns the primary action,
@@ -196,7 +199,7 @@ export function Coachmark({
               variant={!isLast && step.advanceOn ? "ghost" : "default"}
               onClick={onNext}
             >
-              {isLast ? "Finish" : step.advanceOn ? "Skip this step" : "Next"}
+              {isLast ? t("finish") : step.advanceOn ? t("skipThisStep") : t("next")}
             </Button>
           </div>
         </div>
@@ -207,7 +210,7 @@ export function Coachmark({
             onClick={onSkip}
             className="mt-2 text-xs text-muted-foreground hover:underline"
           >
-            Skip tour
+            {t("skipTour")}
           </button>
         ) : null}
       </div>

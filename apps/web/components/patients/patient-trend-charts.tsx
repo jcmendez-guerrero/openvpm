@@ -1,6 +1,7 @@
 "use client";
 
 import { Activity } from "lucide-react";
+import { useTranslations } from "use-intl";
 import {
   CartesianGrid,
   Line,
@@ -53,12 +54,13 @@ function ChartTooltip({
 }
 
 export function WeightTrendChart({ data }: { data: WeightTrendPoint[] }) {
+  const t = useTranslations("patients.trends");
   if (data.length < 2) {
     return (
       <div className="rounded-lg border border-dashed border-border bg-card p-6 text-center">
         <Activity className="mx-auto h-8 w-8 text-muted-foreground/50" />
         <p className="mt-2 text-sm text-muted-foreground">
-          Not enough weight history for a trend yet.
+          {t("weightEmpty")}
         </p>
       </div>
     );
@@ -68,9 +70,9 @@ export function WeightTrendChart({ data }: { data: WeightTrendPoint[] }) {
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h3 className="font-heading text-base font-semibold">Weight Trend</h3>
+          <h3 className="font-heading text-base font-semibold">{t("weightTitle")}</h3>
           <p className="text-sm text-muted-foreground">
-            {data[0]!.weightKg} kg to {data[data.length - 1]!.weightKg} kg
+            {t("weightRange", { from: data[0]!.weightKg, to: data[data.length - 1]!.weightKg })}
           </p>
         </div>
       </div>
@@ -95,7 +97,7 @@ export function WeightTrendChart({ data }: { data: WeightTrendPoint[] }) {
             <Line
               type="monotone"
               dataKey="weightKg"
-              name="Weight kg"
+              name={t("weightSeries")}
               stroke="hsl(var(--primary))"
               strokeWidth={2}
               dot={{ r: 3 }}
@@ -110,6 +112,7 @@ export function WeightTrendChart({ data }: { data: WeightTrendPoint[] }) {
 }
 
 export function VitalsTrendChart({ data }: { data: VitalTrendPoint[] }) {
+  const t = useTranslations("patients.trends");
   const hasTemp = hasTrendValues(data, ["temperatureC"]);
   const hasRates = hasTrendValues(data, ["heartRateBpm", "respiratoryRateBpm"]);
   const hasScores = hasTrendValues(data, ["bodyConditionScore", "painScore"]);
@@ -119,7 +122,7 @@ export function VitalsTrendChart({ data }: { data: VitalTrendPoint[] }) {
       <div className="rounded-lg border border-dashed border-border bg-card p-6 text-center">
         <Activity className="mx-auto h-8 w-8 text-muted-foreground/50" />
         <p className="mt-2 text-sm text-muted-foreground">
-          Not enough vitals history for trends yet.
+          {t("vitalsEmpty")}
         </p>
       </div>
     );
@@ -129,7 +132,7 @@ export function VitalsTrendChart({ data }: { data: VitalTrendPoint[] }) {
     <div className="grid gap-4 lg:grid-cols-2">
       {hasTemp && (
         <div className="rounded-lg border border-border bg-card p-4">
-          <h3 className="font-heading text-base font-semibold">Temperature</h3>
+          <h3 className="font-heading text-base font-semibold">{t("temperature")}</h3>
           <div className="mt-3 h-56">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
@@ -137,7 +140,7 @@ export function VitalsTrendChart({ data }: { data: VitalTrendPoint[] }) {
                 <XAxis dataKey="dateLabel" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickLine={false} axisLine={{ stroke: "hsl(var(--border))" }} />
                 <YAxis width={44} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickLine={false} axisLine={{ stroke: "hsl(var(--border))" }} domain={["dataMin - 0.5", "dataMax + 0.5"]} />
                 <Tooltip content={<ChartTooltip />} />
-                <Line type="monotone" dataKey="temperatureC" name="Temp C" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                <Line type="monotone" dataKey="temperatureC" name={t("tempSeries")} stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -146,7 +149,7 @@ export function VitalsTrendChart({ data }: { data: VitalTrendPoint[] }) {
 
       {hasRates && (
         <div className="rounded-lg border border-border bg-card p-4">
-          <h3 className="font-heading text-base font-semibold">Heart / Respiratory Rate</h3>
+          <h3 className="font-heading text-base font-semibold">{t("rates")}</h3>
           <div className="mt-3 h-56">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
@@ -154,8 +157,8 @@ export function VitalsTrendChart({ data }: { data: VitalTrendPoint[] }) {
                 <XAxis dataKey="dateLabel" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickLine={false} axisLine={{ stroke: "hsl(var(--border))" }} />
                 <YAxis width={44} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickLine={false} axisLine={{ stroke: "hsl(var(--border))" }} />
                 <Tooltip content={<ChartTooltip />} />
-                <Line type="monotone" dataKey="heartRateBpm" name="HR bpm" stroke="#dc2626" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                <Line type="monotone" dataKey="respiratoryRateBpm" name="RR bpm" stroke="#2563eb" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                <Line type="monotone" dataKey="heartRateBpm" name={t("hrSeries")} stroke="#dc2626" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                <Line type="monotone" dataKey="respiratoryRateBpm" name={t("rrSeries")} stroke="#2563eb" strokeWidth={2} dot={{ r: 3 }} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -164,7 +167,7 @@ export function VitalsTrendChart({ data }: { data: VitalTrendPoint[] }) {
 
       {hasScores && (
         <div className="rounded-lg border border-border bg-card p-4 lg:col-span-2">
-          <h3 className="font-heading text-base font-semibold">Body / Pain Scores</h3>
+          <h3 className="font-heading text-base font-semibold">{t("scores")}</h3>
           <div className="mt-3 h-56">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
@@ -172,8 +175,8 @@ export function VitalsTrendChart({ data }: { data: VitalTrendPoint[] }) {
                 <XAxis dataKey="dateLabel" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickLine={false} axisLine={{ stroke: "hsl(var(--border))" }} />
                 <YAxis width={44} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickLine={false} axisLine={{ stroke: "hsl(var(--border))" }} domain={[0, 10]} />
                 <Tooltip content={<ChartTooltip />} />
-                <Line type="monotone" dataKey="bodyConditionScore" name="BCS" stroke="#0d9488" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                <Line type="monotone" dataKey="painScore" name="Pain" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                <Line type="monotone" dataKey="bodyConditionScore" name={t("bcsSeries")} stroke="#0d9488" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                <Line type="monotone" dataKey="painScore" name={t("painSeries")} stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -188,6 +191,7 @@ function formatLabValue(value: number, unit: string | null): string {
 }
 
 export function LabTrendCharts({ groups }: { groups: LabTrendGroup[] }) {
+  const t = useTranslations("patients.trends");
   if (groups.length === 0) return null;
 
   return (
@@ -196,17 +200,19 @@ export function LabTrendCharts({ groups }: { groups: LabTrendGroup[] }) {
         const latest = group.points[group.points.length - 1]!;
         const changeLabel =
           group.change === 0
-            ? "No change"
-            : `${group.change > 0 ? "+" : ""}${formatLabValue(
-                group.change,
-                group.unit
-              )} from prior`;
+            ? t("noChange")
+            : t("fromPrior", {
+                change: `${group.change > 0 ? "+" : ""}${formatLabValue(
+                  group.change,
+                  group.unit
+                )}`,
+              });
         const rangeLabel =
           latest.referenceRangeLow !== null && latest.referenceRangeHigh !== null
             ? `${latest.referenceRangeLow} - ${latest.referenceRangeHigh}${
                 group.unit ? ` ${group.unit}` : ""
               }`
-            : "No reference range";
+            : t("noRange");
 
         return (
           <div key={group.key} className="rounded-lg border border-border bg-card p-4">
@@ -248,7 +254,7 @@ export function LabTrendCharts({ groups }: { groups: LabTrendGroup[] }) {
                   <Line
                     type="monotone"
                     dataKey="value"
-                    name={group.unit ? `Result ${group.unit}` : "Result"}
+                    name={group.unit ? t("resultSeriesUnit", { unit: group.unit }) : t("resultSeries")}
                     stroke="hsl(var(--primary))"
                     strokeWidth={2}
                     dot={{ r: 3 }}

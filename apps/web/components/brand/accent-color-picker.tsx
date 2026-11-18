@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useEffect, useRef, useState } from "react";
 import { Check, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -32,6 +34,7 @@ export function AccentColorPicker({
   onChange: (hex: string) => void;
   disabled?: boolean;
 }) {
+  const t = useTranslations("brand.accentPicker");
   const current = (value ?? "").toLowerCase();
   const customActive = !!current && !PRESETS.includes(current);
   const [open, setOpen] = useState(false);
@@ -67,7 +70,7 @@ export function AccentColorPicker({
           <button
             key={c}
             type="button"
-            aria-label={`Use accent color ${c}`}
+            aria-label={t("useColor", { color: c })}
             disabled={disabled}
             onClick={() => onChange(c)}
             className={cn(
@@ -86,7 +89,7 @@ export function AccentColorPicker({
       <div className="relative" ref={ref}>
         <button
           type="button"
-          aria-label="Custom accent color"
+          aria-label={t("customAccentColor")}
           disabled={disabled}
           onClick={() => setOpen((o) => !o)}
           className={cn(
@@ -107,7 +110,7 @@ export function AccentColorPicker({
         {open ? (
           <div className="absolute left-0 top-11 z-30 w-56 rounded-lg border border-border bg-popover p-3 shadow-lg">
             <p className="mb-2 text-xs font-medium text-foreground">
-              Your brand color
+              {t("yourBrandColor")}
             </p>
             <div className="flex items-center gap-2">
               <input
@@ -117,7 +120,7 @@ export function AccentColorPicker({
                   setDraft(e.target.value);
                   commit(e.target.value);
                 }}
-                aria-label="Pick color"
+                aria-label={t("pickColor")}
                 className="h-9 w-10 shrink-0 cursor-pointer rounded-md border border-input bg-transparent p-0.5"
               />
               <input
@@ -134,7 +137,7 @@ export function AccentColorPicker({
                 placeholder={FALLBACK}
                 maxLength={7}
                 spellCheck={false}
-                aria-label="Hex color"
+                aria-label={t("hexColor")}
                 className="h-9 w-full min-w-0 rounded-md border border-input bg-background px-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
@@ -147,7 +150,7 @@ export function AccentColorPicker({
               disabled={!normalizeHex(draft) || disabled}
               className="mt-2.5 h-8 w-full rounded-md bg-primary text-xs font-medium text-primary-foreground disabled:opacity-50"
             >
-              Use this color
+              {t("useThisColor")}
             </button>
           </div>
         ) : null}

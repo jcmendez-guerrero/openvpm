@@ -1,3 +1,4 @@
+import { messageLanguage } from "@/i18n/message-language";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { and, asc, desc, eq, gt, inArray, isNull, lte, sql } from "drizzle-orm";
@@ -314,6 +315,8 @@ export const careRemindersRouter = createRouter({
             clientEmail: clients.email,
             clientPhone: clients.phone,
             clientSmsConsent: clients.smsConsent,
+            clientLanguage: clients.preferredLanguage,
+            clinicDefaultLanguage: practices.defaultLanguage,
             emailSuppressionReason: emailSuppressions.reason,
             practiceName: practices.name,
             practicePhone: practices.phone,
@@ -378,6 +381,17 @@ export const careRemindersRouter = createRouter({
           reminder.dueDate,
           reminder.practiceTimezone,
           reminder.dueDate,
+        );
+        // The timeline entry stays English; the client gets their language.
+        const language = messageLanguage("message", {
+          clientLanguage: reminder.clientLanguage,
+          clinicDefault: reminder.clinicDefaultLanguage,
+        });
+        const clientDueDate = formatClinicalDate(
+          reminder.dueDate,
+          reminder.practiceTimezone,
+          reminder.dueDate,
+          language === "es" ? "es" : "en-US",
         );
         const subject = `Care Reminder for ${reminder.patientName}`;
         const content = `Hello ${clientName},\n\nThis is a reminder from our veterinary team about ${reminder.patientName}: ${reminder.title}. The reminder date is ${dueDate}. Please contact us if you have questions or would like to schedule.`;
@@ -453,6 +467,7 @@ export const careRemindersRouter = createRouter({
               content,
               status: "pending",
               dedupeKey,
+              language,
             })
             .onConflictDoNothing({ target: communications.dedupeKey })
             .returning();
@@ -523,7 +538,8 @@ export const careRemindersRouter = createRouter({
                 clientName,
                 patientName: reminder.patientName,
                 reminderTitle: reminder.title,
-                dueDate,
+                dueDate: clientDueDate,
+                language,
                 practiceName: reminder.practiceName,
                 practicePhone: reminder.practicePhone ?? undefined,
                 practiceAddress: reminder.practiceAddress ?? undefined,
@@ -533,7 +549,8 @@ export const careRemindersRouter = createRouter({
                 to: reminder.clientPhone!,
                 patientName: reminder.patientName,
                 reminderTitle: reminder.title,
-                dueDate,
+                dueDate: clientDueDate,
+                language,
                 practiceName: reminder.practiceName,
                 practicePhone: reminder.practicePhone ?? undefined,
                 practiceId: ctx.practiceId,

@@ -4,6 +4,9 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { AlertCircle, ArrowLeft, Loader2 } from "lucide-react";
+import { useTranslations } from "use-intl";
+import { ClientLanguageSelect } from "@/components/clients/client-language-select";
+import type { Language } from "@/i18n/config";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,10 +38,11 @@ function canManageClientFormRole(role?: string | null): boolean {
 }
 
 function NewClientPageFallback() {
+  const t = useTranslations("clients.form");
   return (
     <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card p-8 text-sm text-muted-foreground">
       <Loader2 className="h-4 w-4 animate-spin" />
-      Checking client access...
+      {t("checkingAccess")}
     </div>
   );
 }
@@ -53,6 +57,7 @@ export default function NewClientPage() {
 
 function NewClientPageContent() {
   const router = useRouter();
+  const t = useTranslations("clients.form");
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const firstClinicDay = searchParams.get("setup") === "first-visit";
@@ -71,14 +76,14 @@ function NewClientPageContent() {
           className="mb-4"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Clients
+          {t("back")}
         </Button>
         <EmptyState
           icon={AlertCircle}
-          title="Client actions are read-only"
-          description="Only staff roles with client write access can create clients."
+          title={t("readOnlyTitle")}
+          description={t("readOnlyCreate")}
           action={{
-            label: "Back to Clients",
+            label: t("back"),
             onClick: () => router.push("/clients"),
           }}
         />
@@ -91,6 +96,7 @@ function NewClientPageContent() {
 
 function NewClientForm({ firstClinicDay }: { firstClinicDay: boolean }) {
   const router = useRouter();
+  const t = useTranslations("clients");
   const utils = trpc.useUtils();
   const [form, setForm] = useState({
     firstName: "",
@@ -103,6 +109,7 @@ function NewClientForm({ firstClinicDay }: { firstClinicDay: boolean }) {
     zip: "",
   });
   const [smsConsent, setSmsConsent] = useState(false);
+  const [preferredLanguage, setPreferredLanguage] = useState<Language | null>(null);
   const [preferredContactMethod, setPreferredContactMethod] =
     useState<ClientContactMethod>("phone");
   const [error, setError] = useState<string | null>(null);
@@ -110,7 +117,7 @@ function NewClientForm({ firstClinicDay }: { firstClinicDay: boolean }) {
   const createClient = trpc.clients.create.useMutation({
     onSuccess: async (client) => {
       await utils.clients.list.invalidate();
-      toast.success("Client created");
+      toast.success(t("form.created"));
       if (firstClinicDay) {
         const ownerName = `${client.firstName} ${client.lastName}`;
         router.push(
@@ -145,18 +152,18 @@ function NewClientForm({ firstClinicDay }: { firstClinicDay: boolean }) {
 
     if (smsConsent && !smsPhoneValid) {
       setError(
-        "Enter a valid mobile phone number before recording SMS consent.",
+        t("form.smsPhoneInvalid"),
       );
       return;
     }
     if (preferredContactMethod === "sms" && !smsConsent) {
       setError(
-        "Confirm the client's SMS consent before using text messages for reminders.",
+        t("form.smsConsentNeeded"),
       );
       return;
     }
     if (!canSubmit) {
-      setError("Check required fields and field lengths.");
+      setError(t("form.checkFields"));
       return;
     }
 
@@ -170,6 +177,7 @@ function NewClientForm({ firstClinicDay }: { firstClinicDay: boolean }) {
       state: form.state.trim() || undefined,
       zip: form.zip.trim() || undefined,
       preferredContactMethod,
+      preferredLanguage,
       smsConsent,
     });
   };
@@ -193,14 +201,14 @@ function NewClientForm({ firstClinicDay }: { firstClinicDay: boolean }) {
         className="mb-4"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Clients
+        {t("form.back")}
       </Button>
 
-      <h2 className="font-heading text-xl font-semibold">New Client</h2>
+      <h2 className="font-heading text-xl font-semibold">{t("list.new")}</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         {firstClinicDay
-          ? "First clinic day, step 1 of 3: add one real owner. Their pet is next."
-          : "Add a new client to your practice"}
+          ? t("form.firstDayIntro")
+          : t("form.newIntro")}
       </p>
 
       {error && (
@@ -213,13 +221,13 @@ function NewClientForm({ firstClinicDay }: { firstClinicDay: boolean }) {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="text-sm font-medium" htmlFor="firstName">
-              First Name *
+              {t("form.firstName")}
             </label>
             <Input
               id="firstName"
               value={form.firstName}
               onChange={(e) => updateField("firstName", e.target.value)}
-              placeholder="First name"
+              placeholder={t("form.firstNamePlaceholder")}
               className="mt-1"
               maxLength={CLIENT_NAME_MAX_LENGTH}
               required
@@ -227,13 +235,13 @@ function NewClientForm({ firstClinicDay }: { firstClinicDay: boolean }) {
           </div>
           <div>
             <label className="text-sm font-medium" htmlFor="lastName">
-              Last Name *
+              {t("form.lastName")}
             </label>
             <Input
               id="lastName"
               value={form.lastName}
               onChange={(e) => updateField("lastName", e.target.value)}
-              placeholder="Last name"
+              placeholder={t("form.lastNamePlaceholder")}
               className="mt-1"
               maxLength={CLIENT_NAME_MAX_LENGTH}
               required
@@ -244,7 +252,7 @@ function NewClientForm({ firstClinicDay }: { firstClinicDay: boolean }) {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="text-sm font-medium" htmlFor="email">
-              Email
+              {t("form.email")}
             </label>
             <Input
               id="email"
@@ -258,7 +266,7 @@ function NewClientForm({ firstClinicDay }: { firstClinicDay: boolean }) {
           </div>
           <div>
             <label className="text-sm font-medium" htmlFor="phone">
-              Phone
+              {t("form.phone")}
             </label>
             <Input
               id="phone"
@@ -271,12 +279,14 @@ function NewClientForm({ firstClinicDay }: { firstClinicDay: boolean }) {
           </div>
         </div>
 
+        <ClientLanguageSelect value={preferredLanguage} onChange={setPreferredLanguage} />
+
         <div className="rounded-md border border-border p-3">
           <label
             className="text-sm font-medium"
             htmlFor="preferredContactMethod"
           >
-            Preferred contact for reminders
+            {t("form.preferredContact")}
           </label>
           <select
             id="preferredContactMethod"
@@ -288,20 +298,17 @@ function NewClientForm({ firstClinicDay }: { firstClinicDay: boolean }) {
             }
             className="mt-2 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
-            <option value="phone">Phone call</option>
-            <option value="email">Email</option>
-            <option value="sms">Text message</option>
-            <option value="portal">Client portal</option>
+            <option value="phone">{t("form.contact.phone")}</option>
+            <option value="email">{t("form.contact.email")}</option>
+            <option value="sms">{t("form.contact.sms")}</option>
+            <option value="portal">{t("form.contact.portal")}</option>
           </select>
           <p className="mt-2 text-xs text-muted-foreground">
-            Text message uses SMS for appointment and vaccination reminders when
-            clinic texting is active. The client&apos;s permission below is
-            still required.
+            {t("form.smsHelp")}
           </p>
           {preferredContactMethod === "sms" && !smsConsent ? (
             <p className="mt-2 text-xs font-medium text-amber-700">
-              Read the disclosure below and confirm consent before saving text
-              reminders as the preference.
+              {t("form.smsNeedsConsent")}
             </p>
           ) : null}
         </div>
@@ -322,30 +329,27 @@ function NewClientForm({ firstClinicDay }: { firstClinicDay: boolean }) {
           />
           <span>
             <span className="font-medium">
-              I confirm the client explicitly consented to SMS
+              {t("form.smsConfirm")}
             </span>
             <span className="block text-xs text-muted-foreground">
               {SMS_CONSENT_DISCLOSURE.snapshot}
             </span>
             <span className="mt-1 block text-xs text-muted-foreground">
-              Only check this after the client has read this disclosure or you
-              have read it to them.
-              {!smsPhoneValid
-                ? " Enter a valid mobile phone number to record consent."
-                : ""}
+              {t("form.smsConfirmHelp")}
+              {!smsPhoneValid ? ` ${t("form.smsEnterPhone")}` : ""}
             </span>
           </span>
         </label>
 
         <div>
           <label className="text-sm font-medium" htmlFor="address">
-            Address
+            {t("form.address")}
           </label>
           <Input
             id="address"
             value={form.address}
             onChange={(e) => updateField("address", e.target.value)}
-            placeholder="Street address"
+            placeholder={t("form.addressPlaceholder")}
             className="mt-1"
             maxLength={CLIENT_ADDRESS_MAX_LENGTH}
           />
@@ -354,39 +358,39 @@ function NewClientForm({ firstClinicDay }: { firstClinicDay: boolean }) {
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
             <label className="text-sm font-medium" htmlFor="city">
-              City
+              {t("form.city")}
             </label>
             <Input
               id="city"
               value={form.city}
               onChange={(e) => updateField("city", e.target.value)}
-              placeholder="City"
+              placeholder={t("form.city")}
               className="mt-1"
               maxLength={CLIENT_CITY_MAX_LENGTH}
             />
           </div>
           <div>
             <label className="text-sm font-medium" htmlFor="state">
-              State
+              {t("form.state")}
             </label>
             <Input
               id="state"
               value={form.state}
               onChange={(e) => updateField("state", e.target.value)}
-              placeholder="State"
+              placeholder={t("form.state")}
               className="mt-1"
               maxLength={CLIENT_STATE_MAX_LENGTH}
             />
           </div>
           <div>
             <label className="text-sm font-medium" htmlFor="zip">
-              Zip
+              {t("form.zip")}
             </label>
             <Input
               id="zip"
               value={form.zip}
               onChange={(e) => updateField("zip", e.target.value)}
-              placeholder="Zip code"
+              placeholder={t("form.zipPlaceholder")}
               className="mt-1"
               maxLength={CLIENT_ZIP_MAX_LENGTH}
             />
@@ -395,14 +399,14 @@ function NewClientForm({ firstClinicDay }: { firstClinicDay: boolean }) {
 
         <div className="flex gap-3 pt-4">
           <Button type="submit" disabled={!canSubmit || createClient.isPending}>
-            {createClient.isPending ? "Creating..." : "Create Client"}
+            {createClient.isPending ? t("form.creating") : t("form.create")}
           </Button>
           <Button
             type="button"
             variant="outline"
             onClick={() => router.push("/clients")}
           >
-            Cancel
+            {t("form.cancel")}
           </Button>
         </div>
       </form>

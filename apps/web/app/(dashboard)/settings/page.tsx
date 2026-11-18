@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations, useLocale } from "use-intl";
+
 import { ImportRowIssues } from "@/components/settings/import-row-issues";
 
 import { useState, useCallback, useEffect, useRef, Suspense } from "react";
@@ -47,7 +49,9 @@ import { EmptyState } from "@/components/common/empty-state";
 import { AccentColorPicker } from "@/components/brand/accent-color-picker";
 import { MessagingTab } from "@/components/settings/messaging-tab";
 import { BookingTab } from "@/components/settings/booking-tab";
+import { ClinicLanguageField } from "@/components/settings/clinic-language-field";
 import { ProviderHours } from "@/components/settings/provider-hours";
+import { useMigrationCopy } from "@/lib/import/use-migration-copy";
 import { MigrationHelpRequest } from "@/components/onboarding/migration-help-request";
 import { ServicesTab } from "@/components/settings/services-tab";
 import { AmbulatoryWorkspaceSettingsCard } from "@/components/settings/ambulatory-workspace-settings";
@@ -76,7 +80,6 @@ import {
 } from "@/lib/billing/catalog";
 import {
   PRACTICE_BACKUP_JSON_MAX_BYTES,
-  PRACTICE_BACKUP_JSON_SIZE_MESSAGE,
   isPracticeBackupJsonSizeValid,
 } from "@/lib/backup/policy";
 import {
@@ -160,19 +163,20 @@ type Tab =
   | "booking"
   | "billing";
 
-const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: "practice", label: "Practice Info", icon: Settings },
-  { id: "locations", label: "Locations", icon: MapPin },
-  { id: "staff", label: "Staff", icon: Users },
-  { id: "appointmentTypes", label: "Appointment Types", icon: Calendar },
-  { id: "rooms", label: "Rooms", icon: DoorOpen },
-  { id: "services", label: "Services & Pricing", icon: ReceiptText },
-  { id: "data", label: "Data", icon: Database },
-  { id: "templates", label: "Templates", icon: Layers },
-  { id: "wellness", label: "Wellness Plans", icon: HeartPulse },
-  { id: "messaging", label: "Messaging", icon: MessageSquare },
-  { id: "booking", label: "Online Booking", icon: Globe },
-  { id: "billing", label: "Plan & Billing", icon: CreditCard },
+// Labels are catalog keys: settings.page.tabs.<id>.
+const tabs: { id: Tab; icon: React.ElementType }[] = [
+  { id: "practice", icon: Settings },
+  { id: "locations", icon: MapPin },
+  { id: "staff", icon: Users },
+  { id: "appointmentTypes", icon: Calendar },
+  { id: "rooms", icon: DoorOpen },
+  { id: "services", icon: ReceiptText },
+  { id: "data", icon: Database },
+  { id: "templates", icon: Layers },
+  { id: "wellness", icon: HeartPulse },
+  { id: "messaging", icon: MessageSquare },
+  { id: "booking", icon: Globe },
+  { id: "billing", icon: CreditCard },
 ];
 
 const TIMEZONES = [
@@ -220,6 +224,15 @@ const ROLE_BADGE: Record<string, string> = {
 
 const ROOM_TYPES = ["exam", "surgery", "treatment", "boarding"] as const;
 
+/** Translated room type, falling back to the stored value for unknown types. */
+function useRoomTypeLabel() {
+  const t = useTranslations("settings.page");
+  return (value: string) =>
+    (ROOM_TYPES as readonly string[]).includes(value)
+      ? t(`roomTypes.${value}`)
+      : value;
+}
+
 type PracticeInfoForm = {
   name: string;
   address: string;
@@ -236,6 +249,7 @@ type PracticeInfoForm = {
 function formatSettingsDateTime(
   value: Date | string | null | undefined,
   timeZone?: string | null,
+  locale = "en-US",
 ): string {
   if (!value) return "";
 
@@ -249,12 +263,12 @@ function formatSettingsDateTime(
   const resolvedTimeZone = timeZone?.trim() || "UTC";
 
   try {
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat(locale, {
       ...options,
       timeZone: resolvedTimeZone,
     }).format(date);
   } catch {
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat(locale, {
       ...options,
       timeZone: "UTC",
     }).format(date);
@@ -285,19 +299,20 @@ function requireSettingsExportData<T>(
 
 function SettingsLoadError({
   message,
-  title = "Could not load settings",
+  title,
   onRetry,
 }: {
   message: string;
   title?: string;
   onRetry?: () => void;
 }) {
+  const t = useTranslations("settings.page");
   return (
     <div className="rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
       <div className="flex items-start gap-2">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
         <div>
-          <p className="font-medium">{title}</p>
+          <p className="font-medium">{title ?? t("couldNotLoadSettings")}</p>
           <p className="mt-1">{message}</p>
           {onRetry ? (
             <Button
@@ -306,7 +321,7 @@ function SettingsLoadError({
               onClick={onRetry}
               className="mt-3"
             >
-              Retry
+              {t("retry")}
             </Button>
           ) : null}
         </div>
@@ -316,6 +331,7 @@ function SettingsLoadError({
 }
 
 function TrustedProxyNotice() {
+  const t = useTranslations("settings.page");
   const notices = trpc.settings.deploymentNotices.useQuery(undefined, {
     staleTime: Infinity,
   });
@@ -328,32 +344,26 @@ function TrustedProxyNotice() {
         {data.proxyNotForwarding ? (
           <>
             <p className="font-medium">
-              Your proxy isn&apos;t forwarding client addresses
+              {t("proxy.notForwardingTitle")}
             </p>
             <p className="mt-1">
-              <code>OPENVPM_TRUSTED_PROXY_HOPS</code> is set, but requests
-              arrive from{" "}
-              {data.proxyNotForwarding.address
-                ? `an internal address (${data.proxyNotForwarding.address})`
-                : "no client address"}
-              , which is usually the proxy itself. Per-IP sign-in limits are
-              off until the proxy sends <code>X-Forwarded-For</code>;
-              per-account limits still apply. If staff only connect from
-              inside your network, this is expected. See &ldquo;Reverse
-              proxies and sign-in limits&rdquo; in the README.
+              {t.rich("proxy.notForwardingBody", {
+                source: data.proxyNotForwarding.address
+                  ? t("proxy.internalAddress", {
+                      address: data.proxyNotForwarding.address,
+                    })
+                  : t("proxy.noClientAddress"),
+                code: (chunks) => <code>{chunks}</code>,
+              })}
             </p>
           </>
         ) : (
           <>
-            <p className="font-medium">Reverse proxy not configured</p>
+            <p className="font-medium">{t("reverseProxyNotConfigured")}</p>
             <p className="mt-1">
-              OpenVPM can&apos;t verify client addresses, so per-IP sign-in
-              limits are off; per-account limits still apply. Only if you
-              run a reverse proxy in front of OpenVPM: set{" "}
-              <code>OPENVPM_TRUSTED_PROXY_HOPS</code> to the number of proxies
-              in front of the app and restart. See &ldquo;Reverse proxies and
-              sign-in limits&rdquo; in the README for nginx, Caddy, and Traefik
-              settings.
+              {t.rich("proxy.notConfiguredBody", {
+                code: (chunks) => <code>{chunks}</code>,
+              })}
             </p>
           </>
         )}
@@ -378,6 +388,7 @@ export default function SettingsPage() {
 }
 
 function SettingsPageInner() {
+  const t = useTranslations("settings.page");
   const { data: session, status } = useSession();
   const { openWelcome } = useWelcome();
   const searchParams = useSearchParams();
@@ -390,7 +401,7 @@ function SettingsPageInner() {
     return (
       <div className="flex items-center justify-center gap-2 py-24 text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
-        Checking settings access...
+        {t("checkingSettingsAccess")}
       </div>
     );
   }
@@ -399,9 +410,9 @@ function SettingsPageInner() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <ShieldAlert className="h-12 w-12 text-muted-foreground mb-4" />
-        <h2 className="font-heading text-xl font-semibold">Access Denied</h2>
+        <h2 className="font-heading text-xl font-semibold">{t("accessDenied")}</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Only administrators can access practice settings.
+          {t("onlyAdministratorsCanAccessPractice")}
         </p>
       </div>
     );
@@ -411,9 +422,9 @@ function SettingsPageInner() {
     <div className="min-w-0 w-full max-w-full overflow-hidden">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="font-heading text-xl font-semibold">Settings</h2>
+          <h2 className="font-heading text-xl font-semibold">{t("settings")}</h2>
           <p className="text-sm text-muted-foreground">
-            Practice configuration and staff management
+            {t("practiceConfigurationAndStaffManagement")}
           </p>
         </div>
         <Button
@@ -423,7 +434,7 @@ function SettingsPageInner() {
           onClick={openWelcome}
         >
           <Compass className="mr-2 h-4 w-4" />
-          Guides
+          {t("guides")}
         </Button>
       </div>
 
@@ -433,7 +444,7 @@ function SettingsPageInner() {
         {/* Section nav: horizontal scroll on small screens, vertical on lg+ */}
         <nav
           className="min-w-0 max-w-full overflow-hidden lg:w-56 lg:shrink-0"
-          aria-label="Settings sections"
+          aria-label={t("settingsSections")}
         >
           <div className="flex w-full max-w-full gap-1 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible lg:pb-0">
             {tabs.map((tab) => {
@@ -450,7 +461,7 @@ function SettingsPageInner() {
                   )}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
-                  {tab.label}
+                  {t(`tabs.${tab.id}`)}
                 </button>
               );
             })}
@@ -479,6 +490,9 @@ function SettingsPageInner() {
 
 // ── Practice Info ───────────────────────────────────────────
 function PracticeInfoTab() {
+  const t = useTranslations("settings.page");
+  const locale = useLocale();
+  const regionNames = new Intl.DisplayNames([locale], { type: "region" });
   const utils = trpc.useUtils();
   const {
     data: practice,
@@ -498,7 +512,7 @@ function PracticeInfoTab() {
         utils.settings.getPractice.invalidate(),
         utils.settings.getMarketingEmailPreference.invalidate(),
       ]);
-      toast.success("Practice info updated");
+      toast.success(t("practiceInfoUpdated"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -511,7 +525,7 @@ function PracticeInfoTab() {
     onSuccess: () => {
       utils.settings.getPractice.invalidate();
       utils.settings.getBranding.invalidate();
-      toast.success("Branding updated");
+      toast.success(t("brandingUpdated"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -523,8 +537,8 @@ function PracticeInfoTab() {
         utils.settings.getMarketingEmailPreference.invalidate();
         toast.success(
           preference.enabled
-            ? "Optional OpenVPM emails turned on"
-            : "Optional OpenVPM emails turned off",
+            ? t("optionalOpenvpmEmailsTurnedOn")
+            : t("optionalOpenvpmEmailsTurnedOff"),
         );
       },
       onError: (err) => toast.error(err.message),
@@ -573,7 +587,7 @@ function PracticeInfoTab() {
           kind: "response",
           status: res.status,
         });
-        throw new Error(json.error ?? "Upload failed");
+        throw new Error(json.error ?? t("uploadFailed"));
       }
       logoUploadAttemptRef.current = settleManagedUploadAttempt(attempt, {
         kind: "success",
@@ -582,14 +596,14 @@ function PracticeInfoTab() {
         utils.settings.getPractice.invalidate(),
         utils.settings.getBranding.invalidate(),
       ]);
-      toast.success("Logo saved");
+      toast.success(t("logoSaved"));
     } catch (err) {
       if (logoUploadAttemptRef.current === attempt) {
         logoUploadAttemptRef.current = settleManagedUploadAttempt(attempt, {
           kind: "ambiguous",
         });
       }
-      const message = err instanceof Error ? err.message : "Upload failed";
+      const message = err instanceof Error ? err.message : t("uploadFailed");
       setLogoUploadError(message);
       toast.error(message);
     } finally {
@@ -628,8 +642,8 @@ function PracticeInfoTab() {
     return (
       <EmptyState
         icon={Settings}
-        title="Practice settings unavailable"
-        description="The practice profile could not be found for this account."
+        title={t("practiceSettingsUnavailable")}
+        description={t("thePracticeProfileCouldNot")}
       />
     );
   }
@@ -682,14 +696,14 @@ function PracticeInfoTab() {
         {/* ── Practice details ── */}
         <div className="space-y-6 rounded-lg border border-border bg-card p-6">
           <div className="space-y-1">
-            <h3 className="text-sm font-semibold">Practice details</h3>
+            <h3 className="text-sm font-semibold">{t("practiceDetails")}</h3>
             <p className="text-xs text-muted-foreground">
-              Your practice name, contact info, and timezone.
+              {t("yourPracticeNameContactInfo")}
             </p>
           </div>
           <div className="grid gap-4">
             <label className="space-y-1.5">
-              <span className="text-sm font-medium">Practice Name</span>
+              <span className="text-sm font-medium">{t("practiceName")}</span>
               <Input
                 maxLength={PRACTICE_NAME_MAX_LENGTH}
                 value={current.name}
@@ -697,7 +711,7 @@ function PracticeInfoTab() {
               />
             </label>
             <label className="space-y-1.5">
-              <span className="text-sm font-medium">Address</span>
+              <span className="text-sm font-medium">{t("address")}</span>
               <Input
                 maxLength={SETTINGS_ADDRESS_MAX_LENGTH}
                 value={current.address}
@@ -706,7 +720,7 @@ function PracticeInfoTab() {
             </label>
             <div className="grid grid-cols-2 gap-4">
               <label className="space-y-1.5">
-                <span className="text-sm font-medium">Phone</span>
+                <span className="text-sm font-medium">{t("phone")}</span>
                 <Input
                   maxLength={SETTINGS_PHONE_MAX_LENGTH}
                   value={current.phone}
@@ -714,7 +728,7 @@ function PracticeInfoTab() {
                 />
               </label>
               <label className="space-y-1.5">
-                <span className="text-sm font-medium">Email</span>
+                <span className="text-sm font-medium">{t("email")}</span>
                 <Input
                   type="email"
                   maxLength={SETTINGS_EMAIL_MAX_LENGTH}
@@ -724,7 +738,7 @@ function PracticeInfoTab() {
               </label>
             </div>
             <label className="space-y-1.5">
-              <span className="text-sm font-medium">Website</span>
+              <span className="text-sm font-medium">{t("website")}</span>
               <Input
                 maxLength={SETTINGS_WEBSITE_MAX_LENGTH}
                 value={current.website}
@@ -732,7 +746,7 @@ function PracticeInfoTab() {
               />
             </label>
             <label className="space-y-1.5">
-              <span className="text-sm font-medium">Timezone</span>
+              <span className="text-sm font-medium">{t("timezone")}</span>
               <select
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 value={current.timezone}
@@ -751,32 +765,31 @@ function PracticeInfoTab() {
         {/* ── Region & Tax ── */}
         <div className="space-y-6 rounded-lg border border-border bg-card p-6">
           <div className="space-y-1">
-            <h3 className="text-sm font-semibold">Region &amp; Tax</h3>
+            <h3 className="text-sm font-semibold">{t("regionTax")}</h3>
             <p className="text-xs text-muted-foreground">
-              Controls invoice currency, tax rate, and date formatting. Choosing
-              a country prefills the usual defaults — adjust as needed.
+              {t("controlsInvoiceCurrencyTaxRate")}
             </p>
           </div>
           <div className="grid gap-4">
             <div className="grid grid-cols-2 gap-4">
               <label className="space-y-1.5">
-                <span className="text-sm font-medium">Country</span>
+                <span className="text-sm font-medium">{t("country")}</span>
                 <select
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   value={current.country}
                   onChange={(e) => handleCountryChange(e.target.value)}
                   required
                 >
-                  <option value="">Choose your clinic country</option>
+                  <option value="">{t("chooseYourClinicCountry")}</option>
                   {CLINIC_REGION_OPTIONS.map((c) => (
                     <option key={c.code} value={c.code}>
-                      {c.label}
+                      {regionNames.of(c.code) ?? c.label}
                     </option>
                   ))}
                 </select>
               </label>
               <label className="space-y-1.5">
-                <span className="text-sm font-medium">Currency</span>
+                <span className="text-sm font-medium">{t("currency")}</span>
                 <select
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   value={current.currency}
@@ -792,7 +805,7 @@ function PracticeInfoTab() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <label className="space-y-1.5">
-                <span className="text-sm font-medium">Tax / VAT rate (%)</span>
+                <span className="text-sm font-medium">{t("taxVatRate")}</span>
                 <Input
                   type="number"
                   step="0.01"
@@ -806,7 +819,7 @@ function PracticeInfoTab() {
               </label>
               <label className="space-y-1.5">
                 <span className="text-sm font-medium">
-                  VAT number (optional)
+                  {t("vatNumberOptional")}
                 </span>
                 <Input
                   maxLength={SETTINGS_VAT_NUMBER_MAX_LENGTH}
@@ -815,28 +828,28 @@ function PracticeInfoTab() {
                 />
               </label>
             </div>
+            <ClinicLanguageField />
           </div>
         </div>
 
         {/* ── Branding ── */}
         <div className="space-y-6 rounded-lg border border-border bg-card p-6">
           <div className="space-y-1">
-            <h3 className="text-sm font-semibold">Branding</h3>
+            <h3 className="text-sm font-semibold">{t("branding")}</h3>
             <p className="text-xs text-muted-foreground">
-              Your logo and accent color appear across OpenVPM. Changes save
-              immediately.
+              {t("yourLogoAndAccentColor")}
             </p>
           </div>
           <div className="grid gap-5">
             {/* Logo */}
             <div className="space-y-2">
-              <span className="text-sm font-medium">Logo</span>
+              <span className="text-sm font-medium">{t("logo")}</span>
               <div className="flex items-center gap-4">
                 {practice.logoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={practice.logoUrl}
-                    alt="Practice logo"
+                    alt={t("practiceLogo")}
                     className="h-14 w-14 rounded-lg border border-border object-cover"
                   />
                 ) : (
@@ -867,10 +880,10 @@ function PracticeInfoTab() {
                     ) : (
                       <Upload className="mr-2 h-4 w-4" />
                     )}
-                    {practice.logoUrl ? "Replace logo" : "Upload logo"}
+                    {practice.logoUrl ? t("replaceLogo") : t("uploadLogo")}
                   </Button>
                   <p className="mt-1.5 text-xs text-muted-foreground">
-                    PNG, JPG, or WebP. Square images work best.
+                    {t("pngJpgOrWebpSquare")}
                   </p>
                   {logoUploadError ? (
                     <div className="mt-2 flex items-center gap-2 text-xs text-destructive">
@@ -882,7 +895,7 @@ function PracticeInfoTab() {
                           onClick={() => void handleLogoUpload()}
                           className="font-medium underline underline-offset-2 disabled:opacity-50"
                         >
-                          Try again
+                          {t("tryAgain")}
                         </button>
                       ) : null}
                     </div>
@@ -893,7 +906,7 @@ function PracticeInfoTab() {
 
             {/* Accent color */}
             <div className="space-y-2">
-              <span className="text-sm font-medium">Accent color</span>
+              <span className="text-sm font-medium">{t("accentColor")}</span>
               <AccentColorPicker
                 value={currentBrandColor}
                 onChange={(c) => brandingMutation.mutate({ brandColor: c })}
@@ -906,17 +919,16 @@ function PracticeInfoTab() {
         {/* ── OpenVPM email preferences ── */}
         <div className="space-y-5 rounded-lg border border-border bg-card p-6">
           <div className="space-y-1">
-            <h3 className="text-sm font-semibold">Emails from OpenVPM</h3>
+            <h3 className="text-sm font-semibold">{t("emailsFromOpenvpm")}</h3>
             <p className="text-xs text-muted-foreground">
-              Controls optional email OpenVPM sends to your clinic, not messages
-              your clinic sends to pet owners.
+              {t("controlsOptionalEmailOpenvpmSends")}
             </p>
           </div>
 
           {marketingEmailPreferenceError ? (
             <div className="space-y-3" role="alert">
               <p className="text-sm text-destructive">
-                We couldn&apos;t load this email preference.
+                {t("emailPreferenceLoadError")}
               </p>
               <Button
                 type="button"
@@ -924,7 +936,7 @@ function PracticeInfoTab() {
                 size="sm"
                 onClick={() => void refetchMarketingEmailPreference()}
               >
-                Try again
+                {t("tryAgain")}
               </Button>
             </div>
           ) : (
@@ -948,15 +960,13 @@ function PracticeInfoTab() {
                 />
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-medium">
-                    Product guidance and feedback
+                    {t("productGuidanceAndFeedback")}
                   </span>
                   <span
                     id="marketing-email-preference-description"
                     className="mt-1 block text-xs leading-5 text-muted-foreground"
                   >
-                    Occasional setup tips, product updates, trial guidance, and
-                    requests for feedback. Turn this off to stop marketing and
-                    research email
+                    {t("occasionalSetupTipsProductUpdates")}
                     {marketingEmailPreference?.recipientEmail
                       ? ` to ${marketingEmailPreference.recipientEmail}`
                       : ""}
@@ -981,25 +991,23 @@ function PracticeInfoTab() {
                   marketingEmailPreference?.enabled ? (
                 <p className="text-xs text-emerald-700" role="status">
                   {marketingEmailMutation.data.enabled
-                    ? "Optional OpenVPM emails are on."
-                    : "Optional OpenVPM emails are off."}
+                    ? t("optionalOpenvpmEmailsAreOn")
+                    : t("optionalOpenvpmEmailsAreOff")}
                 </p>
               ) : null}
 
               <div className="rounded-md bg-muted/50 p-3">
                 <p className="text-sm font-medium">
-                  Account, security, and billing email
+                  {t("accountSecurityAndBillingEmail")}
                 </p>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  Required for sign-in, receipts, payment issues, and critical
-                  service notices. These cannot be turned off here.
+                  {t("requiredForSignInReceipts")}
                 </p>
               </div>
 
               {marketingEmailPreference?.configurable === false ? (
                 <p className="text-xs text-amber-700" role="status">
-                  Add a practice email above, save your changes, then manage
-                  optional email here.
+                  {t("addAPracticeEmailAbove")}
                 </p>
               ) : null}
             </div>
@@ -1028,7 +1036,7 @@ function PracticeInfoTab() {
         ) : (
           <Save className="mr-2 h-4 w-4" />
         )}
-        Save Changes
+        {t("saveChanges")}
       </Button>
     </div>
   );
@@ -1043,6 +1051,7 @@ type LocationForm = {
 };
 
 function LocationsTab() {
+  const t = useTranslations("settings.page");
   const utils = trpc.useUtils();
   const {
     data: locationList,
@@ -1063,7 +1072,7 @@ function LocationsTab() {
       invalidateLocationState();
       setShowAdd(false);
       setAddForm({ name: "", address: "", phone: "", isPrimary: false });
-      toast.success("Location created");
+      toast.success(t("locationCreated"));
     },
     onError: (err) => toast.error(err.message),
   });
@@ -1071,14 +1080,14 @@ function LocationsTab() {
     onSuccess: () => {
       invalidateLocationState();
       setEditingId(null);
-      toast.success("Location updated");
+      toast.success(t("locationUpdated"));
     },
     onError: (err) => toast.error(err.message),
   });
   const setPrimaryMutation = trpc.settings.setPrimaryLocation.useMutation({
     onSuccess: () => {
       invalidateLocationState();
-      toast.success("Primary location updated");
+      toast.success(t("primaryLocationUpdated"));
     },
     onError: (err) => toast.error(err.message),
   });
@@ -1086,7 +1095,7 @@ function LocationsTab() {
     onSuccess: () => {
       invalidateLocationState();
       setConfirmDelete(null);
-      toast.success("Location retired");
+      toast.success(t("locationRetired"));
     },
     onError: (err) => toast.error(err.message),
   });
@@ -1132,8 +1141,8 @@ function LocationsTab() {
   if (locationsMissing) {
     return (
       <SettingsLoadError
-        title="Could not load locations"
-        message="The locations request finished without returning data. Try loading it again before editing practice locations."
+        title={t("couldNotLoadLocations")}
+        message={t("locationsEmpty")}
         onRetry={() => void refetchLocations()}
       />
     );
@@ -1169,10 +1178,9 @@ function LocationsTab() {
     <div className="max-w-4xl space-y-4">
       <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-sm font-semibold">Practice Locations</h3>
+          <h3 className="text-sm font-semibold">{t("practiceLocations")}</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Locations power texting setup, room assignment, reminders, and
-            hosted billing quantity.
+            {t("locationsPowerTextingSetupRoom")}
           </p>
         </div>
         <Button
@@ -1185,22 +1193,22 @@ function LocationsTab() {
           className="gap-2"
         >
           <Plus className="h-4 w-4" />
-          Add Location
+          {t("addLocation")}
         </Button>
       </div>
 
       {showAdd ? (
         <div className="rounded-lg border border-border bg-card p-4">
-          <h3 className="text-sm font-semibold">New Location</h3>
+          <h3 className="text-sm font-semibold">{t("newLocation")}</h3>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <Input
-              placeholder="Location name"
+              placeholder={t("locationName")}
               maxLength={LOCATION_NAME_MAX_LENGTH}
               value={addForm.name}
               onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
             />
             <Input
-              placeholder="Phone"
+              placeholder={t("phone")}
               maxLength={SETTINGS_PHONE_MAX_LENGTH}
               value={addForm.phone}
               onChange={(e) =>
@@ -1208,7 +1216,7 @@ function LocationsTab() {
               }
             />
             <Input
-              placeholder="Address"
+              placeholder={t("address")}
               maxLength={SETTINGS_ADDRESS_MAX_LENGTH}
               value={addForm.address}
               onChange={(e) =>
@@ -1225,7 +1233,7 @@ function LocationsTab() {
                 setAddForm({ ...addForm, isPrimary: e.target.checked })
               }
             />
-            Make this the primary location
+            {t("makeThisThePrimaryLocation")}
           </label>
           <div className="mt-4 flex gap-2">
             <Button
@@ -1240,10 +1248,10 @@ function LocationsTab() {
               ) : (
                 <Save className="mr-2 h-4 w-4" />
               )}
-              Create
+              {t("create")}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>
-              Cancel
+              {t("cancel")}
             </Button>
           </div>
         </div>
@@ -1253,9 +1261,9 @@ function LocationsTab() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/50">
-              <th className="px-4 py-3 text-left font-medium">Location</th>
-              <th className="px-4 py-3 text-left font-medium">Contact</th>
-              <th className="px-4 py-3 text-right font-medium">Actions</th>
+              <th className="px-4 py-3 text-left font-medium">{t("location2")}</th>
+              <th className="px-4 py-3 text-left font-medium">{t("contact")}</th>
+              <th className="px-4 py-3 text-right font-medium">{t("actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -1280,7 +1288,7 @@ function LocationsTab() {
                         />
                         <Input
                           value={editForm.address}
-                          placeholder="Address"
+                          placeholder={t("address")}
                           maxLength={SETTINGS_ADDRESS_MAX_LENGTH}
                           onChange={(e) =>
                             setEditForm({
@@ -1297,12 +1305,12 @@ function LocationsTab() {
                           {location.isPrimary ? (
                             <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                               <Star className="h-3 w-3" />
-                              Primary
+                              {t("primary")}
                             </span>
                           ) : null}
                         </div>
                         <p className="mt-1 text-muted-foreground">
-                          {location.address || "No address on file"}
+                          {location.address || t("noAddressOnFile")}
                         </p>
                       </div>
                     )}
@@ -1311,14 +1319,14 @@ function LocationsTab() {
                     {isEditing ? (
                       <Input
                         value={editForm.phone}
-                        placeholder="Phone"
+                        placeholder={t("phone")}
                         maxLength={SETTINGS_PHONE_MAX_LENGTH}
                         onChange={(e) =>
                           setEditForm({ ...editForm, phone: e.target.value })
                         }
                       />
                     ) : (
-                      location.phone || "No phone"
+                      location.phone || t("noPhone")
                     )}
                   </td>
                   <td className="px-4 py-3 align-top">
@@ -1402,8 +1410,8 @@ function LocationsTab() {
                   <EmptyState
                     className="border-0 bg-transparent p-8"
                     icon={MapPin}
-                    title="No active locations configured"
-                    description="Add a location to power rooms, reminders, texting setup, and hosted billing quantities."
+                    title={t("noActiveLocationsConfigured")}
+                    description={t("addALocationToPower")}
                   />
                 </td>
               </tr>
@@ -1413,7 +1421,7 @@ function LocationsTab() {
       </div>
       {activeLocationCount <= 1 ? (
         <p className="text-xs text-muted-foreground">
-          A practice must keep at least one active location.
+          {t("aPracticeMustKeepAt")}
         </p>
       ) : null}
     </div>
@@ -1421,27 +1429,28 @@ function LocationsTab() {
 }
 
 // ── Plan & Billing ──────────────────────────────────────────
-const FEATURE_LABELS: Record<string, string> = {
-  agent: "OpenVPM Agent (AI)",
-  sms: "SMS sending",
-  advancedReporting: "Advanced reporting",
-  apiAccess: "API access + webhooks",
-  multiLocation: "Multi-location",
-  integrations: "Supported integrations",
-};
+// Feature labels are catalog keys: settings.page.features.<feature>.
+const FEATURE_KEYS = new Set([
+  "agent",
+  "sms",
+  "advancedReporting",
+  "apiAccess",
+  "multiLocation",
+  "integrations",
+]);
 
-function redirectToHostedBillingUrl(url: unknown) {
+function redirectToHostedBillingUrl(url: unknown, unavailableMessage: string) {
   if (!isSafeCheckoutRedirectUrl(url)) {
-    toast.error("Billing checkout is unavailable. Please try again.");
+    toast.error(unavailableMessage);
     return;
   }
 
   window.location.href = url;
 }
 
-function redirectToClientPaymentUrl(url: unknown) {
+function redirectToClientPaymentUrl(url: unknown, unavailableMessage: string) {
   if (!isSafeCheckoutRedirectUrl(url)) {
-    toast.error("Client payment setup is unavailable. Please try again.");
+    toast.error(unavailableMessage);
     return;
   }
 
@@ -1449,6 +1458,8 @@ function redirectToClientPaymentUrl(url: unknown) {
 }
 
 function BillingTab() {
+  const t = useTranslations("settings.page");
+  const locale = useLocale();
   const utils = trpc.useUtils();
   const searchParams = useSearchParams();
   const [selectedCadence, setSelectedCadence] = useState<BillingCadence>(() =>
@@ -1465,34 +1476,34 @@ function BillingTab() {
   });
   const checkout = trpc.subscription.createCheckout.useMutation({
     onSuccess: (r) => {
-      redirectToHostedBillingUrl(r.url);
+      redirectToHostedBillingUrl(r.url, t("checkoutUnavailable"));
     },
     onError: (e) => toast.error(e.message),
   });
   const setupPaymentAccount =
     trpc.billing.createPaymentAccountOnboarding.useMutation({
       onSuccess: (r) => {
-        redirectToClientPaymentUrl(r.url);
+        redirectToClientPaymentUrl(r.url, t("clientPaymentUnavailable"));
       },
       onError: (e) => toast.error(e.message),
     });
   const refreshPaymentAccount = trpc.billing.refreshPaymentAccount.useMutation({
     onSuccess: () => {
       utils.billing.paymentAccountStatus.invalidate();
-      toast.success("Client payment status refreshed");
+      toast.success(t("clientPaymentStatusRefreshed"));
     },
     onError: (e) => toast.error(e.message),
   });
   const openPaymentAccountDashboard =
     trpc.billing.openPaymentAccountDashboard.useMutation({
       onSuccess: (r) => {
-        redirectToClientPaymentUrl(r.url);
+        redirectToClientPaymentUrl(r.url, t("clientPaymentUnavailable"));
       },
       onError: (e) => toast.error(e.message),
     });
   const portal = trpc.subscription.openBillingPortal.useMutation({
     onSuccess: (r) => {
-      redirectToHostedBillingUrl(r.url);
+      redirectToHostedBillingUrl(r.url, t("checkoutUnavailable"));
     },
     onError: (e) => toast.error(e.message),
   });
@@ -1500,7 +1511,7 @@ function BillingTab() {
   if (billingError) {
     return (
       <SettingsLoadError
-        title="Could not load billing details"
+        title={t("couldNotLoadBillingDetails")}
         message={billingError.message}
         onRetry={() => void refetchBilling()}
       />
@@ -1518,8 +1529,8 @@ function BillingTab() {
   if (!data) {
     return (
       <SettingsLoadError
-        title="Could not load billing details"
-        message="The billing details request finished without returning data. Try loading it again."
+        title={t("couldNotLoadBillingDetails")}
+        message={t("billingEmpty")}
         onRetry={() => void refetchBilling()}
       />
     );
@@ -1534,14 +1545,11 @@ function BillingTab() {
             <div className="flex items-center gap-3">
               <Check className="h-5 w-5 text-green-600" />
               <h3 className="font-heading text-lg font-semibold">
-                Self-hosted — all features unlocked
+                {t("selfHostedAllFeaturesUnlocked")}
               </h3>
             </div>
             <p className="mt-2 text-sm text-muted-foreground">
-              You&apos;re running OpenVPM on your own infrastructure. Every
-              feature is available and there&apos;s no subscription — free
-              forever. Plans below are how the managed OpenVPM Cloud is priced,
-              for reference.
+              {t("selfHostedBody")}
             </p>
           </div>
           <ClientPaymentProcessingSection
@@ -1587,16 +1595,16 @@ function BillingTab() {
     <div className="min-w-0 w-full max-w-full space-y-6">
       {checkoutStatus === "cancelled" ? (
         <div className="rounded-lg border border-border bg-muted/50 p-4 text-sm">
-          <p className="font-medium">Checkout was canceled</p>
+          <p className="font-medium">{t("checkoutWasCanceled")}</p>
           <p className="mt-1 text-muted-foreground">
-            Nothing changed. Choose a schedule whenever you are ready.
+            {t("nothingChangedChooseASchedule")}
           </p>
         </div>
       ) : null}
       {checkoutStatus === "success" ? (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-          <p className="font-medium">Your billing details were received</p>
-          <p className="mt-1">OpenVPM is confirming the subscription now.</p>
+          <p className="font-medium">{t("yourBillingDetailsWereReceived")}</p>
+          <p className="mt-1">{t("openvpmIsConfirmingTheSubscription")}</p>
         </div>
       ) : null}
 
@@ -1609,35 +1617,37 @@ function BillingTab() {
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-sm font-medium text-primary">
-                  OpenVPM Cloud
+                  {t("openvpmCloud")}
                 </p>
                 <Badge
                   variant={data.billingStatus === "active" ? "success" : "info"}
                 >
                   {pendingTrial
-                    ? "Trial not started"
+                    ? t("trialNotStarted")
                     : data.billingStatus === "trialing"
-                    ? `${daysLeft} trial day${daysLeft === 1 ? "" : "s"} left`
-                    : data.billingStatus.replace("_", " ")}
+                    ? t("trialDaysLeft", { count: daysLeft })
+                    : t.has(`billingStatus.${data.billingStatus}`)
+                      ? t(`billingStatus.${data.billingStatus}`)
+                      : data.billingStatus.replace("_", " ")}
                 </Badge>
               </div>
               <h3 className="mt-2 font-heading text-2xl font-semibold tracking-tight">
                 {pendingTrial
-                  ? "Start your free trial"
+                  ? t("startYourFreeTrial")
                   : firstActivation
-                  ? "Activate your account"
-                  : "Your Cloud subscription"}
+                  ? t("activateYourAccount")
+                  : t("yourCloudSubscription")}
               </h3>
               <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
                 {pendingTrial && data.previewActive
-                  ? `Your setup is saved. Add your card securely in Stripe Checkout to start your ${TRIAL_DAYS}-day trial and unlock email, texting, and AI. No charge today.`
+                  ? t("trialPreviewSaved", { days: TRIAL_DAYS })
                   : previewEnded
-                  ? `Your preview has ended and everything you set up is saved. Add your card securely in Stripe Checkout to start your ${TRIAL_DAYS}-day trial and pick up where you left off. No charge today.`
+                  ? t("trialPreviewEnded", { days: TRIAL_DAYS })
                   : pendingTrial
-                  ? `Add your card securely in Stripe Checkout to start your ${TRIAL_DAYS}-day trial. No charge today.`
+                  ? t("trialAddCard", { days: TRIAL_DAYS })
                   : firstActivation
-                  ? "Choose a billing schedule, then add your payment details in secure Stripe Checkout. Your workspace and trial stay exactly as they are."
-                  : `${currentPlan?.name ?? "Cloud"} keeps your clinic workspace active with unlimited staff.`}
+                  ? t("chooseABillingScheduleThen")
+                  : t("planKeepsActive", { plan: currentPlan?.name ?? t("cloud") })}
               </p>
             </div>
           </div>
@@ -1648,8 +1658,7 @@ function BillingTab() {
             <div className="mb-5 flex gap-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <p>
-                Cloud is in read-only mode. Activating billing restores full
-                access without changing your records.
+                {t("cloudIsInReadOnly")}
               </p>
             </div>
           ) : null}
@@ -1658,9 +1667,7 @@ function BillingTab() {
             <div className="mb-5 flex gap-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <p>
-                Stripe is retrying this payment. Your clinic remains writable
-                during the retry window; review billing to avoid an unpaid,
-                read-only account.
+                {t("pastDue")}
               </p>
             </div>
           ) : null}
@@ -1679,15 +1686,15 @@ function BillingTab() {
                 <div>
                   <p className="text-sm font-medium">
                     {selectedCadence === "year"
-                      ? `$${data.estimatedAnnualBase} billed once per year`
-                      : `$${data.estimatedMonthlyBase} billed monthly`}
+                      ? t("billedYearly", { amount: `$${data.estimatedAnnualBase}` })
+                      : t("billedMonthly", { amount: `$${data.estimatedMonthlyBase}` })}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {pendingTrial
-                      ? `Free for ${TRIAL_DAYS} days, then automatic billing at the selected price plus applicable taxes and usage overages. Cancel before the trial ends to avoid a subscription charge.`
+                      ? t("trialTerms", { days: TRIAL_DAYS })
                       : data.billingStatus === "trialing"
-                      ? `No charge today. ${daysLeft} trial day${daysLeft === 1 ? "" : "s"} remaining.`
-                      : "Stripe securely collects and stores your payment method."}
+                      ? t("noChargeTrialRemaining", { count: daysLeft })
+                      : t("stripeSecurelyCollectsAndStores")}
                   </p>
                 </div>
                 <Button
@@ -1708,7 +1715,7 @@ function BillingTab() {
                   ) : (
                     <CreditCard className="size-4" />
                   )}
-                  Continue to secure checkout
+                  {t("continueCheckout")}
                 </Button>
               </div>
             </>
@@ -1717,12 +1724,11 @@ function BillingTab() {
               <div>
                 <p className="text-sm font-medium">
                   {data.currentBillingCadence === "year"
-                    ? `$${data.estimatedAnnualBase} per year`
-                    : `$${data.estimatedMonthlyBase} per month`}
+                    ? t("perYear", { amount: `$${data.estimatedAnnualBase}` })
+                    : t("perMonth", { amount: `$${data.estimatedMonthlyBase}` })}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Update payment details, invoices, or cancellation securely in
-                  Stripe.
+                  {t("updatePaymentDetailsInvoicesOr")}
                 </p>
               </div>
               <Button
@@ -1735,16 +1741,16 @@ function BillingTab() {
                 ) : (
                   <CreditCard className="mr-2 h-4 w-4" />
                 )}
-                Manage billing
+                {t("manageBilling")}
               </Button>
             </div>
           )}
 
           <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
             {[
-              "Powered by Stripe",
-              "Cancel anytime",
-              "Unlimited staff included",
+              t("poweredByStripe"),
+              t("cancelAnytime"),
+              t("unlimitedStaffIncluded"),
             ].map((item) => (
               <span key={item} className="inline-flex items-center gap-1.5">
                 <Check className="size-3.5 text-primary" aria-hidden="true" />
@@ -1756,11 +1762,15 @@ function BillingTab() {
           {(currentPlan?.includedSmsPerMonth != null ||
             currentPlan?.includedAiRunsPerMonth != null) && (
             <p className="mt-5 border-t border-border pt-4 text-xs text-muted-foreground">
-              This month: {data.usage.sms} of{" "}
-              {currentPlan?.includedSmsPerMonth?.toLocaleString()} included
-              texts · {data.usage.aiRuns} of{" "}
-              {currentPlan?.includedAiRunsPerMonth?.toLocaleString()} included
-              AI actions
+              {t("usageThisMonth", {
+                sms: data.usage.sms,
+                smsIncluded:
+                  currentPlan?.includedSmsPerMonth?.toLocaleString(locale) ?? "",
+                ai: data.usage.aiRuns,
+                aiIncluded:
+                  currentPlan?.includedAiRunsPerMonth?.toLocaleString(locale) ??
+                  "",
+              })}
             </p>
           )}
 
@@ -1773,7 +1783,7 @@ function BillingTab() {
                   : "border-amber-200 bg-amber-50 text-amber-800",
               )}
             >
-              <span className="font-medium">Billing sync: </span>
+              <span className="font-medium">{t("billingSyncLabel")} </span>
               {data.billingSyncStatus!.message}
             </div>
           ) : null}
@@ -1836,15 +1846,16 @@ function ClientPaymentProcessingSection({
   onRefresh: () => void;
   onDashboard: () => void;
 }) {
+  const t = useTranslations("settings.page");
   const status = data?.enabled
-    ? "ready"
+    ? t("paymentStatus.ready")
     : data?.status === "action_required" || data?.status === "disabled"
-      ? "action required"
+      ? t("paymentStatus.actionRequired")
       : data?.connectRequired
-        ? "setup needed"
+        ? t("paymentStatus.setupNeeded")
         : data?.stripeConfigured
-          ? "configured"
-          : "not configured";
+          ? t("paymentStatus.configured")
+          : t("paymentStatus.notConfigured");
   const statusClass = data?.enabled
     ? "bg-green-100 text-green-700"
     : data?.status === "action_required" || data?.status === "disabled"
@@ -1865,7 +1876,7 @@ function ClientPaymentProcessingSection({
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="font-heading text-lg font-semibold">
-              Client payment processing
+              {t("clientPaymentProcessing")}
             </h3>
             <span
               className={cn(
@@ -1878,8 +1889,8 @@ function ClientPaymentProcessingSection({
           </div>
           <p className="mt-2 text-sm text-muted-foreground">
             {data?.connectRequired
-              ? "Stripe Connect lets the clinic collect card payments from pet owners into its own Stripe account."
-              : "This installation can use its configured Stripe key for client invoice payments. Stripe Connect is required for hosted OpenVPM Cloud clinics."}
+              ? t("stripeConnectLetsTheClinic")
+              : t("thisInstallationCanUseIts")}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -1890,7 +1901,7 @@ function ClientPaymentProcessingSection({
               ) : (
                 <CreditCard className="mr-2 h-4 w-4" />
               )}
-              {data?.status === "not_started" ? "Set up" : "Resume setup"}
+              {data?.status === "not_started" ? t("setUp") : t("resumeSetup")}
             </Button>
           )}
           {data?.connectRequired && (
@@ -1905,7 +1916,7 @@ function ClientPaymentProcessingSection({
               ) : (
                 <Check className="mr-2 h-4 w-4" />
               )}
-              Refresh
+              {t("refresh")}
             </Button>
           )}
           {canOpenDashboard && (
@@ -1920,7 +1931,7 @@ function ClientPaymentProcessingSection({
               ) : (
                 <CreditCard className="mr-2 h-4 w-4" />
               )}
-              Open Stripe
+              {t("openStripe")}
             </Button>
           )}
         </div>
@@ -1929,48 +1940,47 @@ function ClientPaymentProcessingSection({
       {isLoading && (
         <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading client payment status
+          {t("loadingClientPaymentStatus")}
         </div>
       )}
       {error && <p className="mt-4 text-sm text-destructive">{error}</p>}
       {!isLoading && !error && data && (
         <div className="mt-4 grid gap-3 border-t border-border pt-4 text-sm sm:grid-cols-3">
           <div>
-            <p className="text-muted-foreground">Stripe API</p>
+            <p className="text-muted-foreground">{t("stripeApi")}</p>
             <p className="font-medium">
-              {data.stripeConfigured ? "Configured" : "Missing"}
+              {data.stripeConfigured ? t("configured") : t("missing")}
             </p>
           </div>
           <div>
-            <p className="text-muted-foreground">Card payments</p>
+            <p className="text-muted-foreground">{t("cardPayments")}</p>
             <p className="font-medium">
               {data.enabled || data.status === "not_required"
-                ? "Enabled"
-                : "Disabled"}
+                ? t("enabled")
+                : t("disabled")}
             </p>
           </div>
           <div>
-            <p className="text-muted-foreground">Payouts</p>
+            <p className="text-muted-foreground">{t("payouts")}</p>
             <p className="font-medium">
               {data.payoutsEnabled
-                ? "Enabled"
+                ? t("enabled")
                 : data.connectRequired
-                  ? "Pending"
-                  : "N/A"}
+                  ? t("pending")
+                  : t("nA")}
             </p>
           </div>
           {data.requirementsCurrentlyDue?.length ? (
             <div className="sm:col-span-3">
-              <p className="text-muted-foreground">Stripe requirements</p>
+              <p className="text-muted-foreground">{t("stripeRequirements")}</p>
               <p className="font-medium">
-                {data.requirementsCurrentlyDue.length} item
-                {data.requirementsCurrentlyDue.length === 1 ? "" : "s"} due
+                {t("itemsDue", { count: data.requirementsCurrentlyDue.length })}
               </p>
             </div>
           ) : null}
           {data.requirementsDisabledReason ? (
             <div className="sm:col-span-3">
-              <p className="text-muted-foreground">Disabled reason</p>
+              <p className="text-muted-foreground">{t("disabledReason")}</p>
               <p className="font-medium">{data.requirementsDisabledReason}</p>
             </div>
           ) : null}
@@ -2008,6 +2018,8 @@ function PlanGrid({
   onChoose: (tier: "cloud") => void;
   busyTier: string | null;
 }) {
+  const t = useTranslations("settings.page");
+  const locale = useLocale();
   return (
     <div className="grid gap-4 sm:grid-cols-3">
       {plans.map((p) => {
@@ -2027,19 +2039,19 @@ function PlanGrid({
             <h4 className="font-heading text-base font-semibold">{p.name}</h4>
             <p className="mt-1 text-2xl font-bold">
               {p.locationUnitPriceMonthlyUsd === null ? (
-                "Custom"
+                t("custom")
               ) : p.locationUnitPriceMonthlyUsd === 0 ? (
-                "Free"
+                t("free")
               ) : (
                 <>
                   ${p.locationUnitPriceMonthlyUsd}
                   <span className="text-sm font-normal text-muted-foreground">
-                    /location
+                    {t("location")}
                   </span>
                   <span className="block text-sm font-normal text-muted-foreground">
                     {p.seatUnitPriceMonthlyUsd && p.seatUnitPriceMonthlyUsd > 0
-                      ? `+ $${p.seatUnitPriceMonthlyUsd}/staff/mo`
-                      : "unlimited staff"}
+                      ? t("perStaff", { price: p.seatUnitPriceMonthlyUsd })
+                      : t("unlimitedStaff")}
                   </span>
                 </>
               )}
@@ -2047,28 +2059,34 @@ function PlanGrid({
             <p className="mt-2 text-xs text-muted-foreground">{p.blurb}</p>
             <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
               <li>
-                {p.seatLimit === null ? "All" : p.seatLimit} staff roles
-                included
+                {t("staffRolesIncluded", {
+                  count: p.seatLimit === null ? t("all") : p.seatLimit,
+                })}
               </li>
               <li>
-                {p.locationLimit === null ? "Unlimited" : p.locationLimit}{" "}
-                location
-                {p.locationLimit === 1 ? "" : "s"}
+                {t("locationCount", {
+                  count:
+                    p.locationLimit === null ? t("unlimited") : p.locationLimit,
+                  plural: p.locationLimit === 1 ? "one" : "other",
+                })}
               </li>
               {p.includedSmsPerMonth ? (
                 <li>
-                  {p.includedSmsPerMonth.toLocaleString()} SMS/mo included
+                  {t("smsIncluded", {
+                    count: p.includedSmsPerMonth.toLocaleString(locale),
+                  })}
                   {p.smsOveragePriceUsd
-                    ? `, then $${p.smsOveragePriceUsd}/SMS`
+                    ? t("smsOverage", { price: p.smsOveragePriceUsd })
                     : ""}
                 </li>
               ) : null}
               {p.includedAiRunsPerMonth ? (
                 <li>
-                  {p.includedAiRunsPerMonth.toLocaleString()} AI actions/mo
-                  included
+                  {t("aiIncluded", {
+                    count: p.includedAiRunsPerMonth.toLocaleString(locale),
+                  })}
                   {p.aiOveragePriceUsd
-                    ? `, then $${p.aiOveragePriceUsd}/action`
+                    ? t("aiOverage", { price: p.aiOveragePriceUsd })
                     : ""}
                 </li>
               ) : null}
@@ -2076,17 +2094,17 @@ function PlanGrid({
                 p.features.map((f) => (
                   <li key={f} className="flex items-center gap-1">
                     <Check className="h-3 w-3 text-green-600" />
-                    {FEATURE_LABELS[f] ?? f}
+                    {FEATURE_KEYS.has(f) ? t(`features.${f}`) : f}
                   </li>
                 ))
               ) : (
-                <li>Full core PIMS</li>
+                <li>{t("fullCorePims")}</li>
               )}
             </ul>
             <div className="mt-4 pt-2">
               {isCurrent ? (
                 <span className="text-xs font-medium text-primary">
-                  Current plan
+                  {t("currentPlan")}
                 </span>
               ) : canBuy ? (
                 <Button
@@ -2098,14 +2116,14 @@ function PlanGrid({
                   {busyTier === p.tier ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : null}
-                  Choose {p.name}
+                  {t("choosePlan", { name: p.name })}
                 </Button>
               ) : !p.selfServe ? (
                 <a
                   href="mailto:support@openvpm.com?subject=OpenVPM%20Enterprise"
                   className="text-xs font-medium text-primary hover:underline"
                 >
-                  Contact sales
+                  {t("contactSales")}
                 </a>
               ) : null}
             </div>
@@ -2118,6 +2136,8 @@ function PlanGrid({
 
 // ── Staff ───────────────────────────────────────────────────
 function StaffTab() {
+  const t = useTranslations("settings.page");
+  const roleT = useTranslations("shell.roles");
   const utils = trpc.useUtils();
   const {
     data: staffList,
@@ -2130,7 +2150,7 @@ function StaffTab() {
       utils.settings.listUsers.invalidate();
       setShowAdd(false);
       resetAddForm();
-      toast.success("Staff member added");
+      toast.success(t("staffMemberAdded"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -2140,7 +2160,7 @@ function StaffTab() {
     onSuccess: () => {
       utils.settings.listUsers.invalidate();
       setEditingId(null);
-      toast.success("Staff member updated");
+      toast.success(t("staffMemberUpdated"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -2149,7 +2169,7 @@ function StaffTab() {
   const deactivateMutation = trpc.settings.deactivateUser.useMutation({
     onSuccess: () => {
       utils.settings.listUsers.invalidate();
-      toast.success("Staff member deactivated");
+      toast.success(t("staffMemberDeactivated"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -2163,7 +2183,7 @@ function StaffTab() {
     trpc.settings.clearStaffSignInLock.useMutation({
       onSuccess: () => {
         utils.settings.staffSignInLocks.invalidate();
-        toast.success("Sign-in lock cleared");
+        toast.success(t("signInLockCleared"));
       },
       onError: (err) => {
         toast.error(err.message);
@@ -2174,7 +2194,7 @@ function StaffTab() {
       utils.settings.listUsers.invalidate();
       setInviteForm({ email: "", name: "", role: "front_desk" });
       setInviteUrl(res.inviteUrl ?? null);
-      toast.success("Invite sent");
+      toast.success(t("inviteSent"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -2277,8 +2297,8 @@ function StaffTab() {
   if (staffMissing) {
     return (
       <SettingsLoadError
-        title="Could not load staff"
-        message="The staff list request finished without returning data. Try loading it again before adding or editing staff."
+        title={t("couldNotLoadStaff")}
+        message={t("staffEmpty")}
         onRetry={() => void refetchStaff()}
       />
     );
@@ -2297,7 +2317,7 @@ function StaffTab() {
           variant="outline"
         >
           <Mail className="mr-2 h-4 w-4" />
-          Invite by email
+          {t("inviteByEmail")}
         </Button>
         <Button
           onClick={() => {
@@ -2308,20 +2328,19 @@ function StaffTab() {
           size="sm"
         >
           <Plus className="mr-2 h-4 w-4" />
-          Add Staff
+          {t("addStaff")}
         </Button>
       </div>
 
       {showInvite && (
         <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-          <h3 className="text-sm font-semibold">Invite a teammate</h3>
+          <h3 className="text-sm font-semibold">{t("inviteATeammate")}</h3>
           <p className="text-xs text-muted-foreground">
-            They&apos;ll get an email to set their own password and activate
-            their account.
+            {t("inviteIntro")}
           </p>
           <div className="grid grid-cols-2 gap-3">
             <Input
-              placeholder="Email"
+              placeholder={t("email")}
               type="email"
               maxLength={SETTINGS_EMAIL_MAX_LENGTH}
               value={inviteForm.email}
@@ -2330,7 +2349,7 @@ function StaffTab() {
               }
             />
             <Input
-              placeholder="Name (optional)"
+              placeholder={t("nameOptional")}
               maxLength={STAFF_NAME_MAX_LENGTH}
               value={inviteForm.name}
               onChange={(e) =>
@@ -2347,11 +2366,11 @@ function StaffTab() {
                 })
               }
             >
-              <option value="front_desk">Front Desk</option>
-              <option value="viewer">Viewer (read-only)</option>
-              <option value="technician">Technician</option>
-              <option value="veterinarian">Veterinarian</option>
-              <option value="admin">Admin</option>
+              <option value="front_desk">{t("frontDesk")}</option>
+              <option value="viewer">{t("viewerReadOnly")}</option>
+              <option value="technician">{t("technician")}</option>
+              <option value="veterinarian">{t("veterinarian")}</option>
+              <option value="admin">{t("admin")}</option>
             </select>
           </div>
           <div className="flex gap-2">
@@ -2371,20 +2390,20 @@ function StaffTab() {
               {inviteMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Send invite
+              {t("sendInvite")}
             </Button>
             <Button
               size="sm"
               variant="ghost"
               onClick={() => setShowInvite(false)}
             >
-              Cancel
+              {t("cancel")}
             </Button>
           </div>
           {inviteUrl && (
             <div className="space-y-1.5 rounded-md border border-border bg-muted/30 p-3">
               <p className="text-xs font-medium text-muted-foreground">
-                Invite link (shown in dev/preview so you can test the flow):
+                {t("inviteLinkDev")}
               </p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 truncate rounded bg-background px-2 py-1 text-xs">
@@ -2395,7 +2414,7 @@ function StaffTab() {
                   variant="ghost"
                   onClick={() => {
                     navigator.clipboard.writeText(inviteUrl);
-                    toast.success("Copied");
+                    toast.success(t("copied"));
                   }}
                 >
                   <Copy className="h-4 w-4" />
@@ -2413,16 +2432,16 @@ function StaffTab() {
 
       {showAdd && (
         <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-          <h3 className="text-sm font-semibold">New Staff Member</h3>
+          <h3 className="text-sm font-semibold">{t("newStaffMember")}</h3>
           <div className="grid grid-cols-2 gap-3">
             <Input
-              placeholder="Full name"
+              placeholder={t("fullName")}
               maxLength={STAFF_NAME_MAX_LENGTH}
               value={addForm.name}
               onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
             />
             <Input
-              placeholder="Email"
+              placeholder={t("email")}
               type="email"
               maxLength={SETTINGS_EMAIL_MAX_LENGTH}
               value={addForm.email}
@@ -2431,7 +2450,7 @@ function StaffTab() {
               }
             />
             <Input
-              placeholder={`Password (min ${AUTH_PASSWORD_MIN_LENGTH} chars)`}
+              placeholder={t("passwordMin", { min: AUTH_PASSWORD_MIN_LENGTH })}
               type="password"
               maxLength={AUTH_PASSWORD_MAX_LENGTH}
               value={addForm.password}
@@ -2451,14 +2470,14 @@ function StaffTab() {
                 })
               }
             >
-              <option value="front_desk">Front Desk</option>
-              <option value="viewer">Viewer (read-only)</option>
-              <option value="technician">Technician</option>
-              <option value="veterinarian">Veterinarian</option>
-              <option value="admin">Admin</option>
+              <option value="front_desk">{t("frontDesk")}</option>
+              <option value="viewer">{t("viewerReadOnly")}</option>
+              <option value="technician">{t("technician")}</option>
+              <option value="veterinarian">{t("veterinarian")}</option>
+              <option value="admin">{t("admin")}</option>
             </select>
             <Input
-              placeholder="Phone (optional)"
+              placeholder={t("phoneOptional")}
               maxLength={SETTINGS_PHONE_MAX_LENGTH}
               value={addForm.phone}
               onChange={(e) =>
@@ -2466,7 +2485,7 @@ function StaffTab() {
               }
             />
             <Input
-              placeholder="License # (optional)"
+              placeholder={t("licenseOptional")}
               maxLength={STAFF_LICENSE_NUMBER_MAX_LENGTH}
               value={addForm.licenseNumber}
               onChange={(e) =>
@@ -2487,8 +2506,7 @@ function StaffTab() {
                 }
               />
               <span>
-                Veterinarian provider — appears in doctor lists and can sign
-                doctor-required visits.
+                {t("veterinarianProviderAppearsInDoctor")}
               </span>
             </label>
           </div>
@@ -2509,10 +2527,10 @@ function StaffTab() {
               {createMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Create
+              {t("create")}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>
-              Cancel
+              {t("cancel")}
             </Button>
           </div>
           {createMutation.error && (
@@ -2527,13 +2545,13 @@ function StaffTab() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/50">
-              <th className="px-4 py-3 text-left font-medium">Name</th>
-              <th className="px-4 py-3 text-left font-medium">Email</th>
-              <th className="px-4 py-3 text-left font-medium">Role</th>
-              <th className="px-4 py-3 text-left font-medium">Provider</th>
-              <th className="px-4 py-3 text-left font-medium">Phone</th>
-              <th className="px-4 py-3 text-left font-medium">License #</th>
-              <th className="px-4 py-3 text-right font-medium">Actions</th>
+              <th className="px-4 py-3 text-left font-medium">{t("name")}</th>
+              <th className="px-4 py-3 text-left font-medium">{t("email")}</th>
+              <th className="px-4 py-3 text-left font-medium">{t("role")}</th>
+              <th className="px-4 py-3 text-left font-medium">{t("provider")}</th>
+              <th className="px-4 py-3 text-left font-medium">{t("phone")}</th>
+              <th className="px-4 py-3 text-left font-medium">{t("license")}</th>
+              <th className="px-4 py-3 text-right font-medium">{t("actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -2571,11 +2589,11 @@ function StaffTab() {
                           })
                         }
                       >
-                        <option value="front_desk">Front Desk</option>
-                        <option value="viewer">Viewer (read-only)</option>
-                        <option value="technician">Technician</option>
-                        <option value="veterinarian">Veterinarian</option>
-                        <option value="admin">Admin</option>
+                        <option value="front_desk">{t("frontDesk")}</option>
+                        <option value="viewer">{t("viewerReadOnly")}</option>
+                        <option value="technician">{t("technician")}</option>
+                        <option value="veterinarian">{t("veterinarian")}</option>
+                        <option value="admin">{t("admin")}</option>
                       </select>
                     </td>
                     <td className="px-4 py-2">
@@ -2592,7 +2610,7 @@ function StaffTab() {
                             })
                           }
                         />
-                        Veterinarian
+                        {t("veterinarian")}
                       </label>
                     </td>
                     <td className="px-4 py-2">
@@ -2657,7 +2675,7 @@ function StaffTab() {
                       {user.name}
                       {lockedStaff.has(user.id) && (
                         <span className="ml-2 text-xs font-normal text-amber-700">
-                          Sign-in locked
+                          {t("signInLocked")}
                         </span>
                       )}
                     </td>
@@ -2671,11 +2689,11 @@ function StaffTab() {
                           ROLE_BADGE[user.role] ?? ROLE_BADGE.front_desk,
                         )}
                       >
-                        {user.role.replace("_", " ")}
+                        {roleT.has(user.role) ? roleT(user.role) : user.role.replace("_", " ")}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {user.isVeterinarian ? "Veterinarian" : "—"}
+                      {user.isVeterinarian ? t("veterinarian") : "—"}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {user.phone ?? "-"}
@@ -2687,7 +2705,7 @@ function StaffTab() {
                       {confirmDeactivate === user.id ? (
                         <div className="flex items-center justify-end gap-1">
                           <span className="mr-2 text-xs text-destructive">
-                            Deactivate?
+                            {t("deactivate")}
                           </span>
                           <Button
                             size="sm"
@@ -2698,14 +2716,14 @@ function StaffTab() {
                               setConfirmDeactivate(null);
                             }}
                           >
-                            Yes
+                            {t("yes")}
                           </Button>
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => setConfirmDeactivate(null)}
                           >
-                            No
+                            {t("no")}
                           </Button>
                         </div>
                       ) : (
@@ -2714,8 +2732,8 @@ function StaffTab() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              title="Clear sign-in lock"
-                              aria-label={`Clear sign-in lock for ${user.name}`}
+                              title={t("clearSignInLock")}
+                              aria-label={t("clearLockFor", { name: user.name })}
                               disabled={clearSignInLockMutation.isPending}
                               onClick={() =>
                                 clearSignInLockMutation.mutate({ id: user.id })
@@ -2760,8 +2778,8 @@ function StaffTab() {
                   <EmptyState
                     className="border-0 bg-transparent p-8"
                     icon={Users}
-                    title="No staff members found"
-                    description="Invite teammates or create a staff login to finish practice setup."
+                    title={t("noStaffMembersFound")}
+                    description={t("inviteTeammatesOrCreateA")}
                   />
                 </td>
               </tr>
@@ -2776,6 +2794,8 @@ function StaffTab() {
 
 // ── Appointment Types ───────────────────────────────────────
 function AppointmentTypesTab() {
+  const t = useTranslations("settings.page");
+  const roomTypeLabel = useRoomTypeLabel();
   const utils = trpc.useUtils();
   const {
     data: types,
@@ -2788,7 +2808,7 @@ function AppointmentTypesTab() {
       utils.settings.listAppointmentTypes.invalidate();
       setShowAdd(false);
       resetAddForm();
-      toast.success("Appointment type created");
+      toast.success(t("appointmentTypeCreated"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -2798,7 +2818,7 @@ function AppointmentTypesTab() {
     onSuccess: () => {
       utils.settings.listAppointmentTypes.invalidate();
       setEditingId(null);
-      toast.success("Appointment type updated");
+      toast.success(t("appointmentTypeUpdated"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -2807,7 +2827,7 @@ function AppointmentTypesTab() {
   const deleteMutation = trpc.settings.deleteAppointmentType.useMutation({
     onSuccess: () => {
       utils.settings.listAppointmentTypes.invalidate();
-      toast.success("Appointment type deleted");
+      toast.success(t("appointmentTypeDeleted"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -2856,8 +2876,8 @@ function AppointmentTypesTab() {
   if (appointmentTypesMissing) {
     return (
       <SettingsLoadError
-        title="Could not load appointment types"
-        message="The appointment type request finished without returning data. Try loading it again before editing scheduling defaults."
+        title={t("couldNotLoadAppointmentTypes")}
+        message={t("appointmentTypesEmpty")}
         onRetry={() => void refetchAppointmentTypes()}
       />
     );
@@ -2874,23 +2894,23 @@ function AppointmentTypesTab() {
           size="sm"
         >
           <Plus className="mr-2 h-4 w-4" />
-          Add Type
+          {t("addType")}
         </Button>
       </div>
 
       {showAdd && (
         <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-          <h3 className="text-sm font-semibold">New Appointment Type</h3>
+          <h3 className="text-sm font-semibold">{t("newAppointmentType")}</h3>
           <div className="grid grid-cols-2 gap-3">
             <Input
-              placeholder="Type name"
+              placeholder={t("typeName")}
               maxLength={APPOINTMENT_TYPE_NAME_MAX_LENGTH}
               value={addForm.name}
               onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
             />
             <Input
               type="number"
-              placeholder="Duration (minutes)"
+              placeholder={t("durationMinutes")}
               min={APPOINTMENT_TYPE_DURATION_MIN_MINUTES}
               max={APPOINTMENT_TYPE_DURATION_MAX_MINUTES}
               value={addForm.durationMinutes}
@@ -2902,7 +2922,7 @@ function AppointmentTypesTab() {
               }
             />
             <div className="space-y-1.5">
-              <span className="text-sm font-medium">Color</span>
+              <span className="text-sm font-medium">{t("color")}</span>
               <div className="flex gap-1.5">
                 {PRESET_COLORS.map((c) => (
                   <button
@@ -2930,9 +2950,9 @@ function AppointmentTypesTab() {
                 })
               }
             >
-              {ROOM_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
+              {ROOM_TYPES.map((roomType) => (
+                <option key={roomType} value={roomType}>
+                  {t(`roomTypes.${roomType}`)}
                 </option>
               ))}
             </select>
@@ -2950,10 +2970,10 @@ function AppointmentTypesTab() {
               {createMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Create
+              {t("create")}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>
-              Cancel
+              {t("cancel")}
             </Button>
           </div>
         </div>
@@ -2963,11 +2983,11 @@ function AppointmentTypesTab() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/50">
-              <th className="px-4 py-3 text-left font-medium">Name</th>
-              <th className="px-4 py-3 text-left font-medium">Duration</th>
-              <th className="px-4 py-3 text-left font-medium">Color</th>
-              <th className="px-4 py-3 text-left font-medium">Room Type</th>
-              <th className="px-4 py-3 text-right font-medium">Actions</th>
+              <th className="px-4 py-3 text-left font-medium">{t("name")}</th>
+              <th className="px-4 py-3 text-left font-medium">{t("duration")}</th>
+              <th className="px-4 py-3 text-left font-medium">{t("color")}</th>
+              <th className="px-4 py-3 text-left font-medium">{t("roomType")}</th>
+              <th className="px-4 py-3 text-right font-medium">{t("actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -3034,9 +3054,9 @@ function AppointmentTypesTab() {
                           })
                         }
                       >
-                        {ROOM_TYPES.map((t) => (
-                          <option key={t} value={t}>
-                            {t.charAt(0).toUpperCase() + t.slice(1)}
+                        {ROOM_TYPES.map((roomType) => (
+                          <option key={roomType} value={roomType}>
+                            {t(`roomTypes.${roomType}`)}
                           </option>
                         ))}
                       </select>
@@ -3074,7 +3094,7 @@ function AppointmentTypesTab() {
                   <>
                     <td className="px-4 py-3 font-medium">{type.name}</td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {type.durationMinutes} min
+                      {t("minutesShort", { count: type.durationMinutes })}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -3083,7 +3103,9 @@ function AppointmentTypesTab() {
                       />
                     </td>
                     <td className="px-4 py-3 text-muted-foreground capitalize">
-                      {type.defaultRoomType ?? "-"}
+                      {type.defaultRoomType
+                        ? roomTypeLabel(type.defaultRoomType)
+                        : "-"}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-1">
@@ -3122,8 +3144,8 @@ function AppointmentTypesTab() {
                   <EmptyState
                     className="border-0 bg-transparent p-8"
                     icon={Calendar}
-                    title="No appointment types configured"
-                    description="Add appointment types so scheduling can use default durations, colors, and room types."
+                    title={t("noAppointmentTypesConfigured")}
+                    description={t("addAppointmentTypesSoScheduling")}
                   />
                 </td>
               </tr>
@@ -3165,7 +3187,6 @@ type ImportPreview = {
   errors: string[];
 };
 type ImportMode = MigrationImportMode;
-const IMPORT_CSV_SIZE_MESSAGE = "CSV imports must be 5 MB or less.";
 function importPreviewRequestKey(
   mode: ImportMode,
   source: string,
@@ -3181,6 +3202,9 @@ function importPreviewRequestKey(
 }
 // ── Data Tab ─────────────────────────────────────────────────
 function DataTab() {
+  const t = useTranslations("settings.page");
+  const migrationCopy = useMigrationCopy();
+  const locale = useLocale();
   const [exportingType, setExportingType] = useState<string | null>(null);
   const [importMode, setImportMode] = useState<ImportMode | null>(null);
   const [migrationSource, setMigrationSource] = useState<
@@ -3251,11 +3275,11 @@ function DataTab() {
         });
         setRestoreResult(null);
         if (data.missingSections.length > 0) {
-          toast.error("Backup is missing required sections");
+          toast.error(t("backupIsMissingRequiredSections"));
         } else if (data.restoreErrors.length > 0) {
-          toast.error("Backup has invalid restore data");
+          toast.error(t("backupHasInvalidRestoreData"));
         } else {
-          toast.success("Backup verified");
+          toast.success(t("backupVerified"));
         }
         return;
       }
@@ -3265,7 +3289,7 @@ function DataTab() {
         totalRows: data.totalRows,
       });
       setConfirmFreshPractice(false);
-      toast.success(`Restored ${data.totalRows} rows`);
+      toast.success(t("restoredRows", { count: data.totalRows.toLocaleString(locale) }));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -3296,9 +3320,9 @@ function DataTab() {
       importRequestKeyRef.current = null;
       setImportPreview(null);
       setImportRecoveryMessage(
-        "This preview expired or the clinic data changed. Nothing new was imported by this attempt. Check the same file again.",
+        t("thisPreviewExpiredOrThe"),
       );
-      toast.error("Check the CSV again before importing.");
+      toast.error(t("checkTheCsvAgainBefore"));
       return;
     }
     toast.error(err.message);
@@ -3324,7 +3348,7 @@ function DataTab() {
         });
         setImportRecoveryMessage("");
         setImportResult(null);
-        toast.success("Client CSV checked");
+        toast.success(t("clientCsvChecked"));
         return;
       }
 
@@ -3337,7 +3361,7 @@ function DataTab() {
       setCsvText("");
       setCsvFileName("");
       setImportRecoveryMessage("");
-      toast.success("Clients imported");
+      toast.success(t("clientsImported"));
     },
     onError: handleCsvImportError,
   });
@@ -3362,7 +3386,7 @@ function DataTab() {
         });
         setImportRecoveryMessage("");
         setImportResult(null);
-        toast.success("Patient CSV checked");
+        toast.success(t("patientCsvChecked"));
         return;
       }
 
@@ -3375,7 +3399,7 @@ function DataTab() {
       setCsvText("");
       setCsvFileName("");
       setImportRecoveryMessage("");
-      toast.success("Patients imported");
+      toast.success(t("patientsImported"));
     },
     onError: handleCsvImportError,
   });
@@ -3399,7 +3423,7 @@ function DataTab() {
         });
         setImportRecoveryMessage("");
         setImportResult(null);
-        toast.success("Vaccination CSV checked");
+        toast.success(t("vaccinationCsvChecked"));
         return;
       }
 
@@ -3408,7 +3432,7 @@ function DataTab() {
       setCsvText("");
       setCsvFileName("");
       setImportRecoveryMessage("");
-      toast.success("Vaccine history imported");
+      toast.success(t("vaccineHistoryImported"));
     },
     onError: handleCsvImportError,
   });
@@ -3432,7 +3456,7 @@ function DataTab() {
         });
         setImportRecoveryMessage("");
         setImportResult(null);
-        toast.success("Medical history CSV checked");
+        toast.success(t("medicalHistoryCsvChecked"));
         return;
       }
 
@@ -3441,7 +3465,7 @@ function DataTab() {
       setCsvText("");
       setCsvFileName("");
       setImportRecoveryMessage("");
-      toast.success("Medical history imported");
+      toast.success(t("medicalHistoryImported"));
     },
     onError: handleCsvImportError,
   });
@@ -3452,7 +3476,7 @@ function DataTab() {
         utils.settings.getAccountDeletionRequest.invalidate();
         setConfirmExportDownloaded(false);
         setConfirmManualReview(false);
-        toast.success("Account deletion request sent");
+        toast.success(t("accountDeletionRequestSent"));
       },
       onError: (err) => toast.error(err.message),
     });
@@ -3470,14 +3494,14 @@ function DataTab() {
   const clearDemo = trpc.settings.clearDemoData.useMutation({
     onSuccess: () => {
       utils.settings.onboardingStatus.invalidate();
-      toast.success("Sample data removed");
+      toast.success(t("sampleDataRemoved"));
     },
     onError: (err) => toast.error(err.message),
   });
   const reseedDemo = trpc.settings.reseedDemoData.useMutation({
     onSuccess: () => {
       utils.settings.onboardingStatus.invalidate();
-      toast.success("Sample data added");
+      toast.success(t("sampleDataAdded"));
     },
     onError: (err) => toast.error(err.message),
   });
@@ -3491,26 +3515,26 @@ function DataTab() {
           const result = await exportClients.refetch();
           data = requireSettingsExportData(
             result,
-            "Could not export clients",
+            t("couldNotExportClients"),
           ) as Record<string, unknown>[];
         } else if (type === "patients") {
           const result = await exportPatients.refetch();
           data = requireSettingsExportData(
             result,
-            "Could not export patients",
+            t("couldNotExportPatients"),
           ) as Record<string, unknown>[];
         } else if (type === "appointments") {
           const result = await exportAppointments.refetch();
           data = requireSettingsExportData(
             result,
-            "Could not export appointments",
+            t("couldNotExportAppointments"),
           ) as Record<string, unknown>[];
         } else if (type === "invoices") {
           const result = await exportInvoices.refetch();
           // Flatten items for CSV
           const raw = requireSettingsExportData(
             result,
-            "Could not export invoices",
+            t("couldNotExportInvoices"),
           );
           data = raw.map((inv) => {
             const { items, ...rest } = inv;
@@ -3525,7 +3549,7 @@ function DataTab() {
         downloadCSV(data, `${type}-export.csv`);
       } catch (err) {
         toast.error(
-          err instanceof Error ? err.message : "Could not export data",
+          err instanceof Error ? err.message : t("couldNotExportData"),
         );
       } finally {
         setExportingType(null);
@@ -3538,18 +3562,18 @@ function DataTab() {
     setExportingType("full-backup");
     try {
       if (!verifiedPracticeSettings) {
-        throw new Error("Could not load practice settings for backup export");
+        throw new Error(t("couldNotLoadPracticeSettings"));
       }
       const result = await exportFullBackup.refetch();
       const backup = requireSettingsExportData(
         result,
-        "Could not export full backup",
+        t("couldNotExportFullBackup"),
       );
       const date = formatSettingsDateInput(new Date(), settingsTimeZone);
       downloadJSON(backup, `openvpm-full-backup-${date}.json`);
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Could not export full backup",
+        err instanceof Error ? err.message : t("couldNotExportFullBackup"),
       );
     } finally {
       setExportingType(null);
@@ -3568,7 +3592,7 @@ function DataTab() {
 
       if (file.size > PRACTICE_BACKUP_JSON_MAX_BYTES) {
         clearBackupFile();
-        toast.error(PRACTICE_BACKUP_JSON_SIZE_MESSAGE);
+        toast.error(t("backupTooLarge"));
         return;
       }
 
@@ -3584,12 +3608,12 @@ function DataTab() {
           const text = String(e.target?.result ?? "");
           if (!isPracticeBackupJsonSizeValid(text)) {
             clearBackupFile();
-            toast.error(PRACTICE_BACKUP_JSON_SIZE_MESSAGE);
+            toast.error(t("backupTooLarge"));
             return;
           }
           const parsed = JSON.parse(text);
           if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-            throw new Error("Backup JSON must be an object");
+            throw new Error(t("backupJsonMustBeAn"));
           }
           const backup = parsed as Record<string, unknown>;
           setBackupPayload(backup);
@@ -3598,13 +3622,13 @@ function DataTab() {
           setBackupFileName("");
           setBackupPayload(null);
           toast.error(
-            err instanceof Error ? err.message : "Could not read backup JSON",
+            err instanceof Error ? err.message : t("couldNotReadBackupJson"),
           );
         }
       };
       reader.onerror = () => {
         clearBackupFile();
-        toast.error("Could not read backup JSON");
+        toast.error(t("couldNotReadBackupJson"));
       };
       reader.readAsText(file);
     },
@@ -3614,7 +3638,7 @@ function DataTab() {
   const handleBackupRestore = useCallback(() => {
     if (!backupPayload || !confirmFreshPractice) return;
     if (!isPracticeBackupJsonSizeValid(backupPayload)) {
-      toast.error(PRACTICE_BACKUP_JSON_SIZE_MESSAGE);
+      toast.error(t("backupTooLarge"));
       return;
     }
     restoreBackup.mutate({
@@ -3643,7 +3667,7 @@ function DataTab() {
   const runImportPreview = useCallback(
     (text: string) => {
       if (!importMode || !migrationSource) {
-        toast.error("Choose the system you are moving from first.");
+        toast.error(t("chooseTheSystemYouAre2"));
         return;
       }
       setImportPreview(null);
@@ -3679,7 +3703,7 @@ function DataTab() {
   const handleFileSelect = useCallback(
     (file: File) => {
       if (!importMode || !migrationSource) {
-        toast.error("Choose the system you are moving from first.");
+        toast.error(t("chooseTheSystemYouAre2"));
         return;
       }
       const readVersion = ++importFileReadVersionRef.current;
@@ -3694,7 +3718,7 @@ function DataTab() {
 
       if (file.size > IMPORT_CSV_MAX_BYTES) {
         clearImportFile();
-        toast.error(IMPORT_CSV_SIZE_MESSAGE);
+        toast.error(t("csvTooLarge"));
         return;
       }
 
@@ -3709,12 +3733,12 @@ function DataTab() {
         const text = String(e.target?.result ?? "");
         if (!text.trim()) {
           setCsvFileName("");
-          toast.error("CSV file is empty");
+          toast.error(t("csvFileIsEmpty"));
           return;
         }
         if (!isImportCsvSizeValid(text)) {
           clearImportFile();
-          toast.error(IMPORT_CSV_SIZE_MESSAGE);
+          toast.error(t("csvTooLarge"));
           return;
         }
 
@@ -3724,7 +3748,7 @@ function DataTab() {
       reader.onerror = () => {
         if (importFileReadVersionRef.current !== readVersion) return;
         setCsvFileName("");
-        toast.error("Could not read CSV file");
+        toast.error(t("couldNotReadCsvFile"));
       };
       reader.readAsText(file);
     },
@@ -3746,7 +3770,7 @@ function DataTab() {
   const handleImportConfirm = useCallback(() => {
     if (!csvText || !importMode || !importPreview) return;
     if (!isImportCsvSizeValid(csvText)) {
-      toast.error(IMPORT_CSV_SIZE_MESSAGE);
+      toast.error(t("csvTooLarge"));
       return;
     }
     const currentRequestKey = importPreviewRequestKey(
@@ -3757,7 +3781,7 @@ function DataTab() {
     if (importPreview.requestKey !== currentRequestKey) {
       importRequestKeyRef.current = null;
       setImportPreview(null);
-      toast.error("The file or source changed. Check the CSV again.");
+      toast.error(t("theFileOrSourceChanged"));
       return;
     }
     if (importMode === "clients") {
@@ -3821,7 +3845,7 @@ function DataTab() {
     Boolean(deletionRequest?.requestedAt) &&
     (practiceSettingsMissing || !verifiedPracticeSettings);
   const deletionRequestedAt = deletionRequest?.requestedAt
-    ? formatSettingsDateTime(deletionRequest.requestedAt, settingsTimeZone)
+    ? formatSettingsDateTime(deletionRequest.requestedAt, settingsTimeZone, locale)
     : null;
   const isDeletionStatusLoading =
     accountDeletionRequest.isLoading ||
@@ -3830,7 +3854,7 @@ function DataTab() {
     accountDeletionRequest.error ??
     (deletionRequest?.requestedAt ? practiceSettingsError : null) ??
     (deletionSettingsMissing
-      ? new Error("Could not load practice settings. Please retry.")
+      ? new Error(t("couldNotLoadPracticeSettings2"))
       : null);
   const isDeletionContactEmailValid = (email: string) =>
     email.trim().length <= SETTINGS_EMAIL_MAX_LENGTH &&
@@ -3848,10 +3872,9 @@ function DataTab() {
     <div className="space-y-8">
       {/* Sample data */}
       <div>
-        <h3 className="text-sm font-semibold mb-1">Sample data</h3>
+        <h3 className="text-sm font-semibold mb-1">{t("sampleData")}</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          A practice full of made up clients and pets so you can explore. Add it
-          any time, and remove it when you are ready to work for real.
+          {t("aPracticeFullOfMade")}
         </p>
         <Button
           variant="outline"
@@ -3872,21 +3895,21 @@ function DataTab() {
             reseedDemo.isPending
           }
         >
-          {hasDemo ? "Remove sample data" : "Add sample data"}
+          {hasDemo ? t("removeSampleData") : t("addSampleData")}
         </Button>
         {onboarding.error || onboardingMissing ? (
           <p className="mt-2 text-xs text-destructive">
             {onboarding.error?.message ??
-              "Unable to load sample data status. Please retry."}
+              t("sampleStatusError")}
           </p>
         ) : null}
       </div>
 
       {/* Export Section */}
       <div>
-        <h3 className="text-sm font-semibold mb-1">Export Data</h3>
+        <h3 className="text-sm font-semibold mb-1">{t("exportData")}</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Download your practice data.
+          {t("downloadYourPracticeData")}
         </p>
         <div className="mb-3 max-w-2xl">
           <Button
@@ -3907,36 +3930,35 @@ function DataTab() {
               <Download className="h-4 w-4" />
             )}
             <Database className="h-4 w-4" />
-            Export Database Backup
+            {t("exportDatabaseBackup")}
           </Button>
           {practiceSettingsError || practiceSettingsMissing ? (
             <p className="mt-2 text-xs text-destructive">
               {practiceSettingsError?.message ??
-                "Unable to load practice settings for backup export."}
+                t("backupSettingsError")}
             </p>
           ) : null}
           <p className="mt-2 text-xs text-muted-foreground">
-            Includes structured records and attachment manifests. Uploaded
-            document and image bytes are not embedded in the JSON download.
+            {t("includesStructuredRecordsAndAttachment")}
           </p>
         </div>
         <div className="grid grid-cols-2 gap-3 max-w-2xl">
           {(
             [
-              { key: "clients", label: "Export Clients", icon: Users },
+              { key: "clients", label: t("exportClients"), icon: Users },
               {
                 key: "patients",
-                label: "Export Patients",
+                label: t("exportPatients"),
                 icon: FileSpreadsheet,
               },
               {
                 key: "appointments",
-                label: "Export Appointments",
+                label: t("exportAppointments"),
                 icon: Calendar,
               },
               {
                 key: "invoices",
-                label: "Export Invoices",
+                label: t("exportInvoices"),
                 icon: FileSpreadsheet,
               },
             ] as const
@@ -3962,23 +3984,19 @@ function DataTab() {
 
       {/* Database backup restore */}
       <div>
-        <h3 className="text-sm font-semibold mb-1">Restore Database Backup</h3>
+        <h3 className="text-sm font-semibold mb-1">{t("restoreDatabaseBackup")}</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Restore structured data into an empty practice. Existing clients,
-          patients, appointments, or invoices block the restore. A backup with
-          attachment manifests must target its original practice.
+          {t("restoreStructuredDataIntoAn")}
         </p>
         <div className="max-w-2xl rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <div className="min-w-0 flex-1 space-y-4">
               <div>
-                <p className="text-sm font-medium">Empty-practice restore</p>
+                <p className="text-sm font-medium">{t("emptyPracticeRestore")}</p>
                 <p className="mt-1 text-xs leading-5 text-amber-900 dark:text-amber-200">
-                  OpenVPM first checks the backup sections, row counts, and
-                  internal record links. Restores are non-destructive and only
-                  insert rows that do not already exist.{" "}
-                  {PRACTICE_BACKUP_JSON_SIZE_MESSAGE}
+                  {t("restoreIntro")}{" "}
+                  {t("backupTooLarge")}
                 </p>
               </div>
 
@@ -3995,7 +4013,7 @@ function DataTab() {
                   ) : (
                     <Upload className="h-4 w-4" />
                   )}
-                  Choose Backup JSON
+                  {t("chooseBackupJson")}
                 </Button>
                 {backupFileName && (
                   <span className="truncate text-xs text-amber-900 dark:text-amber-200">
@@ -4027,19 +4045,21 @@ function DataTab() {
                       }
                     >
                       {backupSummary.missingSections.length > 0
-                        ? "Missing sections"
+                        ? t("missingSections")
                         : backupSummary.restoreErrors.length > 0
-                          ? "Invalid backup data"
-                          : "Verified"}
+                          ? t("invalidBackupData")
+                          : t("verified")}
                     </Badge>
                     <span className="text-muted-foreground">
-                      {backupSummary.totalRows.toLocaleString()} rows detected
+                      {t("rowsDetected", {
+                        count: backupSummary.totalRows.toLocaleString(locale),
+                      })}
                     </span>
                   </div>
 
                   {backupSummary.missingSections.length > 0 ? (
                     <p className="mt-2 text-xs text-destructive">
-                      Missing: {backupSummary.missingSections.join(", ")}
+                      {t("missingSectionsList", { sections: backupSummary.missingSections.join(", ") })}
                     </p>
                   ) : backupSummary.restoreErrors.length > 0 ? (
                     <div className="mt-2 space-y-1 text-xs text-destructive">
@@ -4061,7 +4081,7 @@ function DataTab() {
                               {section}
                             </p>
                             <p className="text-sm font-semibold">
-                              {count.toLocaleString()}
+                              {count.toLocaleString(locale)}
                             </p>
                           </div>
                         ))}
@@ -4074,7 +4094,9 @@ function DataTab() {
                 <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-100">
                   <div className="flex items-center gap-2 font-medium">
                     <Check className="h-4 w-4" />
-                    Restored {restoreResult.totalRows.toLocaleString()} rows
+                    {t("restoredRows", {
+                      count: restoreResult.totalRows.toLocaleString(locale),
+                    })}
                   </div>
                 </div>
               )}
@@ -4094,8 +4116,7 @@ function DataTab() {
                   className="mt-0.5"
                 />
                 <span>
-                  I confirm this practice has no live clients, patients,
-                  appointments, or invoices.
+                  {t("iConfirmThisPracticeHas")}
                 </span>
               </label>
 
@@ -4110,7 +4131,7 @@ function DataTab() {
                 ) : (
                   <Database className="h-4 w-4" />
                 )}
-                Restore into Empty Practice
+                {t("restoreIntoEmpty")}
               </Button>
             </div>
           </div>
@@ -4119,29 +4140,28 @@ function DataTab() {
 
       {/* Account deletion */}
       <div>
-        <h3 className="text-sm font-semibold mb-1">Account Deletion</h3>
+        <h3 className="text-sm font-semibold mb-1">{t("accountDeletion")}</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Start a deletion review after exporting the database backup. Review
-          uploaded files separately because their bytes are not in the JSON.
+          {t("startADeletionReviewAfter")}
         </p>
         <div className="max-w-2xl rounded-lg border border-destructive/30 bg-destructive/5 p-4">
           {isDeletionStatusLoading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Loading deletion status
+              {t("loadingDeletionStatus")}
             </div>
           ) : deletionStatusError ? (
             <div className="flex items-start gap-2 text-sm text-destructive">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <div>
-                <p className="font-medium">Could not load deletion status</p>
+                <p className="font-medium">{t("couldNotLoadDeletionStatus")}</p>
                 <p className="mt-1 text-xs">{deletionStatusError.message}</p>
               </div>
             </div>
           ) : deletionRequest ? (
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="warning">Review requested</Badge>
+                <Badge variant="warning">{t("reviewRequested")}</Badge>
                 {deletionRequestedAt && (
                   <span className="text-sm text-muted-foreground">
                     {deletionRequestedAt}
@@ -4150,11 +4170,11 @@ function DataTab() {
               </div>
               <div className="grid gap-1 text-sm">
                 <div>
-                  <span className="font-medium">Contact:</span>{" "}
+                  <span className="font-medium">{t("contact2")}</span>{" "}
                   {deletionRequest.contactEmail}
                 </div>
                 <div>
-                  <span className="font-medium">Requested by:</span>{" "}
+                  <span className="font-medium">{t("requestedBy")}</span>{" "}
                   {deletionRequest.requestedByEmail}
                 </div>
               </div>
@@ -4166,7 +4186,7 @@ function DataTab() {
                   htmlFor="account-deletion-contact"
                   className="mb-1 block text-sm font-medium"
                 >
-                  Contact email
+                  {t("contactEmail")}
                 </label>
                 <Input
                   id="account-deletion-contact"
@@ -4182,7 +4202,7 @@ function DataTab() {
                   htmlFor="account-deletion-reason"
                   className="mb-1 block text-sm font-medium"
                 >
-                  Notes
+                  {t("notes")}
                 </label>
                 <textarea
                   id="account-deletion-reason"
@@ -4191,7 +4211,7 @@ function DataTab() {
                   maxLength={ACCOUNT_DELETION_REASON_MAX_LENGTH}
                   rows={3}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
-                  placeholder="Optional context for the ops review"
+                  placeholder={t("optionalContextForTheOps")}
                 />
               </div>
               <label className="flex items-start gap-2 text-sm">
@@ -4203,7 +4223,7 @@ function DataTab() {
                   className="mt-0.5"
                 />
                 <span>
-                  I downloaded the database backup before requesting deletion.
+                  {t("iDownloadedTheDatabaseBackup")}
                 </span>
               </label>
               <label className="flex items-start gap-2 text-sm">
@@ -4215,8 +4235,7 @@ function DataTab() {
                   className="mt-0.5"
                 />
                 <span>
-                  I understand deletion needs manual retention review before
-                  records are erased.
+                  {t("iUnderstandDeletionNeedsManual")}
                 </span>
               </label>
               <Button
@@ -4230,7 +4249,7 @@ function DataTab() {
                 ) : (
                   <Trash2 className="h-4 w-4" />
                 )}
-                Request Deletion Review
+                {t("requestDeletionReview")}
               </Button>
             </div>
           )}
@@ -4239,21 +4258,15 @@ function DataTab() {
 
       {/* Import Section */}
       <div>
-        <h3 className="text-sm font-semibold mb-1">Import Data</h3>
+        <h3 className="text-sm font-semibold mb-1">{t("importData")}</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Moving from another system? Import clients first, then patients, then
-          vaccine history, then medical history (visit notes). Every file is
-          dry-run first so you see duplicates and missing matches before
-          anything is saved. Common column names from AVImark, Cornerstone, and
-          ezyVet are recognized. Shepherd migrations are currently guided so we
-          can verify the clinic's exact export format. Owner and patient IDs
-          stay linked across files, even when an owner has no email.
+          {t("importIntro")}
         </p>
 
         {/* Where the data is coming from (export instructions per source) */}
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <span className="text-xs font-medium text-muted-foreground">
-            Coming from:
+            {t("comingFrom")}
           </span>
           {MIGRATION_SOURCES.map((source) => (
             <button
@@ -4277,7 +4290,7 @@ function DataTab() {
                   : "border-border text-muted-foreground hover:border-primary/50",
               )}
             >
-              {source.name}
+              {migrationCopy.sourceName(source.id)}
             </button>
           ))}
         </div>
@@ -4285,23 +4298,20 @@ function DataTab() {
           <div className="mb-4 max-w-2xl space-y-3">
             <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
               <p>
-                {
-                  MIGRATION_SOURCES.find((s) => s.id === migrationSource)!
-                    .exportHint
-                }
+                {migrationCopy.sourceExportHint(migrationSource)}
               </p>
             </div>
             <MigrationHelpRequest source={migrationSource} />
           </div>
         ) : (
           <p className="mb-4 text-xs font-medium text-amber-700">
-            Choose the system you are moving from before selecting an import.
+            {t("chooseTheSystemYouAre")}
           </p>
         )}
 
         {/* Import mode selector */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {MIGRATION_STEPS.map(({ mode, label }, index) => (
+          {MIGRATION_STEPS.map(({ mode }, index) => (
             <Button
               key={mode}
               variant={importMode === mode ? "default" : "outline"}
@@ -4318,7 +4328,10 @@ function DataTab() {
               }}
             >
               <Upload className="mr-2 h-4 w-4" />
-              {index + 1}. Import {label}
+              {t("importStep", {
+                index: index + 1,
+                label: migrationCopy.stepLabel(mode),
+              })}
             </Button>
           ))}
         </div>
@@ -4327,11 +4340,9 @@ function DataTab() {
           <div className="max-w-2xl space-y-4">
             {/* Expected columns hint */}
             <p className="text-xs text-muted-foreground">
-              Expected columns:{" "}
-              {
-                MIGRATION_STEPS.find((step) => step.mode === importMode)!
-                  .columnHint
-              }
+              {t("expectedColumns", {
+                hint: migrationCopy.stepColumnHint(importMode),
+              })}
             </p>
 
             {/* Drop zone */}
@@ -4352,15 +4363,13 @@ function DataTab() {
             >
               <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
               <p className="text-sm text-muted-foreground">
-                Drag and drop a CSV file here, or click to select
+                {t("dragAndDropACsv")}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                CSV files must be 5 MB or less. The file is dry-run first; no
-                rows import until you confirm.
+                {t("csvDropHint")}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Existing owners connect by one exact email. Existing pets need a
-                matching microchip or date of birth before an ID is connected.
+                {t("existingOwnersConnectByOne")}
               </p>
               <input
                 ref={fileInputRef}
@@ -4378,7 +4387,7 @@ function DataTab() {
             {/* Server dry-run preview */}
             {csvFileName && (
               <p className="text-xs text-muted-foreground">
-                Selected file:{" "}
+                {t("selectedFileLabel")}{" "}
                 <span className="font-medium">{csvFileName}</span>
               </p>
             )}
@@ -4397,7 +4406,7 @@ function DataTab() {
                   {isImportPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : null}
-                  Check again
+                  {t("checkAgain")}
                 </Button>
               </div>
             ) : null}
@@ -4411,64 +4420,63 @@ function DataTab() {
                         importPreview.willInsert > 0 ? "success" : "warning"
                       }
                     >
-                      Dry run complete
+                      {t("dryRunComplete")}
                     </Badge>
                     <span className="text-sm text-muted-foreground">
-                      No data has been imported yet.
+                      {t("noDataHasBeenImported")}
                     </span>
                   </div>
                   <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
                     <ImportStat
-                      label="Valid rows"
+                      label={t("validRows")}
                       value={importPreview.total}
                     />
                     <ImportStat
-                      label="Will import"
+                      label={t("willImport")}
                       value={importPreview.willInsert}
                     />
                     {typeof importPreview.duplicates === "number" && (
                       <ImportStat
-                        label="Duplicates"
+                        label={t("duplicates")}
                         value={importPreview.duplicates ?? 0}
                       />
                     )}
                     {typeof importPreview.willReconcile === "number" &&
                       importPreview.willReconcile > 0 && (
                         <ImportStat
-                          label="IDs to connect"
+                          label={t("idsToConnect")}
                           value={importPreview.willReconcile}
                         />
                       )}
                     {importMode === "patients" && (
                       <ImportStat
-                        label="Missing owners"
+                        label={t("missingOwners")}
                         value={importPreview.unmatchedClient ?? 0}
                       />
                     )}
                     {(importMode === "vaccinations" ||
                       importMode === "soapNotes") && (
                       <ImportStat
-                        label="Missing pets"
+                        label={t("missingPets")}
                         value={importPreview.unmatchedPatient ?? 0}
                       />
                     )}
                     <ImportStat
-                      label="Row issues"
+                      label={t("rowIssues")}
                       value={importPreview.errors.length}
                     />
                   </div>
 
                   <ImportRowIssues errors={importPreview.errors} csv={csvText} />
                   <p className="mt-4 text-xs text-muted-foreground">
-                    Only the{" "}
-                    {importPreview.willInsert +
-                      (importPreview.willReconcile ?? 0)}{" "}
-                    listed changes will be saved. Review any reported issues first;
-                    some rows may import with a warning.
+                    {t("onlyListedSaved", {
+                      count:
+                        importPreview.willInsert +
+                        (importPreview.willReconcile ?? 0),
+                    })}
                   </p>
                   <p className="mt-2 text-xs font-medium text-amber-700">
-                    Start with a small representative sample. A confirmed import
-                    has no one-click rollback.
+                    {t("startWithASmallRepresentative")}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -4487,10 +4495,11 @@ function DataTab() {
                     ) : (
                       <Check className="mr-2 h-4 w-4" />
                     )}
-                    Confirm Import (
-                    {importPreview.willInsert +
-                      (importPreview.willReconcile ?? 0)}{" "}
-                    changes)
+                    {t("confirmImport", {
+                      count:
+                        importPreview.willInsert +
+                        (importPreview.willReconcile ?? 0),
+                    })}
                   </Button>
                   <Button
                     size="sm"
@@ -4504,7 +4513,7 @@ function DataTab() {
                       setImportRecoveryMessage("");
                     }}
                   >
-                    Cancel
+                    {t("cancel")}
                   </Button>
                 </div>
               </div>
@@ -4515,15 +4524,15 @@ function DataTab() {
               <div className="rounded-lg border border-border bg-card p-4 space-y-2">
                 <div className="flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400">
                   <Check className="h-4 w-4" />
-                  {importResult.imported} records imported successfully
+                  {t("importedRecords", { count: importResult.imported })}
                   {(importResult.reconciled ?? 0) > 0
-                    ? `; ${importResult.reconciled} existing record IDs connected`
+                    ? t("connectedIds", { count: importResult.reconciled ?? 0 })
                     : ""}
                 </div>
                 {importResult.errors && importResult.errors.length > 0 && (
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-destructive">
-                      {importResult.errors.length} error(s):
+                      {t("errorCount", { count: importResult.errors.length })}
                     </p>
                     <ul className="text-xs text-destructive space-y-0.5">
                       {importResult.errors.map((err, i) => (
@@ -4565,6 +4574,8 @@ function ImportStat({ label, value }: { label: string; value: number }) {
 
 // ── Rooms ───────────────────────────────────────────────────
 function RoomsTab() {
+  const t = useTranslations("settings.page");
+  const roomTypeLabel = useRoomTypeLabel();
   const utils = trpc.useUtils();
   const locationsQuery = trpc.settings.listLocations.useQuery();
   const {
@@ -4585,7 +4596,7 @@ function RoomsTab() {
           locationsQuery.data?.[0]?.id ??
           "",
       });
-      toast.success("Room created");
+      toast.success(t("roomCreated"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -4594,7 +4605,7 @@ function RoomsTab() {
   const deleteMutation = trpc.settings.deleteRoom.useMutation({
     onSuccess: () => {
       utils.settings.listRooms.invalidate();
-      toast.success("Room deleted");
+      toast.success(t("roomDeleted"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -4636,8 +4647,8 @@ function RoomsTab() {
   if (roomsMissing) {
     return (
       <SettingsLoadError
-        title="Could not load rooms"
-        message="The room list request finished without returning data. Try loading it again before editing rooms."
+        title={t("couldNotLoadRooms")}
+        message={t("roomsEmpty")}
         onRetry={() => void refetchRooms()}
       />
     );
@@ -4648,16 +4659,16 @@ function RoomsTab() {
       <div className="flex justify-end">
         <Button onClick={() => setShowAdd(!showAdd)} size="sm">
           <Plus className="mr-2 h-4 w-4" />
-          Add Room
+          {t("addRoom")}
         </Button>
       </div>
 
       {showAdd && (
         <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-          <h3 className="text-sm font-semibold">New Room</h3>
+          <h3 className="text-sm font-semibold">{t("newRoom")}</h3>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Input
-              placeholder="Room name"
+              placeholder={t("roomName")}
               maxLength={ROOM_NAME_MAX_LENGTH}
               value={addForm.name}
               onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
@@ -4672,14 +4683,14 @@ function RoomsTab() {
                 })
               }
             >
-              {ROOM_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
+              {ROOM_TYPES.map((roomType) => (
+                <option key={roomType} value={roomType}>
+                  {t(`roomTypes.${roomType}`)}
                 </option>
               ))}
             </select>
             <select
-              aria-label="Clinic location"
+              aria-label={t("clinicLocation")}
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               value={addForm.locationId}
               onChange={(event) =>
@@ -4687,7 +4698,7 @@ function RoomsTab() {
               }
               disabled={locationsQuery.isLoading || roomLocations.length === 0}
             >
-              <option value="">Select location</option>
+              <option value="">{t("selectLocation")}</option>
               {roomLocations.map((location) => (
                 <option key={location.id} value={location.id}>
                   {location.name}
@@ -4708,10 +4719,10 @@ function RoomsTab() {
               {createMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Create
+              {t("create")}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>
-              Cancel
+              {t("cancel")}
             </Button>
           </div>
         </div>
@@ -4721,10 +4732,10 @@ function RoomsTab() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/50">
-              <th className="px-4 py-3 text-left font-medium">Name</th>
-              <th className="px-4 py-3 text-left font-medium">Type</th>
-              <th className="px-4 py-3 text-left font-medium">Location</th>
-              <th className="px-4 py-3 text-right font-medium">Actions</th>
+              <th className="px-4 py-3 text-left font-medium">{t("name")}</th>
+              <th className="px-4 py-3 text-left font-medium">{t("type")}</th>
+              <th className="px-4 py-3 text-left font-medium">{t("location2")}</th>
+              <th className="px-4 py-3 text-right font-medium">{t("actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -4735,12 +4746,12 @@ function RoomsTab() {
               >
                 <td className="px-4 py-3 font-medium">{room.name}</td>
                 <td className="px-4 py-3 text-muted-foreground capitalize">
-                  {room.type}
+                  {roomTypeLabel(room.type)}
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">
                   {roomLocations.find(
                     (location) => location.id === room.locationId,
-                  )?.name ?? "Unassigned"}
+                  )?.name ?? t("unassigned")}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <Button
@@ -4759,8 +4770,8 @@ function RoomsTab() {
                   <EmptyState
                     className="border-0 bg-transparent p-8"
                     icon={DoorOpen}
-                    title="No rooms configured"
-                    description="Add rooms so appointments can reserve exam, treatment, surgery, or boarding spaces."
+                    title={t("noRoomsConfigured")}
+                    description={t("addRoomsSoAppointmentsCan")}
                   />
                 </td>
               </tr>
@@ -4774,6 +4785,7 @@ function RoomsTab() {
 
 // ── Wellness Plans ──────────────────────────────────────────
 function WellnessPlansTab() {
+  const t = useTranslations("settings.page");
   const formatCurrency = useCurrencyFormatter();
   const utils = trpc.useUtils();
   const {
@@ -4792,7 +4804,7 @@ function WellnessPlansTab() {
         price: "",
         billingInterval: "monthly",
       });
-      toast.success("Wellness plan created");
+      toast.success(t("wellnessPlanCreated"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -4804,8 +4816,8 @@ function WellnessPlansTab() {
       utils.wellness.listDue.invalidate();
       toast.success(
         variables.active
-          ? "Wellness plan reactivated"
-          : "Wellness plan deactivated",
+          ? t("wellnessPlanReactivated")
+          : t("wellnessPlanDeactivated"),
       );
     },
     onError: (err) => {
@@ -4847,8 +4859,8 @@ function WellnessPlansTab() {
   if (wellnessPlansMissing) {
     return (
       <SettingsLoadError
-        title="Could not load wellness plans"
-        message="The wellness plan request finished without returning data. Try loading it again before editing membership plans."
+        title={t("couldNotLoadWellnessPlans")}
+        message={t("wellnessEmpty")}
         onRetry={() => void refetchWellnessPlans()}
       />
     );
@@ -4859,26 +4871,25 @@ function WellnessPlansTab() {
       <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-sm font-semibold">Scheduled invoice billing</h3>
-            <Badge variant="secondary">No auto-charge</Badge>
+            <h3 className="text-sm font-semibold">{t("scheduledInvoiceBilling")}</h3>
+            <Badge variant="secondary">{t("noAutoCharge")}</Badge>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Wellness plans generate due invoices by cadence; Stripe checkout is
-            collected on each invoice.
+            {t("wellnessIntro")}
           </p>
         </div>
         <Button size="sm" onClick={() => setShowAdd(!showAdd)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Plan
+          {t("addPlan")}
         </Button>
       </div>
 
       {showAdd && (
         <div className="space-y-3 rounded-lg border border-border bg-card p-4">
-          <h3 className="text-sm font-semibold">New Wellness Plan</h3>
+          <h3 className="text-sm font-semibold">{t("newWellnessPlan")}</h3>
           <div className="grid gap-3 md:grid-cols-[1fr_9rem_9rem]">
             <Input
-              placeholder="Plan name"
+              placeholder={t("planName")}
               maxLength={WELLNESS_PLAN_NAME_MAX_LENGTH}
               value={addForm.name}
               onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
@@ -4888,7 +4899,7 @@ function WellnessPlansTab() {
               min={WELLNESS_PLAN_PRICE_MIN}
               max={WELLNESS_PLAN_PRICE_MAX}
               step={10 ** -WELLNESS_PLAN_PRICE_SCALE}
-              placeholder="Price"
+              placeholder={t("price")}
               value={addForm.price}
               onChange={(e) =>
                 setAddForm({ ...addForm, price: e.target.value })
@@ -4905,12 +4916,12 @@ function WellnessPlansTab() {
                 })
               }
             >
-              <option value="monthly">Monthly</option>
-              <option value="annual">Annual</option>
+              <option value="monthly">{t("monthly")}</option>
+              <option value="annual">{t("annual")}</option>
             </select>
           </div>
           <Input
-            placeholder="Description (optional)"
+            placeholder={t("descriptionOptional")}
             maxLength={WELLNESS_PLAN_DESCRIPTION_MAX_LENGTH}
             value={addForm.description}
             onChange={(e) =>
@@ -4933,10 +4944,10 @@ function WellnessPlansTab() {
               {createMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Create
+              {t("create")}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>
-              Cancel
+              {t("cancel")}
             </Button>
           </div>
         </div>
@@ -4946,11 +4957,11 @@ function WellnessPlansTab() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/50">
-              <th className="px-4 py-3 text-left font-medium">Name</th>
-              <th className="px-4 py-3 text-left font-medium">Interval</th>
-              <th className="px-4 py-3 text-right font-medium">Price</th>
-              <th className="px-4 py-3 text-left font-medium">Status</th>
-              <th className="px-4 py-3 text-right font-medium">Actions</th>
+              <th className="px-4 py-3 text-left font-medium">{t("name")}</th>
+              <th className="px-4 py-3 text-left font-medium">{t("interval")}</th>
+              <th className="px-4 py-3 text-right font-medium">{t("price")}</th>
+              <th className="px-4 py-3 text-left font-medium">{t("status")}</th>
+              <th className="px-4 py-3 text-right font-medium">{t("actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -4969,10 +4980,10 @@ function WellnessPlansTab() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="capitalize text-muted-foreground">
-                    {plan.billingInterval}
+                    {t(`intervals.${plan.billingInterval}`)}
                   </div>
                   <Badge variant="outline" className="mt-1">
-                    Invoice schedule
+                    {t("invoiceSchedule")}
                   </Badge>
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums">
@@ -4980,7 +4991,7 @@ function WellnessPlansTab() {
                 </td>
                 <td className="px-4 py-3">
                   <Badge variant={plan.active ? "default" : "secondary"}>
-                    {plan.active ? "Active" : "Inactive"}
+                    {plan.active ? t("active") : t("inactive")}
                   </Badge>
                 </td>
                 <td className="px-4 py-3 text-right">
@@ -4995,7 +5006,7 @@ function WellnessPlansTab() {
                       })
                     }
                   >
-                    {plan.active ? "Deactivate" : "Reactivate"}
+                    {plan.active ? t("deactivate2") : t("reactivate")}
                   </Button>
                 </td>
               </tr>
@@ -5006,8 +5017,8 @@ function WellnessPlansTab() {
                   <EmptyState
                     className="border-0 bg-transparent p-8"
                     icon={HeartPulse}
-                    title="No wellness plans configured"
-                    description="Create a plan to package preventive care into scheduled invoice memberships."
+                    title={t("noWellnessPlansConfigured")}
+                    description={t("createAPlanToPackage")}
                   />
                 </td>
               </tr>
@@ -5054,6 +5065,7 @@ interface TemplateItem {
 }
 
 function TemplatesTab() {
+  const t = useTranslations("settings.page");
   const formatCurrency = useCurrencyFormatter();
   const utils = trpc.useUtils();
   const [showAdd, setShowAdd] = useState(false);
@@ -5069,7 +5081,7 @@ function TemplatesTab() {
       utils.templates.list.invalidate();
       setShowAdd(false);
       resetAddForm();
-      toast.success("Template created");
+      toast.success(t("templateCreated"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -5078,7 +5090,7 @@ function TemplatesTab() {
   const updateMutation = trpc.templates.update.useMutation({
     onSuccess: () => {
       utils.templates.list.invalidate();
-      toast.success("Template updated");
+      toast.success(t("templateUpdated"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -5258,8 +5270,8 @@ function TemplatesTab() {
   if (templatesMissing) {
     return (
       <SettingsLoadError
-        title="Could not load templates"
-        message="The template list request finished without returning data. Try loading it again before editing treatment templates."
+        title={t("couldNotLoadTemplates")}
+        message={t("templatesEmpty")}
         onRetry={() => void refetchTemplates()}
       />
     );
@@ -5276,7 +5288,7 @@ function TemplatesTab() {
             onClick={() => setSelectedTemplateId(null)}
           >
             <X className="mr-2 h-4 w-4" />
-            Back
+            {t("back")}
           </Button>
           <h3 className="text-sm font-semibold">{selectedTemplate.name}</h3>
           <span
@@ -5287,7 +5299,7 @@ function TemplatesTab() {
                 : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
             )}
           >
-            {selectedTemplate.isActive !== false ? "Active" : "Inactive"}
+            {selectedTemplate.isActive !== false ? t("active") : t("inactive")}
           </span>
           <Button
             size="sm"
@@ -5303,7 +5315,7 @@ function TemplatesTab() {
             {updateMutation.isPending && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
-            {selectedTemplate.isActive !== false ? "Deactivate" : "Activate"}
+            {selectedTemplate.isActive !== false ? t("deactivate2") : t("activate")}
           </Button>
         </div>
 
@@ -5317,10 +5329,10 @@ function TemplatesTab() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/50">
-                <th className="px-4 py-3 text-left font-medium">Description</th>
-                <th className="px-4 py-3 text-left font-medium">Type</th>
-                <th className="px-4 py-3 text-left font-medium">Quantity</th>
-                <th className="px-4 py-3 text-right font-medium">Unit Price</th>
+                <th className="px-4 py-3 text-left font-medium">{t("description")}</th>
+                <th className="px-4 py-3 text-left font-medium">{t("type")}</th>
+                <th className="px-4 py-3 text-left font-medium">{t("quantity")}</th>
+                <th className="px-4 py-3 text-right font-medium">{t("unitPrice")}</th>
               </tr>
             </thead>
             <tbody>
@@ -5339,15 +5351,15 @@ function TemplatesTab() {
                     className="px-4 py-8 text-center text-muted-foreground"
                   >
                     <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />
-                    Loading template items...
+                    {t("loadingTemplateItems")}
                   </td>
                 </tr>
               ) : selectedTemplateMissing ? (
                 <tr>
                   <td colSpan={4} className="p-4">
                     <SettingsLoadError
-                      title="Could not load template items"
-                      message="The template detail request finished without returning data. Try loading it again before using this treatment template."
+                      title={t("couldNotLoadTemplateItems")}
+                      message={t("templateDetailEmpty")}
                       onRetry={() => void refetchSelectedTemplate()}
                     />
                   </td>
@@ -5359,12 +5371,13 @@ function TemplatesTab() {
                       {item.description}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      <span className="capitalize">{item.itemType}</span>
+                      <span className="capitalize">
+                        {item.itemType === "service" ? t("service") : t("product")}
+                      </span>
                       {item.itemType === "product" &&
                       item.hasActiveProductLink !== true ? (
                         <p className="mt-1 max-w-xs text-xs text-amber-700 dark:text-amber-400">
-                          Missing or archived inventory product — recreate this
-                          template before use.
+                          {t("missingOrArchivedInventoryProduct")}
                         </p>
                       ) : null}
                     </td>
@@ -5382,8 +5395,8 @@ function TemplatesTab() {
                     <EmptyState
                       className="border-0 bg-transparent p-8"
                       icon={Layers}
-                      title="No items in this template"
-                      description="Add default services or products when creating a new treatment template."
+                      title={t("noItemsInThisTemplate")}
+                      description={t("addDefaultServicesOrProducts")}
                     />
                   </td>
                 </tr>
@@ -5406,16 +5419,16 @@ function TemplatesTab() {
           size="sm"
         >
           <Plus className="mr-2 h-4 w-4" />
-          Add Template
+          {t("addTemplate")}
         </Button>
       </div>
 
       {showAdd && (
         <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-          <h3 className="text-sm font-semibold">New Treatment Template</h3>
+          <h3 className="text-sm font-semibold">{t("newTreatmentTemplate")}</h3>
           <div className="grid grid-cols-2 gap-3">
             <Input
-              placeholder="Template name"
+              placeholder={t("templateName")}
               maxLength={TREATMENT_TEMPLATE_NAME_MAX_LENGTH}
               value={addForm.name}
               onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
@@ -5432,13 +5445,13 @@ function TemplatesTab() {
             >
               {TEMPLATE_CATEGORIES.map((c) => (
                 <option key={c} value={c}>
-                  {c.charAt(0).toUpperCase() + c.slice(1)}
+                  {t(`templateCategories.${c}`)}
                 </option>
               ))}
             </select>
           </div>
           <Input
-            placeholder="Description (optional)"
+            placeholder={t("descriptionOptional")}
             maxLength={TREATMENT_TEMPLATE_DESCRIPTION_MAX_LENGTH}
             value={addForm.description}
             onChange={(e) =>
@@ -5448,7 +5461,7 @@ function TemplatesTab() {
 
           {/* Items */}
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">Items</h4>
+            <h4 className="text-sm font-medium">{t("items")}</h4>
             {addItems.map((item, index) => (
               <div
                 key={item.draftId}
@@ -5474,7 +5487,7 @@ function TemplatesTab() {
                   />
                 </div>
                 <select
-                  aria-label={`Item type ${index + 1}`}
+                  aria-label={t("itemType", { n: index + 1 })}
                   className="h-10 rounded-md border border-input bg-background px-2 text-sm"
                   value={item.itemType}
                   onChange={(e) =>
@@ -5484,12 +5497,12 @@ function TemplatesTab() {
                     )
                   }
                 >
-                  <option value="service">Service</option>
-                  <option value="product">Product</option>
+                  <option value="service">{t("service")}</option>
+                  <option value="product">{t("product")}</option>
                 </select>
                 <Input
                   type="number"
-                  placeholder="Qty"
+                  placeholder={t("qty")}
                   min={TREATMENT_TEMPLATE_ITEM_QUANTITY_MIN}
                   max={TREATMENT_TEMPLATE_ITEM_QUANTITY_MAX}
                   step={1}
@@ -5505,7 +5518,7 @@ function TemplatesTab() {
                 />
                 <Input
                   type="number"
-                  placeholder="Price"
+                  placeholder={t("price")}
                   min={0}
                   max={TREATMENT_TEMPLATE_UNIT_PRICE_MAX}
                   step="0.01"
@@ -5518,7 +5531,7 @@ function TemplatesTab() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  aria-label={`Remove item ${index + 1}`}
+                  aria-label={t("removeItem", { n: index + 1 })}
                   disabled={addItems.length <= 1}
                   onClick={() => removeItemRow(index)}
                 >
@@ -5528,8 +5541,7 @@ function TemplatesTab() {
             ))}
             {hasUnlinkedCatalogRows ? (
               <p className="text-sm text-muted-foreground">
-                Search for and select an active service or inventory product for
-                every template row.
+                {t("searchForAndSelectAn")}
               </p>
             ) : null}
             <Button
@@ -5539,7 +5551,7 @@ function TemplatesTab() {
               onClick={addItemRow}
             >
               <Plus className="mr-2 h-4 w-4" />
-              Add Item
+              {t("addItem")}
             </Button>
           </div>
 
@@ -5559,10 +5571,10 @@ function TemplatesTab() {
               {createMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Create
+              {t("create")}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setShowAdd(false)}>
-              Cancel
+              {t("cancel")}
             </Button>
           </div>
           {createMutation.error && (
@@ -5577,11 +5589,11 @@ function TemplatesTab() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/50">
-              <th className="px-4 py-3 text-left font-medium">Name</th>
-              <th className="px-4 py-3 text-left font-medium">Category</th>
-              <th className="px-4 py-3 text-left font-medium">Items</th>
-              <th className="px-4 py-3 text-left font-medium">Status</th>
-              <th className="px-4 py-3 text-right font-medium">Actions</th>
+              <th className="px-4 py-3 text-left font-medium">{t("name")}</th>
+              <th className="px-4 py-3 text-left font-medium">{t("category")}</th>
+              <th className="px-4 py-3 text-left font-medium">{t("items")}</th>
+              <th className="px-4 py-3 text-left font-medium">{t("status")}</th>
+              <th className="px-4 py-3 text-right font-medium">{t("actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -5600,7 +5612,9 @@ function TemplatesTab() {
                         CATEGORY_BADGE.other,
                     )}
                   >
-                    {template.category}
+                    {(TEMPLATE_CATEGORIES as readonly (string | null)[]).includes(template.category)
+                      ? t(`templateCategories.${template.category}`)
+                      : template.category}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">—</td>
@@ -5613,7 +5627,7 @@ function TemplatesTab() {
                         : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
                     )}
                   >
-                    {template.isActive !== false ? "Active" : "Inactive"}
+                    {template.isActive !== false ? t("active") : t("inactive")}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">
@@ -5643,8 +5657,8 @@ function TemplatesTab() {
                   <EmptyState
                     className="border-0 bg-transparent p-8"
                     icon={Layers}
-                    title="No templates configured"
-                    description="Create reusable treatment templates for common service and product bundles."
+                    title={t("noTemplatesConfigured")}
+                    description={t("createReusableTreatmentTemplatesFor")}
                   />
                 </td>
               </tr>

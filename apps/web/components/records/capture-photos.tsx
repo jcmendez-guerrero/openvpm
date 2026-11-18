@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { Camera, Loader2, RefreshCw, X } from "lucide-react";
@@ -22,6 +24,7 @@ export function CapturePhotos({
   patientId: string;
   appointmentId?: string;
 }) {
+  const t = useTranslations("records.capture");
   const [open, setOpen] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const baselineCountRef = useRef<number | null>(null);
@@ -92,7 +95,7 @@ export function CapturePhotos({
     <>
       <Button variant="outline" size="sm" onClick={handleOpen}>
         <Camera className="mr-2 h-4 w-4" />
-        Capture photos
+        {t("title")}
       </Button>
 
       {open && (
@@ -100,23 +103,23 @@ export function CapturePhotos({
           className="fixed inset-0 z-[90] overflow-y-auto bg-black/50 p-4"
           role="dialog"
           aria-modal="true"
-          aria-label="Capture photos"
+          aria-label={t("title")}
         >
           <div className="flex min-h-full items-center justify-center">
             <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <h3 className="font-heading text-base font-semibold">
-                    Capture photos
+                    {t("title")}
                   </h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Scan with any phone. The code works for 30 minutes.
+                    {t("intro")}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleClose}
-                  aria-label="Close"
+                  aria-label={t("close")}
                   className="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <X className="h-5 w-5" />
@@ -131,7 +134,7 @@ export function CapturePhotos({
                 ) : createSession.isError ? (
                   <div className="flex h-60 w-full flex-col items-center justify-center gap-3 rounded-lg border border-border bg-muted/30 p-4 text-center">
                     <p className="text-sm text-muted-foreground">
-                      Could not make a code. Please try again.
+                      {t("failed")}
                     </p>
                     <Button
                       variant="outline"
@@ -141,7 +144,7 @@ export function CapturePhotos({
                       }
                     >
                       <RefreshCw className="mr-2 h-4 w-4" />
-                      Try again
+                      {t("retry")}
                     </Button>
                   </div>
                 ) : (
@@ -150,7 +153,7 @@ export function CapturePhotos({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={qrDataUrl}
-                        alt="QR code for the photo capture link"
+                        alt={t("qrAlt")}
                         className="h-60 w-60 rounded-lg border border-border bg-white p-2"
                       />
                     ) : (
@@ -170,14 +173,10 @@ export function CapturePhotos({
               <div className="mt-5 border-t border-border pt-4">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium">
-                    {addedCount === 0
-                      ? "No photos yet"
-                      : addedCount === 1
-                        ? "1 photo added"
-                        : `${addedCount} photos added`}
+                    {t("added", { count: addedCount })}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    New photos show up here.
+                    {t("hint")}
                   </p>
                 </div>
                 {recentFiles.length > 0 && (
@@ -197,7 +196,7 @@ export function CapturePhotos({
 
               <div className="mt-5 flex justify-end">
                 <Button variant="outline" size="sm" onClick={handleClose}>
-                  Done
+                  {t("done")}
                 </Button>
               </div>
             </div>

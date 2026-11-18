@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -51,6 +53,8 @@ export default function ReplaceSoapNotePage() {
   const params = useParams<{ patientId: string }>();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const t = useTranslations("records.replaceSoap");
+  const ts = useTranslations("records.soap");
   const { data: session, status } = useSession();
   const allowed = canReplaceSoap(session?.user?.role);
   const sourceNoteId = searchParams.get("sourceNoteId") ?? "";
@@ -121,7 +125,7 @@ export default function ReplaceSoapNotePage() {
       ) {
         return;
       }
-      if (!window.confirm("Discard the replacement SOAP changes on this page?")) {
+      if (!window.confirm(t("discard"))) {
         event.preventDefault();
         event.stopPropagation();
       }
@@ -133,9 +137,9 @@ export default function ReplaceSoapNotePage() {
   const replace = trpc.records.replaceSoapNote.useMutation({
     onSuccess: async (replacement) => {
       initialFingerprint.current = fingerprint(reason, sections);
-      toast.success("Replacement SOAP finalized; original retained in history", {
+      toast.success(t("finalized"), {
         description:
-          "Review the signed discharge separately if owner-facing instructions changed.",
+          t("finalizedHint"),
       });
       router.push(`${returnPath}#soap-note-${replacement.id}`);
     },
@@ -155,7 +159,7 @@ export default function ReplaceSoapNotePage() {
     if (
       initialized &&
       fingerprint(reason, sections) !== initialFingerprint.current &&
-      !window.confirm("Discard the replacement SOAP changes on this page?")
+      !window.confirm(t("discard"))
     ) {
       return;
     }
@@ -165,7 +169,7 @@ export default function ReplaceSoapNotePage() {
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center gap-2 p-8 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Checking access...
+        <Loader2 className="h-4 w-4 animate-spin" /> {t("checkingAccess")}
       </div>
     );
   }
@@ -173,9 +177,9 @@ export default function ReplaceSoapNotePage() {
     return (
       <EmptyState
         icon={ShieldAlert}
-        title="Access denied"
-        description="Only veterinarians and administrators can replace finalized SOAP documentation."
-        action={{ label: "Back to chart", onClick: () => router.push(returnPath) }}
+        title={t("denied")}
+        description={t("deniedHelp")}
+        action={{ label: t("back"), onClick: () => router.push(returnPath) }}
       />
     );
   }
@@ -183,9 +187,9 @@ export default function ReplaceSoapNotePage() {
     return (
       <EmptyState
         icon={AlertCircle}
-        title="Choose a SOAP note"
-        description="Open the finalized note from the patient chart and choose Replace finalized SOAP."
-        action={{ label: "Back to chart", onClick: () => router.push(returnPath) }}
+        title={t("choose")}
+        description={t("chooseHelp")}
+        action={{ label: t("back"), onClick: () => router.push(returnPath) }}
       />
     );
   }
@@ -194,15 +198,15 @@ export default function ReplaceSoapNotePage() {
       return (
         <EmptyState
           icon={AlertCircle}
-          title="Unable to load the source SOAP"
-          description={patient.error?.message ?? notes.error?.message ?? "The finalized source note is unavailable in this patient chart."}
-          action={{ label: "Back to chart", onClick: () => router.push(returnPath) }}
+          title={t("loadFailed")}
+          description={patient.error?.message ?? notes.error?.message ?? t("sourceUnavailable")}
+          action={{ label: t("back"), onClick: () => router.push(returnPath) }}
         />
       );
     }
     return (
       <div className="flex items-center justify-center gap-2 p-8 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading signed SOAP...
+        <Loader2 className="h-4 w-4 animate-spin" /> {t("loadingSignedSoap")}
       </div>
     );
   }
@@ -210,9 +214,9 @@ export default function ReplaceSoapNotePage() {
     return (
       <EmptyState
         icon={AlertCircle}
-        title="Finalized source required"
-        description="Only finalized SOAP notes can be replaced."
-        action={{ label: "Back to chart", onClick: () => router.push(returnPath) }}
+        title={t("finalizedRequired")}
+        description={t("finalizedRequiredHelp")}
+        action={{ label: t("back"), onClick: () => router.push(returnPath) }}
       />
     );
   }
@@ -220,9 +224,9 @@ export default function ReplaceSoapNotePage() {
     return (
       <EmptyState
         icon={FilePenLine}
-        title="Replacement already finalized"
-        description="This source already has a signed replacement. Open the current note from the chart."
-        action={{ label: "View chart", onClick: () => router.push(returnPath) }}
+        title={t("alreadyReplaced")}
+        description={t("alreadyReplacedHelp")}
+        action={{ label: t("viewChart"), onClick: () => router.push(returnPath) }}
       />
     );
   }
@@ -233,34 +237,31 @@ export default function ReplaceSoapNotePage() {
   return (
     <div className="mx-auto max-w-5xl space-y-5">
       <Button variant="ghost" size="sm" onClick={leaveEditor}>
-        <ArrowLeft className="mr-2 h-4 w-4" /> Back to chart
+        <ArrowLeft className="mr-2 h-4 w-4" /> {t("back")}
       </Button>
 
       <div>
         <h1 className="font-heading text-2xl font-semibold">
-          Replace finalized SOAP
+          {t("title")}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Patient: {patient.data?.name ?? "Unknown patient"}
+          {t("patient", { name: patient.data?.name ?? t("unknownPatient") })}
         </p>
       </div>
 
       <div role="alert" className="rounded-lg border border-amber-400/60 bg-amber-50 p-4 text-sm text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
-        <p className="font-semibold">This creates a new signed clinical record.</p>
+        <p className="font-semibold">{t("warningTitle")}</p>
         <p className="mt-1">
-          The original remains permanently visible as entered in error. The
-          replacement becomes the current SOAP immediately. A completed visit,
-          invoice, payment, discharge, and signed handoffs are not reopened or
-          rewritten.
+          {t("warningBody")}
         </p>
         <p className="mt-2 font-medium">
-          This page is not an autosaved draft. Finish or copy your work before leaving.
+          {t("notAutosaved")}
         </p>
       </div>
 
       <div className="rounded-lg border border-border bg-card p-5">
         <label htmlFor="soap-correction-reason" className="text-sm font-semibold">
-          Permanent correction reason
+          {t("reason")}
         </label>
         <Textarea
           id="soap-correction-reason"
@@ -269,22 +270,22 @@ export default function ReplaceSoapNotePage() {
           maxLength={CLINICAL_CORRECTION_REASON_MAX_LENGTH}
           value={reason}
           disabled={Boolean(source.correctionId)}
-          placeholder="Required. Explain why the original signed note is incorrect."
+          placeholder={t("reasonPlaceholder")}
           onChange={(event) => setReason(event.currentTarget.value)}
         />
         {source.correctionId ? (
           <p className="mt-2 text-xs text-muted-foreground">
-            This reason is already permanent chart history and cannot be changed.
+            {t("reasonLocked")}
           </p>
         ) : null}
       </div>
 
       {(
         [
-          ["Subjective", "subjective"],
-          ["Objective", "objective"],
-          ["Assessment", "assessment"],
-          ["Plan", "plan"],
+          [ts("subjective"), "subjective"],
+          [ts("objective"), "objective"],
+          [ts("assessment"), "assessment"],
+          [ts("plan"), "plan"],
         ] as const
       ).map(([label, key]) => (
         <section key={key}>
@@ -292,27 +293,27 @@ export default function ReplaceSoapNotePage() {
           <SoapNoteEditor
             value={sections[key]}
             onChange={(value) => updateSection(key, value)}
-            placeholder={`Enter corrected ${label.toLowerCase()} documentation...`}
+            placeholder={t("sectionPlaceholder", { section: label.toLowerCase() })}
           />
         </section>
       ))}
 
       {unresolvedPrompts ? (
         <p role="alert" className="text-sm font-medium text-destructive">
-          Replace or delete every bracketed template prompt before finalizing.
+          {t("unresolvedPrompts")}
         </p>
       ) : null}
 
       <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-5">
         <Button variant="outline" disabled={replace.isPending} onClick={leaveEditor}>
-          Cancel
+          {t("cancel")}
         </Button>
         <Button
           disabled={!valid || replace.isPending}
           onClick={() => {
             if (
               !window.confirm(
-                "Finalize this replacement SOAP now? It cannot be edited after signing; later clarification requires an attributed addendum.",
+                t("confirmFinalize"),
               )
             ) {
               return;
@@ -332,7 +333,7 @@ export default function ReplaceSoapNotePage() {
           ) : (
             <FilePenLine className="mr-2 h-4 w-4" />
           )}
-          {replace.isPending ? "Finalizing..." : "Finalize replacement"}
+          {replace.isPending ? t("finalizing") : t("finalize")}
         </Button>
       </div>
     </div>

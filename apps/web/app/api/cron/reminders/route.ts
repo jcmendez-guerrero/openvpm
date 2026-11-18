@@ -44,6 +44,9 @@ import {
   switchAppointmentReminderClaimToEmail,
 } from "@/lib/messaging/appointment-reminder";
 
+import { messageLanguage } from "@/i18n/message-language";
+import type { Language } from "@/i18n/config";
+
 type ReminderChannel = "sms" | "email";
 
 async function claimReminderCommunication(opts: {
@@ -54,6 +57,7 @@ async function claimReminderCommunication(opts: {
   patientName: string | null;
   startTime: Date;
   now: Date;
+  language: Language;
 }): Promise<
   | { status: "claimed"; claim: AppointmentReminderClaim }
   | { status: "deduped" }
@@ -77,6 +81,7 @@ async function claimReminderCommunication(opts: {
       patientName: opts.patientName,
       startTime: opts.startTime,
       source: "automated",
+      language: opts.language,
     });
     return claim ? { status: "claimed", claim } : { status: "deduped" };
   });
@@ -144,6 +149,8 @@ export async function GET(request: Request) {
           clientPhone: clients.phone,
           preferredContactMethod: clients.preferredContactMethod,
           smsConsent: clients.smsConsent,
+          clientLanguage: clients.preferredLanguage,
+          clinicDefaultLanguage: practices.defaultLanguage,
           emailSuppressionReason: emailSuppressions.reason,
           doctorName: users.name,
           practiceName: practices.name,
@@ -370,7 +377,9 @@ export async function GET(request: Request) {
                 patientName: currentRecipient.patientName,
                 practiceName: currentRecipient.practiceName,
                 practicePhone: currentRecipient.practicePhone,
+                language: claim.language,
               }),
+              language: claim.language,
               idempotencyKey: appointmentReminderEmailIdempotencyKey(
                 appt,
                 claim.attempt,
@@ -464,6 +473,10 @@ export async function GET(request: Request) {
           patientName: appt.patientName,
           startTime: startDate,
           now: new Date(),
+          language: messageLanguage("message", {
+            clientLanguage: appt.clientLanguage,
+            clinicDefault: appt.clinicDefaultLanguage,
+          }),
         });
         if (claim.status === "ineligible") {
           ineligible++;
@@ -485,6 +498,7 @@ export async function GET(request: Request) {
           patientName: appt.patientName,
           practiceName: appt.practiceName,
           practicePhone: appt.practicePhone,
+          language: reminderClaim.language,
         });
 
         if (sendChannel === "sms") {
@@ -506,6 +520,7 @@ export async function GET(request: Request) {
               result = await sendAppointmentReminderSms({
                 to: appt.clientPhone!,
                 ...message,
+                language: reminderClaim.language,
                 practiceId: appt.practiceId,
                 locationId: senderLocationId,
                 clientId: appt.clientId,

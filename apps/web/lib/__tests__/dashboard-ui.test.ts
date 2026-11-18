@@ -1,9 +1,9 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("dashboard analytics UI", () => {
   it("passes doctor production data into the dashboard chart chunk", () => {
-    const source = readFileSync("app/(dashboard)/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/page.tsx");
 
     expect(source).toContain("chartData.productionByDoctor.some");
     expect(source).toContain(
@@ -12,7 +12,7 @@ describe("dashboard analytics UI", () => {
   });
 
   it("surfaces missing dashboard payloads before empty dashboard copy", () => {
-    const source = readFileSync("app/(dashboard)/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/page.tsx");
 
     expect(source).toContain("const statsMissing =");
     expect(source).toContain("const isUpcomingMissing =");
@@ -63,10 +63,7 @@ describe("dashboard analytics UI", () => {
   });
 
   it("renders a month-to-date production by doctor chart", () => {
-    const source = readFileSync(
-      "components/dashboard/dashboard-charts.tsx",
-      "utf8",
-    );
+    const source = readTranslatedSource("components/dashboard/dashboard-charts.tsx");
 
     expect(source).toContain("type ProductionByDoctorPoint");
     expect(source).toContain("Net collections by doctor (MTD)");
@@ -78,7 +75,7 @@ describe("dashboard analytics UI", () => {
   });
 
   it("surfaces signed follow-up obligations as an actionable work queue", () => {
-    const source = readFileSync("app/(dashboard)/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/page.tsx");
 
     expect(source).toContain("trpc.encounters.listPendingFollowUps.useQuery");
     expect(source).toContain("Follow-up work queue");

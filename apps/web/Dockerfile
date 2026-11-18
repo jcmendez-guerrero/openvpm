@@ -25,7 +25,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # The default heap on a 4 GiB builder is too small for Next's type-check worker.
 # Keep the larger heap scoped to this build; the runtime uses Node's defaults.
 ARG BUILD_NODE_OPTIONS="--max-old-space-size=3072"
-RUN NODE_OPTIONS="$BUILD_NODE_OPTIONS" pnpm --filter @openpims/web build
+# Read at build time too: pages built with it off are prerendered in English.
+ARG LANGUAGE_SELECTION_ENABLED=false
+RUN NODE_OPTIONS="$BUILD_NODE_OPTIONS" LANGUAGE_SELECTION_ENABLED="$LANGUAGE_SELECTION_ENABLED" pnpm --filter @openpims/web build
 
 # --- Runner ---
 FROM base AS runner

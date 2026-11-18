@@ -1,33 +1,15 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("welcome surface UI states", () => {
-  const providerSource = readFileSync(
-    "components/welcome/welcome-provider.tsx",
-    "utf8"
-  );
-  const surfaceSource = readFileSync(
-    "components/welcome/welcome-surface.tsx",
-    "utf8"
-  );
-  const cardSource = readFileSync(
-    "components/welcome/polaroid-card.tsx",
-    "utf8"
-  );
-  const aiVignetteSource = readFileSync(
-    "components/welcome/vignettes/ai-vignette.tsx",
-    "utf8"
-  );
-  const copySource = readFileSync(
-    "components/welcome/welcome-copy.ts",
-    "utf8"
-  );
-  const journeySource = readFileSync(
-    "components/onboarding/journey-overlay.tsx",
-    "utf8"
-  );
-  const firstRunSource = readFileSync("lib/welcome/first-run.ts", "utf8");
-  const sidebarSource = readFileSync("components/layout/sidebar.tsx", "utf8");
+  const providerSource = readTranslatedSource("components/welcome/welcome-provider.tsx");
+  const surfaceSource = readTranslatedSource("components/welcome/welcome-surface.tsx");
+  const cardSource = readTranslatedSource("components/welcome/polaroid-card.tsx");
+  const aiVignetteSource = readTranslatedSource("components/welcome/vignettes/ai-vignette.tsx");
+  const copySource = readTranslatedSource("components/welcome/welcome-copy.ts");
+  const journeySource = readTranslatedSource("components/onboarding/journey-overlay.tsx");
+  const firstRunSource = readTranslatedSource("lib/welcome/first-run.ts");
+  const sidebarSource = readTranslatedSource("components/layout/sidebar.tsx");
 
   it("auto-opens under the same server gates the wizard used", () => {
     // Exactly one first-run surface fires per mode: the welcome checks the
@@ -82,10 +64,7 @@ describe("welcome surface UI states", () => {
     // Guides moved out of the sidebar into Settings (founder decision):
     // the sidebar stays clean, Settings owns the manual re-entry point.
     expect(sidebarSource).not.toContain("nav-guides");
-    const settingsSource = readFileSync(
-      "app/(dashboard)/settings/page.tsx",
-      "utf8"
-    );
+    const settingsSource = readTranslatedSource("app/(dashboard)/settings/page.tsx");
     expect(settingsSource).toContain('data-tour="settings-guides"');
     expect(settingsSource).toContain("onClick={openWelcome}");
   });

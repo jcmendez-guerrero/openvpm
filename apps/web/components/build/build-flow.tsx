@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations, useLocale } from "use-intl";
+
 import {
   useCallback,
   useEffect,
@@ -41,7 +43,6 @@ import type { BillingCadence } from "@/lib/billing/catalog";
 import { trpc } from "@/lib/trpc";
 import {
   BUILD_PRACTICE_PROFILES,
-  BUILD_SCENE_LABELS,
   BUILD_SCENES,
   BUILD_SYSTEM_LABELS,
   BUILD_SYSTEMS,
@@ -113,6 +114,8 @@ const INITIAL_STATE: BuildState = {
   logo: null,
 };
 
+type BuildT = (key: string, values?: Record<string, string>) => string;
+
 interface SceneCopy {
   title: (draft: BuildState) => string;
   lead: (draft: BuildState) => string;
@@ -124,86 +127,92 @@ interface SceneCopy {
 
 const sample = (d: BuildState) => BUILD_PRACTICE_PROFILES[d.practiceType].sample;
 
-const COPY: Record<BuildScene, SceneCopy> = {
+// Built with the translator so every scene follows the active language.
+function sceneCopy(t: BuildT): Record<BuildScene, SceneCopy> {
+  return {
   practice: {
-    title: (d) => `Let's build ${displayName(d)} on OpenVPM.`,
+    title: (d) =>
+      t("scenes.practice.title", { name: displayName(d, t("yourClinicLower")) }),
     lead: () =>
-      "About three minutes. Tell us how you practice and we'll shape everything around it.",
+      t("aboutThreeMinutesTellUs"),
   },
   brand: {
-    title: () => "Make it unmistakably yours.",
+    title: () => t("scenes.brand.title"),
     lead: () =>
-      "Your name and color show up everywhere your clients do: booking, reminders, the portal, and invoices.",
+      t("yourNameAndColorShow"),
   },
   services: {
-    title: () => "Your services, your prices.",
+    title: () => t("scenes.services.title"),
     lead: () =>
-      "Start with what practices like yours usually offer, then add your own. Clients see these when they book.",
+      t("startWithWhatPracticesLike"),
   },
   book: {
-    title: () => "A client books while you're off the clock.",
+    title: () => t("scenes.book.title"),
     lead: (d) =>
-      `${sample(d).owner} books ${sample(d).pet}'s visit from their phone at 9:41 PM. It's on your schedule before you wake up.`,
+      t("scenes.book.lead", { owner: sample(d).owner, pet: sample(d).pet }),
     points: (d) => [
-      { icon: Heart, text: "Clients book whenever it suits them, from a page in your brand." },
-      { icon: PhoneOff, text: "Your front desk spends less time on the phone." },
-      { icon: PawPrint, text: `${sample(d).pet}'s chart is started before the visit.` },
+      { icon: Heart, text: t("clientsBookWheneverItSuits") },
+      { icon: PhoneOff, text: t("yourFrontDeskSpendsLess") },
+      { icon: PawPrint, text: t("scenes.book.chartStarted", { pet: sample(d).pet }) },
     ],
     replay: true,
   },
   remind: {
-    title: () => "Reminders go out on their own.",
+    title: () => t("scenes.remind.title"),
     lead: (d) =>
-      `The day before, ${sample(d).owner} gets a friendly reminder in your name, and their reply lands in your inbox.`,
+      t("scenes.remind.lead", { owner: sample(d).owner }),
     points: () => [
-      { icon: CalendarCheck, text: "Fewer no-shows, without anyone making calls." },
-      { icon: MessageSquare, text: "Replies land in one inbox the whole team can see." },
-      { icon: BellRing, text: "Recalls for every pet that's due go out in one click." },
+      { icon: CalendarCheck, text: t("fewerNoShowsWithoutAnyone") },
+      { icon: MessageSquare, text: t("repliesLandInOneInbox") },
+      { icon: BellRing, text: t("recallsForEveryPetThat") },
     ],
-    note: "Email works from day one. Texting turns on after a quick carrier registration we walk you through.",
+    note: t("emailWorksFromDayOne"),
     replay: true,
   },
   visit: {
-    title: (d) => `You focus on ${sample(d).pet}. The note writes itself.`,
+    title: (d) => t("scenes.visit.title", { pet: sample(d).pet }),
     lead: () =>
-      "The AI drafts the SOAP note from the exam for you to review, and charges flow straight onto the invoice.",
+      t("theAiDraftsTheSoap"),
     points: () => [
-      { icon: Clock, text: "Notes are done before the next patient, not after closing." },
-      { icon: Receipt, text: "Charges land on the invoice as you work, so nothing slips." },
-      { icon: Heart, text: "Your attention stays on the patient and the family." },
+      { icon: Clock, text: t("notesAreDoneBeforeThe") },
+      { icon: Receipt, text: t("chargesLandOnTheInvoice") },
+      { icon: Heart, text: t("yourAttentionStaysOnThe") },
     ],
     replay: true,
   },
   paid: {
-    title: () => "Paid on the spot.",
+    title: () => t("scenes.paid.title"),
     lead: (d) =>
-      `The invoice lands in ${sample(d).owner}'s portal and they pay by card in a tap. It's recorded on your side automatically.`,
+      t("scenes.paid.lead", { owner: sample(d).owner }),
     points: () => [
-      { icon: CreditCard, text: "Get paid before clients reach the car." },
-      { icon: Receipt, text: "No statements to mail and no balances to chase." },
-      { icon: Smartphone, text: "Clients pay from their phone, wherever they are." },
+      { icon: CreditCard, text: t("getPaidBeforeClientsReach") },
+      { icon: Receipt, text: t("noStatementsToMailAnd") },
+      { icon: Smartphone, text: t("clientsPayFromTheirPhone") },
     ],
-    note: "Payments go to your own Stripe account, connected in a few minutes.",
+    note: t("paymentsGoToYourOwn"),
     replay: true,
   },
   records: {
-    title: () => "Bring your history with you.",
+    title: () => t("scenes.records.title"),
     lead: (d) =>
       d.currentSystem === "paper" || d.currentSystem === "other"
-        ? "Import a spreadsheet of clients and pets, or start fresh."
-        : `Upload your ${BUILD_SYSTEM_LABELS[d.currentSystem]} export and every client, pet, and vaccine comes with you.`,
+        ? t("importASpreadsheetOfClients")
+        : t("scenes.records.leadExport", {
+            system: BUILD_SYSTEM_LABELS[d.currentSystem],
+          }),
     points: () => [
-      { icon: Eye, text: "Review every record before anything is saved." },
-      { icon: LifeBuoy, text: "Need a hand? We'll help you move it." },
+      { icon: Eye, text: t("reviewEveryRecordBeforeAnything") },
+      { icon: LifeBuoy, text: t("needAHandWeLl") },
     ],
     replay: true,
   },
   gate: {
-    title: (d) => `${brandName(d)} is ready for you.`,
+    title: (d) => t("scenes.gate.title", { name: brandName(d, t("yourClinic")) }),
     lead: () =>
-      "Everything you built is saved. Start your free trial and open it today.",
+      t("everythingYouBuiltIsSaved"),
   },
-};
+  };
+}
 
 /** The picture on the right; the gate shows the payment card instead. */
 const STAGES: Partial<Record<BuildScene, ComponentType<SceneProps>>> = {
@@ -343,6 +352,7 @@ export function BuildFlow({
   /** Null when annual billing isn't offered. */
   annualPriceUsd: number | null;
 }) {
+  const t = useTranslations("build.flow");
   const searchParams = useSearchParams();
   const acquisition = useMemo(
     () => acquisitionFromSearchParams(searchParams),
@@ -388,8 +398,8 @@ export function BuildFlow({
         if (!response.ok) {
           setResumeError(
             response.status === 404
-              ? "This saved-progress link has expired or is no longer available. You can continue with this browser’s progress, or start building your clinic below."
-              : "We couldn’t load your saved progress. Try opening the link again, or continue below.",
+              ? t("thisSavedProgressLinkHas")
+              : t("weCouldnTLoadYour"),
           );
           return null;
         }
@@ -403,7 +413,7 @@ export function BuildFlow({
         }
       })
       .catch(() => setResumeError(
-        "We couldn’t load your saved progress. Try opening the link again.",
+        t("weCouldnTLoadYour2"),
       ))
       .finally(() => setRestored(true));
   }, []);
@@ -494,7 +504,7 @@ export function BuildFlow({
     setIndex(Math.max(0, Math.min(BUILD_SCENES.length - 1, next)));
   };
 
-  const copy = COPY[scene];
+  const copy = sceneCopy(t)[scene];
   const Stage = STAGES[scene];
   const Controls = CONTROLS[scene];
   const props: SceneProps = { draft, update, playId, still };
@@ -516,9 +526,13 @@ export function BuildFlow({
       <div className="mx-auto flex w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">
         <header className="flex h-16 items-center gap-6 border-b border-slate-100 px-5 sm:px-8">
           <div className="flex min-w-0 items-center gap-2.5">
-            <ClinicMark name={displayName(draft)} logo={draft.logo} size={28} />
+            <ClinicMark
+              name={displayName(draft, t("yourClinicLower"))}
+              logo={draft.logo}
+              size={28}
+            />
             <span className="truncate font-heading text-[15px] font-semibold">
-              {brandName(draft)}
+              {brandName(draft, t("yourClinic"))}
             </span>
           </div>
           <div
@@ -527,7 +541,7 @@ export function BuildFlow({
             aria-valuemin={1}
             aria-valuemax={BUILD_SCENES.length}
             aria-valuenow={index + 1}
-            aria-label="Build progress"
+            aria-label={t("buildProgress")}
           >
             {BUILD_SCENES.map((id, i) => (
               <span
@@ -538,7 +552,7 @@ export function BuildFlow({
             ))}
           </div>
           <span className="ml-auto whitespace-nowrap text-xs text-slate-500 sm:ml-0">
-            {index + 1} of {BUILD_SCENES.length} · {BUILD_SCENE_LABELS[scene]}
+            {t("sceneProgress", { step: index + 1, total: BUILD_SCENES.length, label: t(`sceneLabels.${scene}`) })}
           </span>
         </header>
 
@@ -595,7 +609,7 @@ export function BuildFlow({
                   className="mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
-                  Play it again
+                  {t("playItAgain")}
                 </button>
               ) : null}
             </section>
@@ -626,14 +640,14 @@ export function BuildFlow({
               className="inline-flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back
+              {t("back")}
             </button>
           ) : (
             <Link
               href="/login"
               className="text-sm text-slate-500 hover:text-slate-800"
             >
-              Already have an account? Sign in
+              {t("alreadyHaveAnAccountSign")}
             </Link>
           )}
           {!isGate ? (
@@ -644,7 +658,7 @@ export function BuildFlow({
               className="inline-flex h-10 items-center gap-2 rounded-lg px-5 text-sm font-semibold text-white transition-[background,opacity] duration-500 disabled:opacity-40"
               style={{ background: "var(--b)" }}
             >
-              {scene === "records" ? "See my clinic" : "Continue"}
+              {scene === "records" ? t("seeMyClinic") : t("continue")}
               <ArrowRight className="h-4 w-4" />
             </button>
           ) : null}
@@ -674,6 +688,7 @@ function SaveProgress({
   onSkip: () => void;
   autoFocus: boolean;
 }) {
+  const t = useTranslations("build.flow");
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "saving" | "error">("idle");
 
@@ -693,7 +708,7 @@ function SaveProgress({
     return (
       <p className="mt-7 flex items-center gap-2 text-sm text-slate-600">
         <Check className="h-4 w-4" style={{ color: "var(--b)" }} />
-        {brandName(draft)}&apos;s progress is saved for {savedEmail}.
+        {t("progress.saved", { name: brandName(draft, t("yourClinic")), email: savedEmail })}
       </p>
     );
   }
@@ -721,7 +736,7 @@ function SaveProgress({
       )}
     >
       <label htmlFor="build-save-email" className="text-sm font-medium text-slate-800">
-        Save {brandName(draft)}&apos;s progress
+        {t("progress.label", { name: brandName(draft, t("yourClinic")) })}
       </label>
       <div className="mt-3 flex gap-2">
         <input
@@ -745,24 +760,23 @@ function SaveProgress({
           className="inline-flex h-10 min-w-[72px] items-center justify-center rounded-lg px-4 text-sm font-semibold text-white transition-[background,opacity] duration-500 disabled:opacity-60"
           style={{ background: "var(--b)" }}
         >
-          {state === "saving" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+          {state === "saving" ? <Loader2 className="h-4 w-4 animate-spin" /> : t("save")}
         </button>
       </div>
       <p className="mt-2 text-xs leading-5 text-slate-500">
         {state === "error"
-          ? "That didn't save. Check the address and try again."
+          ? t("thatDidnTSaveCheck")
           : BUILD_SAVE_DISCLOSURE_TEXT}
       </p>
       {confirmingSkip ? (
         <p className="mt-3 border-t border-slate-100 pt-3 text-sm leading-6 text-slate-700" role="status">
-          Continue without saving? {brandName(draft)} will only live in this
-          browser.{" "}
+          {t("progress.skipConfirm", { name: brandName(draft, t("yourClinic")) })}{" "}
           <button
             type="button"
             onClick={onSkip}
             className="font-medium text-slate-500 underline underline-offset-4 hover:text-slate-800"
           >
-            Continue anyway
+            {t("continueAnyway")}
           </button>
         </p>
       ) : null}
@@ -787,6 +801,7 @@ function PlanOption({
   detail: string;
   badge?: string;
 }) {
+  const locale = useLocale();
   return (
     <button
       type="button"
@@ -816,7 +831,7 @@ function PlanOption({
       </span>
       <span className="mt-2 block">
         <span className="font-heading text-2xl font-semibold tabular-nums">
-          ${price.toLocaleString("en-US")}
+          ${price.toLocaleString(locale)}
         </span>
         <span className="text-sm text-slate-500">{interval}</span>
       </span>
@@ -844,6 +859,9 @@ function GateForm({
   cadence: BillingCadence;
   setCadence: (value: BillingCadence) => void;
 }) {
+  const t = useTranslations("build.flow");
+  const locale = useLocale();
+  const regionNames = new Intl.DisplayNames([locale], { type: "region" });
   const [email, setEmail] = useState(defaultEmail);
   const [password, setPassword] = useState("");
   const [country, setCountry] = useState<ClinicRegionCode | "">("");
@@ -852,14 +870,18 @@ function GateForm({
   const trialEnds = useMemo(
     () =>
       new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toLocaleDateString(
-        "en-US",
+        locale,
         { month: "long", day: "numeric" },
       ),
-    [trialDays],
+    [trialDays, locale],
   );
   const then = annual
-    ? `$${annualPriceUsd.toLocaleString("en-US")}/year`
-    : `$${monthlyPriceUsd}/month`;
+    ? t("gate.perYear", { price: annualPriceUsd.toLocaleString(locale) })
+    : t("gate.perMonth", { price: monthlyPriceUsd });
+  const termsPrice = t("gate.termsPrice", {
+    price: annual ? annualPriceUsd.toLocaleString(locale) : monthlyPriceUsd,
+    period: (annual ? t("gate.perYr") : t("gate.perMo")).slice(1),
+  });
 
   const register = trpc.auth.register.useMutation({
     onSuccess: (data) => {
@@ -882,7 +904,7 @@ function GateForm({
         window.location.href = data.checkoutUrl;
         return;
       }
-      setError("Secure checkout is unavailable right now. Please try again.");
+      setError(t("gate.checkoutUnavailable"));
     },
     onError: (err) => setError(err.message),
   });
@@ -890,15 +912,15 @@ function GateForm({
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!EMAIL_PATTERN.test(email.trim())) {
-      setError("Enter your work email.");
+      setError(t("gate.enterEmail"));
       return;
     }
     if (password.length < 8) {
-      setError("Use at least 8 characters for your password.");
+      setError(t("gate.passwordLength"));
       return;
     }
     if (!country) {
-      setError("Choose your clinic's country.");
+      setError(t("gate.chooseCountry"));
       return;
     }
     setError("");
@@ -936,40 +958,45 @@ function GateForm({
       className="rounded-2xl border border-slate-200 p-5 sm:p-6"
     >
       {annualPriceUsd !== null ? (
-        <div role="radiogroup" aria-label="Plan" className="grid grid-cols-2 gap-2.5">
+        <div role="radiogroup" aria-label={t("plan")} className="grid grid-cols-2 gap-2.5">
           <PlanOption
             selected={!annual}
             onSelect={() => setCadence("month")}
-            name="Monthly"
+            name={t("gate.monthly")}
             price={monthlyPriceUsd}
-            interval="/mo"
-            detail="Cancel anytime"
+            interval={t("gate.perMo")}
+            detail={t("gate.cancelAnytime")}
           />
           <PlanOption
             selected={annual}
             onSelect={() => setCadence("year")}
-            name="Annual"
+            name={t("gate.annual")}
             price={annualPriceUsd}
-            interval="/yr"
-            detail={`About $${Math.round(annualPriceUsd / 12)}/mo, billed yearly`}
-            badge={`Save $${(monthlyPriceUsd * 12 - annualPriceUsd).toLocaleString("en-US")}`}
+            interval={t("gate.perYr")}
+            detail={t("gate.annualDetail", {
+              price: Math.round(annualPriceUsd / 12),
+            })}
+            badge={t("gate.annualSave", {
+              amount: (monthlyPriceUsd * 12 - annualPriceUsd).toLocaleString(locale),
+            })}
           />
         </div>
       ) : (
         <div className="flex items-baseline gap-1">
           <span className="font-heading text-2xl font-semibold">${monthlyPriceUsd}</span>
-          <span className="text-sm text-slate-500">/month per location</span>
+          <span className="text-sm text-slate-500">{t("monthPerLocation")}</span>
         </div>
       )}
 
       <div className="mt-4 rounded-lg bg-slate-50 px-3.5 py-3 text-sm">
         <div className="flex items-center justify-between">
-          <span className="font-medium text-slate-800">{trialDays}-day free trial</span>
-          <span className="font-semibold tabular-nums">$0.00 today</span>
+          <span className="font-medium text-slate-800">
+            {t("gate.freeTrial", { days: trialDays })}
+          </span>
+          <span className="font-semibold tabular-nums">{t("n000Today")}</span>
         </div>
         <p className="mt-0.5 text-xs text-slate-500">
-          Then {then} per location from {trialEnds}. Cancel before then and
-          you won&apos;t be charged.
+          {t("gate.thenFrom", { then, date: trialEnds })}
         </p>
       </div>
 
@@ -986,33 +1013,33 @@ function GateForm({
           type="email"
           required
           autoComplete="email"
-          placeholder="Work email"
+          placeholder={t("workEmail")}
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           className={field}
-          aria-label="Work email"
+          aria-label={t("workEmail")}
         />
         <input
           type="password"
           required
           autoComplete="new-password"
-          placeholder="Create a password (8+ characters)"
+          placeholder={t("createAPassword8Characters")}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           className={field}
-          aria-label="Password"
+          aria-label={t("password")}
         />
         <select
           required
           value={country}
           onChange={(event) => setCountry(event.target.value as ClinicRegionCode)}
           className={cn(field, !country && "text-slate-400")}
-          aria-label="Clinic country"
+          aria-label={t("clinicCountry")}
         >
-          <option value="">Clinic country</option>
+          <option value="">{t("clinicCountry")}</option>
           {CLINIC_REGION_OPTIONS.map((option) => (
             <option key={option.code} value={option.code} className="text-slate-900">
-              {option.label}
+              {regionNames.of(option.code) ?? option.label}
             </option>
           ))}
         </select>
@@ -1027,33 +1054,35 @@ function GateForm({
         {register.isPending ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Opening secure checkout
+            {t("openingSecureCheckout")}
           </>
         ) : (
           <>
-            Start free trial
+            {t("startFreeTrial")}
             <ArrowRight className="h-4 w-4" />
           </>
         )}
       </button>
       <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-slate-500">
         <Lock className="h-3.5 w-3.5" />
-        Card details are collected securely by Stripe.
+        {t("cardDetailsAreCollectedSecurely")}
       </p>
       <p className="mt-3 text-center text-[11px] leading-[17px] text-slate-400">
-        After your {trialDays}-day trial, {then.replace("/", " USD/")} per
-        active location, plus applicable taxes
-        {annual ? "" : " and usage overages"}. Billing starts automatically.
-        Cancel in Settings → Plan &amp; Billing before the trial ends to avoid a
-        subscription charge. By continuing you agree to the{" "}
-        <Link href="/legal/terms" className="underline">
-          Terms of Service
-        </Link>{" "}
-        and{" "}
-        <Link href="/legal/privacy" className="underline">
-          Privacy Policy
-        </Link>
-        .
+        {t.rich("gate.terms", {
+          days: trialDays,
+          then: termsPrice,
+          overages: annual ? "no" : "yes",
+          terms: (chunks) => (
+            <Link href="/legal/terms" className="underline">
+              {chunks}
+            </Link>
+          ),
+          privacy: (chunks) => (
+            <Link href="/legal/privacy" className="underline">
+              {chunks}
+            </Link>
+          ),
+        })}
       </p>
     </form>
   );

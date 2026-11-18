@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -13,7 +15,7 @@ import { PawMark } from "@/components/brand/paw-mark";
 import { DemoLogin } from "@/components/demo/demo-login";
 import { isValidEmail } from "@/lib/utils";
 import { safeAuthNextPath } from "@/lib/auth-redirect";
-import { loginErrorMessage } from "@/lib/login-error-message";
+import { loginRetryAfterSeconds } from "@/lib/login-error-message";
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE?.trim() === "true";
 
@@ -32,6 +34,7 @@ export default function LoginPage() {
 }
 
 function PracticeLogin() {
+  const t = useTranslations("auth.login");
   const router = useRouter();
   const searchParams = useSearchParams();
   const checkoutState = searchParams.get("checkout");
@@ -48,6 +51,16 @@ function PracticeLogin() {
   const canSubmit =
     isAuthEmailLengthValid(email) && isValidEmail(email) && passwordMeetsPolicy;
 
+  // Mirrors loginErrorMessage in lib/login-error-message.ts.
+  function loginError(code: string): string {
+    const seconds = loginRetryAfterSeconds(code);
+    if (seconds === null) return t("errors.invalid");
+    const minutes = Math.max(1, Math.ceil(seconds / 60));
+    return minutes <= 60
+      ? t("errors.rateLimitedMinutes", { minutes })
+      : t("errors.rateLimitedHours", { hours: Math.ceil(minutes / 60) });
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!canSubmit || loading) return;
@@ -60,15 +73,15 @@ function PracticeLogin() {
         redirect: false,
       });
       if (result?.error) {
-        setError(loginErrorMessage(result.error));
+        setError(loginError(result.error));
       } else if (result?.ok) {
         router.push(nextPath);
         router.refresh();
       } else {
-        setError("Sign-in is temporarily unavailable. Please try again.");
+        setError(t("errors.unavailable"));
       }
     } catch {
-      setError("Sign-in is temporarily unavailable. Please try again.");
+      setError(t("errors.unavailable"));
     } finally {
       setLoading(false);
     }
@@ -88,7 +101,7 @@ function PracticeLogin() {
             OpenVPM
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Sign in to your practice
+            {t("subtitle")}
           </p>
         </div>
         {(checkoutState === "success" || checkoutState === "cancelled") && (
@@ -97,8 +110,8 @@ function PracticeLogin() {
             className="mb-6 rounded-md border border-primary/20 bg-primary/5 p-4 text-sm leading-6"
           >
             {checkoutState === "success"
-              ? "Checkout completed. Sign in to open your clinic workspace. Your billing status updates after Stripe confirms checkout."
-              : "Your account is saved, but your trial has not started. Sign in to resume secure checkout in Plan & Billing. No subscription charge was made."}
+              ? t("checkoutSuccess")
+              : t("checkoutCancelled")}
           </div>
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -115,7 +128,7 @@ function PracticeLogin() {
               htmlFor="email"
               className="mb-1.5 block text-sm font-medium text-foreground"
             >
-              Email
+              {t("email")}
             </label>
             <input
               id="email"
@@ -125,7 +138,7 @@ function PracticeLogin() {
               required
               maxLength={AUTH_EMAIL_MAX_LENGTH}
               className="min-h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              placeholder="you@clinic.com"
+              placeholder={t("emailPlaceholder")}
               autoComplete="email"
             />
           </div>
@@ -134,7 +147,7 @@ function PracticeLogin() {
               htmlFor="password"
               className="mb-1.5 block text-sm font-medium text-foreground"
             >
-              Password
+              {t("password")}
             </label>
             <input
               id="password"
@@ -144,7 +157,7 @@ function PracticeLogin() {
               required
               maxLength={AUTH_PASSWORD_MAX_LENGTH}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              placeholder="Enter your password"
+              placeholder={t("passwordPlaceholder")}
               autoComplete="current-password"
             />
           </div>
@@ -153,7 +166,7 @@ function PracticeLogin() {
             disabled={!canSubmit || loading}
             className="min-h-11 w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
-            {loading ? "Signing in..." : "Sign in"}
+            {loading ? t("submitting") : t("submit")}
           </button>
         </form>
         <p className="mt-4 text-center text-sm text-muted-foreground">
@@ -161,11 +174,11 @@ function PracticeLogin() {
             href="/forgot-password"
             className="text-primary hover:underline"
           >
-            Forgot your password?
+            {t("forgot")}
           </Link>
         </p>
         <p className="mt-2 text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
+          {t("noAccount")}{" "}
           <Link
             href={
               nextPath === "/post-login"
@@ -174,7 +187,7 @@ function PracticeLogin() {
             }
             className="text-primary hover:underline"
           >
-            Register your practice
+            {t("register")}
           </Link>
         </p>
       </div>

@@ -1,5 +1,8 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+import { LanguageSwitch } from "@/components/common/language-switch";
+
 import type { CSSProperties, ReactNode } from "react";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
@@ -14,6 +17,7 @@ type PortalThemeStyle = CSSProperties & {
 };
 
 export function PortalShell({ children }: { children: ReactNode }) {
+  const t = useTranslations("portal.shell");
   const pathname = usePathname();
   const [signingOut, setSigningOut] = useState(false);
   const isAccessExchange = pathname.startsWith("/portal/access/");
@@ -53,7 +57,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={practice.logoUrl}
-                alt={`${practiceName} logo`}
+                alt={t("logoAlt", { name: practiceName })}
                 className="h-10 w-10 shrink-0 rounded-lg border border-gray-200 bg-white object-contain p-0.5"
               />
             ) : practice ? (
@@ -75,9 +79,11 @@ export function PortalShell({ children }: { children: ReactNode }) {
               <p className="truncate text-sm font-semibold text-gray-900">
                 {practiceName}
               </p>
-              <p className="text-sm font-medium text-primary">Pet Portal</p>
+              <p className="text-sm font-medium text-primary">{t("petPortal")}</p>
             </div>
           </div>
+          {/* Writes only this browser's cookie, never the client record. */}
+          <LanguageSwitch className="ml-auto shrink-0" />
           {client.data ? (
             <button
               type="button"
@@ -85,7 +91,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
               disabled={signingOut}
               className="shrink-0 text-sm font-medium text-gray-500 hover:text-gray-800 disabled:opacity-60"
             >
-              {signingOut ? "Signing out…" : "Sign out"}
+              {signingOut ? t("signingOut") : t("signOut")}
             </button>
           ) : null}
         </div>
@@ -95,7 +101,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
       </main>
       <footer className="mt-12 border-t border-gray-100">
         <div className="mx-auto max-w-4xl px-4 py-6 text-center text-sm text-gray-400">
-          Powered by OpenVPM
+          {t("poweredByOpenvpm")}
           <span className="mx-2" aria-hidden="true">
             ·
           </span>
@@ -103,7 +109,7 @@ export function PortalShell({ children }: { children: ReactNode }) {
             href="/legal/privacy"
             className="underline-offset-2 hover:text-gray-600 hover:underline"
           >
-            Privacy
+            {t("privacy")}
           </a>
         </div>
       </footer>

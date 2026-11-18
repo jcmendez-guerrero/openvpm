@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useEffect, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -15,12 +17,13 @@ import type { StepHandle } from "../journey-types";
 
 type Role = "admin" | "veterinarian" | "technician" | "front_desk" | "viewer";
 
+// Labels are catalog keys under onboarding.inviteTeam.
 const ROLES: { value: Role; label: string }[] = [
-  { value: "front_desk", label: "Front desk" },
-  { value: "veterinarian", label: "Veterinarian" },
-  { value: "technician", label: "Technician" },
-  { value: "viewer", label: "Viewer (read only)" },
-  { value: "admin", label: "Admin" },
+  { value: "front_desk", label: "frontDesk" },
+  { value: "veterinarian", label: "veterinarian" },
+  { value: "technician", label: "technician" },
+  { value: "viewer", label: "viewerReadOnly" },
+  { value: "admin", label: "admin" },
 ];
 
 const MAX_ROWS = 10;
@@ -38,18 +41,22 @@ function emptyRow(): Row {
   return { name: "", email: "", role: "front_desk" };
 }
 
-function getInviteEmailError(email: string): string | null {
+function getInviteEmailError(
+  email: string,
+  t: (key: string, values?: Record<string, string | number>) => string,
+): string | null {
   const trimmed = email.trim();
   if (!trimmed) return null;
   if (trimmed.length > SETTINGS_EMAIL_MAX_LENGTH) {
-    return `Email must be at most ${SETTINGS_EMAIL_MAX_LENGTH} characters.`;
+    return t("emailTooLong", { max: SETTINGS_EMAIL_MAX_LENGTH });
   }
-  if (!isValidEmail(trimmed)) return "Enter a valid teammate email.";
+  if (!isValidEmail(trimmed)) return t("emailInvalid");
   return null;
 }
 
 function isInviteEmailValid(email: string): boolean {
-  return email.trim().length > 0 && getInviteEmailError(email) === null;
+  // Only validity matters here, so the message text is not needed.
+  return email.trim().length > 0 && getInviteEmailError(email, (key) => key) === null;
 }
 
 /**
@@ -62,15 +69,16 @@ export function InviteTeamStep({
 }: {
   register: (h: StepHandle) => void;
 }) {
+  const t = useTranslations("onboarding.inviteTeam");
   const inviteStaff = trpc.settings.inviteStaff.useMutation();
   const [rows, setRows] = useState<Row[]>([emptyRow()]);
 
   useEffect(() => {
     register({
       async onContinue() {
-        const invalidRows = rows.filter((r) => getInviteEmailError(r.email));
+        const invalidRows = rows.filter((r) => getInviteEmailError(r.email, t));
         if (invalidRows.length > 0) {
-          toast.error("Fix invalid teammate emails before continuing.");
+          toast.error(t("fixInvalidTeammateEmailsBefore"));
           return false;
         }
 
@@ -89,13 +97,13 @@ export function InviteTeamStep({
           } catch (err) {
             toast.error(
               err instanceof Error
-                ? `Could not invite ${row.email}: ${err.message}`
-                : `Could not invite ${row.email}`
+                ? t("inviteFailedReason", { email: row.email, message: err.message })
+                : t("inviteFailed", { email: row.email })
             );
           }
         }
         if (sent > 0) {
-          toast.success(sent === 1 ? "Sent 1 invite" : `Sent ${sent} invites`);
+          toast.success(sent === 1 ? t("sent1Invite") : t("sentInvites", { count: sent }));
         }
         return true;
       },
@@ -121,13 +129,12 @@ export function InviteTeamStep({
   return (
     <div className="space-y-5">
       <p className="text-sm leading-6 text-slate-600">
-        Add the people you work with. We will email them a link to set up their
-        own login. Every plan includes unlimited staff.
+        {t("addThePeopleYouWork")}
       </p>
 
       <div className="space-y-3">
         {rows.map((row, i) => {
-          const emailError = getInviteEmailError(row.email);
+          const emailError = getInviteEmailError(row.email, t);
           const emailErrorId = `teammate-email-${i + 1}-error`;
           return (
             <div key={i} className="space-y-1">
@@ -137,8 +144,8 @@ export function InviteTeamStep({
                   value={row.name}
                   maxLength={STAFF_NAME_MAX_LENGTH}
                   onChange={(e) => update(i, { name: e.target.value })}
-                  placeholder="Name"
-                  aria-label={`Teammate name ${i + 1}`}
+                  placeholder={t("name")}
+                  aria-label={t("nameLabel", { n: i + 1 })}
                 />
                 <Input
                   type="email"
@@ -148,17 +155,17 @@ export function InviteTeamStep({
                   aria-describedby={emailError ? emailErrorId : undefined}
                   onChange={(e) => update(i, { email: e.target.value })}
                   placeholder="teammate@clinic.com"
-                  aria-label={`Teammate email ${i + 1}`}
+                  aria-label={t("emailLabel", { n: i + 1 })}
                 />
                 <select
                   className={selectClass}
                   value={row.role}
                   onChange={(e) => update(i, { role: e.target.value as Role })}
-                  aria-label={`Teammate role ${i + 1}`}
+                  aria-label={t("roleLabel", { n: i + 1 })}
                 >
                   {ROLES.map((r) => (
                     <option key={r.value} value={r.value}>
-                      {r.label}
+                      {t(r.label)}
                     </option>
                   ))}
                 </select>
@@ -166,7 +173,7 @@ export function InviteTeamStep({
                   type="button"
                   onClick={() => removeRow(i)}
                   disabled={rows.length <= 1}
-                  aria-label={`Remove teammate ${i + 1}`}
+                  aria-label={t("removeLabel", { n: i + 1 })}
                   className="flex h-10 w-10 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 disabled:cursor-not-allowed disabled:opacity-30"
                 >
                   <X className="h-4 w-4" />
@@ -185,7 +192,7 @@ export function InviteTeamStep({
       {rows.length < MAX_ROWS ? (
         <Button type="button" variant="outline" size="sm" onClick={addRow}>
           <Plus className="mr-1.5 h-4 w-4" />
-          Add another
+          {t("addAnother")}
         </Button>
       ) : null}
     </div>

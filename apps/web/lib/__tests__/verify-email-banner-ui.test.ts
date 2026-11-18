@@ -1,11 +1,8 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("verify email banner UI", () => {
-  const source = readFileSync(
-    "components/layout/verify-email-banner.tsx",
-    "utf8",
-  );
+  const source = readTranslatedSource("components/layout/verify-email-banner.tsx");
 
   it("surfaces loading and failures before hiding the verification banner", () => {
     expect(source).toContain("const { data, isLoading, error, refetch }");

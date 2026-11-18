@@ -1,12 +1,9 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("patient duplicate review UI", () => {
-  const listSource = readFileSync("app/(dashboard)/patients/page.tsx", "utf8");
-  const reviewSource = readFileSync(
-    "app/(dashboard)/patients/duplicates/page.tsx",
-    "utf8",
-  );
+  const listSource = readTranslatedSource("app/(dashboard)/patients/page.tsx");
+  const reviewSource = readTranslatedSource("app/(dashboard)/patients/duplicates/page.tsx");
 
   it("exposes duplicate review only to practice administrators", () => {
     expect(listSource).toContain(

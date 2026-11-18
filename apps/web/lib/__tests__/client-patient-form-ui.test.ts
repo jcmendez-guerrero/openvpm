@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
   CLIENT_ADDRESS_MAX_LENGTH,
@@ -26,10 +26,10 @@ import {
 
 describe("client and patient form UI states", () => {
   it("keeps viewer access read-only on client and patient lists", () => {
-    const clientsPage = readFileSync("app/(dashboard)/clients/page.tsx", "utf8");
-    const patientsPage = readFileSync("app/(dashboard)/patients/page.tsx", "utf8");
-    const clientsRouter = readFileSync("server/routers/clients.ts", "utf8");
-    const patientsRouter = readFileSync("server/routers/patients.ts", "utf8");
+    const clientsPage = readTranslatedSource("app/(dashboard)/clients/page.tsx");
+    const patientsPage = readTranslatedSource("app/(dashboard)/patients/page.tsx");
+    const clientsRouter = readTranslatedSource("server/routers/clients.ts");
+    const patientsRouter = readTranslatedSource("server/routers/patients.ts");
 
     expect(clientsPage).toContain('import { useSession } from "next-auth/react"');
     expect(clientsPage).toContain(
@@ -81,22 +81,10 @@ describe("client and patient form UI states", () => {
   });
 
   it("guards direct client and patient create/edit routes to write roles", () => {
-    const newClient = readFileSync(
-      "app/(dashboard)/clients/new/page.tsx",
-      "utf8"
-    );
-    const editClient = readFileSync(
-      "app/(dashboard)/clients/[id]/edit/page.tsx",
-      "utf8"
-    );
-    const newPatient = readFileSync(
-      "app/(dashboard)/patients/new/page.tsx",
-      "utf8"
-    );
-    const editPatient = readFileSync(
-      "app/(dashboard)/patients/[id]/edit/page.tsx",
-      "utf8"
-    );
+    const newClient = readTranslatedSource("app/(dashboard)/clients/new/page.tsx");
+    const editClient = readTranslatedSource("app/(dashboard)/clients/[id]/edit/page.tsx");
+    const newPatient = readTranslatedSource("app/(dashboard)/patients/new/page.tsx");
+    const editPatient = readTranslatedSource("app/(dashboard)/patients/[id]/edit/page.tsx");
 
     for (const source of [newClient, editClient, newPatient, editPatient]) {
       expect(source).toContain('import { useSession } from "next-auth/react"');
@@ -135,14 +123,8 @@ describe("client and patient form UI states", () => {
   });
 
   it("keeps first-clinic-day momentum through owner, pet, and booking", () => {
-    const newClient = readFileSync(
-      "app/(dashboard)/clients/new/page.tsx",
-      "utf8"
-    );
-    const newPatient = readFileSync(
-      "app/(dashboard)/patients/new/page.tsx",
-      "utf8"
-    );
+    const newClient = readTranslatedSource("app/(dashboard)/clients/new/page.tsx");
+    const newPatient = readTranslatedSource("app/(dashboard)/patients/new/page.tsx");
 
     expect(newClient).toContain('searchParams.get("setup") === "first-visit"');
     expect(newClient).toContain("First clinic day, step 1 of 3");
@@ -155,7 +137,7 @@ describe("client and patient form UI states", () => {
   });
 
   it("surfaces New Patient owner-search loading and error states", () => {
-    const source = readFileSync("app/(dashboard)/patients/new/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/patients/new/page.tsx");
 
     expect(source).toContain("isLoading: isSearchingClients");
     expect(source).toContain("error: clientSearchError");
@@ -173,14 +155,8 @@ describe("client and patient form UI states", () => {
   });
 
   it("uses shared edit form load states before rendering empty forms", () => {
-    const patientEdit = readFileSync(
-      "app/(dashboard)/patients/[id]/edit/page.tsx",
-      "utf8"
-    );
-    const clientEdit = readFileSync(
-      "app/(dashboard)/clients/[id]/edit/page.tsx",
-      "utf8"
-    );
+    const patientEdit = readTranslatedSource("app/(dashboard)/patients/[id]/edit/page.tsx");
+    const clientEdit = readTranslatedSource("app/(dashboard)/clients/[id]/edit/page.tsx");
 
     expect(patientEdit).toContain(
       'import { EmptyState } from "@/components/common/empty-state"'
@@ -214,7 +190,7 @@ describe("client and patient form UI states", () => {
   });
 
   it("keeps client form policy aligned with server-side client bounds", () => {
-    const routerSource = readFileSync("server/routers/clients.ts", "utf8");
+    const routerSource = readTranslatedSource("server/routers/clients.ts");
 
     expect(CLIENT_NAME_MAX_LENGTH).toBe(128);
     expect(CLIENT_EMAIL_MAX_LENGTH).toBe(255);
@@ -267,14 +243,8 @@ describe("client and patient form UI states", () => {
   });
 
   it("matches client create/edit form controls to server input limits", () => {
-    const newClient = readFileSync(
-      "app/(dashboard)/clients/new/page.tsx",
-      "utf8"
-    );
-    const editClient = readFileSync(
-      "app/(dashboard)/clients/[id]/edit/page.tsx",
-      "utf8"
-    );
+    const newClient = readTranslatedSource("app/(dashboard)/clients/new/page.tsx");
+    const editClient = readTranslatedSource("app/(dashboard)/clients/[id]/edit/page.tsx");
 
     for (const source of [newClient, editClient]) {
       expect(source).toContain("CLIENT_NAME_MAX_LENGTH");
@@ -315,8 +285,8 @@ describe("client and patient form UI states", () => {
   });
 
   it("keeps patient form policy aligned with server-side patient bounds", () => {
-    const routerSource = readFileSync("server/routers/patients.ts", "utf8");
-    const uploadRouteSource = readFileSync("app/api/upload/route.ts", "utf8");
+    const routerSource = readTranslatedSource("server/routers/patients.ts");
+    const uploadRouteSource = readTranslatedSource("app/api/upload/route.ts");
 
     expect(PATIENT_NAME_MAX_LENGTH).toBe(128);
     expect(PATIENT_BREED_MAX_LENGTH).toBe(128);
@@ -383,14 +353,8 @@ describe("client and patient form UI states", () => {
   });
 
   it("matches patient create/edit form controls to server input limits", () => {
-    const newPatient = readFileSync(
-      "app/(dashboard)/patients/new/page.tsx",
-      "utf8"
-    );
-    const editPatient = readFileSync(
-      "app/(dashboard)/patients/[id]/edit/page.tsx",
-      "utf8"
-    );
+    const newPatient = readTranslatedSource("app/(dashboard)/patients/new/page.tsx");
+    const editPatient = readTranslatedSource("app/(dashboard)/patients/[id]/edit/page.tsx");
 
     for (const source of [newPatient, editPatient]) {
       expect(source).toContain("PATIENT_NAME_MAX_LENGTH");

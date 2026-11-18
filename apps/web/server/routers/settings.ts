@@ -1,3 +1,4 @@
+import { staffEmailLanguage } from "@/i18n/clinic-default-cache";
 import { z } from "zod";
 import { createHash, randomUUID } from "crypto";
 import {
@@ -15,6 +16,7 @@ import {
 import { hash } from "bcryptjs";
 import { TRPCError } from "@trpc/server";
 import { createRouter, protectedProcedure, requireRole } from "../trpc";
+import { DEFAULT_LANGUAGE, isSupportedLanguage, languageSchema } from "@/i18n/config";
 import {
   practices,
   users,
@@ -838,6 +840,8 @@ export const settingsRouter = createRouter({
             .string()
             .regex(/^#[0-9a-fA-F]{6}$/)
             .optional(),
+          // Language used when no user or client choice applies.
+          defaultLanguage: languageSchema.optional(),
         })
         .strict(),
     )
@@ -1073,6 +1077,56 @@ export const settingsRouter = createRouter({
   // ── Branding ──────────────────────────────────────────────
 
   /** Practice name, logo, and accent color — readable by any authenticated role. */
+  /** The caller's saved language (null = clinic default) and the clinic default. */
+  getMyLanguage: protectedProcedure.query(async ({ ctx }) => {
+    const [user] = await ctx.db
+      .select({ language: users.language })
+      .from(users)
+      .where(
+        and(
+          eq(users.id, ctx.user.id),
+          eq(users.practiceId, ctx.practiceId),
+          isNull(users.deletedAt),
+        ),
+      )
+      .limit(1);
+    const [practice] = await ctx.db
+      .select({ defaultLanguage: practices.defaultLanguage })
+      .from(practices)
+      .where(activePracticeWhere(ctx.practiceId))
+      .limit(1);
+    if (!user || !practice) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+    }
+    return {
+      language: isSupportedLanguage(user.language) ? user.language : null,
+      clinicDefault: isSupportedLanguage(practice.defaultLanguage)
+        ? practice.defaultLanguage
+        : DEFAULT_LANGUAGE,
+    };
+  }),
+
+  /** Any signed-in user may change only their own language. */
+  setMyLanguage: protectedProcedure
+    .input(z.object({ language: languageSchema.nullable() }).strict())
+    .mutation(async ({ ctx, input }) => {
+      const [updated] = await ctx.db
+        .update(users)
+        .set({ language: input.language })
+        .where(
+          and(
+            eq(users.id, ctx.user.id),
+            eq(users.practiceId, ctx.practiceId),
+            isNull(users.deletedAt),
+          ),
+        )
+        .returning({ id: users.id });
+      if (!updated) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+      return { language: input.language };
+    }),
+
   getBranding: protectedProcedure.query(async ({ ctx }) => {
     const [practice] = await ctx.db
       .select({
@@ -2596,6 +2650,8 @@ export const settingsRouter = createRouter({
           inviterName: ctx.user.name,
           practiceName: practice.name,
           inviteUrl,
+          // The invitee has no saved language yet: the clinic default decides.
+          language: await staffEmailLanguage(ctx.practiceId),
           idempotencyKey: `staff-invite:${ctx.practiceId}:${createHash("sha256").update(token).digest("hex")}`,
         });
         if (!delivery.success) {

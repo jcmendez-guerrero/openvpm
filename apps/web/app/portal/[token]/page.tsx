@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import Link from "next/link";
 import {
   AlertCircle,
@@ -10,11 +12,14 @@ import {
 import { trpc } from "@/lib/trpc";
 import { PATIENT_SPECIES_EMOJI } from "@/lib/patients/species";
 import { EmptyState } from "@/components/common/empty-state";
-import { calculatePortalAge } from "@/lib/portal/date";
+import { usePortalAge } from "@/components/portal/use-portal-age";
 
 const speciesEmoji: Record<string, string> = PATIENT_SPECIES_EMOJI;
 
 export default function PortalHomePage() {
+  const t = useTranslations("portal.home");
+  const speciesT = useTranslations("patients.species");
+  const age = usePortalAge();
   const { data, isLoading, error } = trpc.portal.getClient.useQuery({});
 
   if (isLoading) {
@@ -31,8 +36,8 @@ export default function PortalHomePage() {
         <EmptyState
           className="py-12"
           icon={AlertCircle}
-          title="Unable to load portal"
-          description="This portal link is invalid or has expired. Please contact your veterinary clinic for a new link."
+          title={t("unableToLoadPortal")}
+          description={t("thisPortalLinkIsInvalid")}
         />
       </div>
     );
@@ -42,22 +47,22 @@ export default function PortalHomePage() {
     <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">
-          Welcome, {data.firstName}!
+          {t("welcome", { name: data.firstName })}
         </h1>
         <p className="text-gray-500 mt-1">
-          Here is everything about your pets in one place.
+          {t("hereIsEverythingAboutYour")}
         </p>
       </div>
 
       {/* Pet Cards */}
       <section className="mb-10">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">Your Pets</h2>
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">{t("yourPets")}</h2>
         {data.patients.length === 0 ? (
           <EmptyState
             className="py-10"
             icon={PawPrint}
-            title="No pets on file yet"
-            description="Your clinic will add pets here when they create patient records."
+            title={t("noPetsOnFileYet")}
+            description={t("yourClinicWillAddPets")}
           />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -76,10 +81,10 @@ export default function PortalHomePage() {
                       {pet.name}
                     </h3>
                     <p className="text-sm text-gray-500">
-                      {pet.breed || pet.species}
+                      {pet.breed || speciesT(pet.species as never)}
                     </p>
                     <p className="text-xs text-gray-400 mt-1">
-                      {calculatePortalAge(pet.dob)}
+                      {age(pet.dob)}
                     </p>
                   </div>
                 </div>
@@ -96,13 +101,13 @@ export default function PortalHomePage() {
           className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/40 p-4 font-medium text-primary transition-all hover:border-primary/60 hover:bg-primary/5"
         >
           <CalendarPlus className="h-5 w-5" aria-hidden="true" />
-          Request an Appointment
+          {t("requestAnAppointment")}
         </Link>
       </section>
 
       {/* Quick Links */}
       <section>
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">Quick Links</h2>
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">{t("quickLinks")}</h2>
         <div className="grid gap-3 sm:grid-cols-3">
           <Link
             href="/portal/messages"
@@ -112,8 +117,8 @@ export default function PortalHomePage() {
               <MessageSquare className="h-5 w-5" aria-hidden="true" />
             </div>
             <div>
-              <p className="font-medium text-gray-900">Messages</p>
-              <p className="text-sm text-gray-500">Read and reply to your clinic</p>
+              <p className="font-medium text-gray-900">{t("messages")}</p>
+              <p className="text-sm text-gray-500">{t("readAndReplyToYour")}</p>
             </div>
           </Link>
           <Link
@@ -126,8 +131,8 @@ export default function PortalHomePage() {
               </svg>
             </div>
             <div>
-              <p className="font-medium text-gray-900">Appointments</p>
-              <p className="text-sm text-gray-500">View upcoming and past visits</p>
+              <p className="font-medium text-gray-900">{t("appointments")}</p>
+              <p className="text-sm text-gray-500">{t("viewUpcomingAndPastVisits")}</p>
             </div>
           </Link>
           <Link
@@ -140,8 +145,8 @@ export default function PortalHomePage() {
               </svg>
             </div>
             <div>
-              <p className="font-medium text-gray-900">Invoices</p>
-              <p className="text-sm text-gray-500">View billing and payments</p>
+              <p className="font-medium text-gray-900">{t("invoices")}</p>
+              <p className="text-sm text-gray-500">{t("viewBillingAndPayments")}</p>
             </div>
           </Link>
         </div>

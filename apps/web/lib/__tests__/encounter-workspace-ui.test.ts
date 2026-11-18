@@ -1,31 +1,13 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
-const workspaceSource = readFileSync(
-  "app/(dashboard)/encounters/[appointmentId]/page.tsx",
-  "utf8",
-);
-const scheduleSource = readFileSync(
-  "app/(dashboard)/schedule/page.tsx",
-  "utf8",
-);
-const soapSource = readFileSync(
-  "app/(dashboard)/records/new-soap/[patientId]/page.tsx",
-  "utf8",
-);
-const encounterVitalsSource = readFileSync(
-  "components/records/encounter-vitals-card.tsx",
-  "utf8",
-);
-const ambulatorySoapSource = readFileSync(
-  "components/records/ambulatory-soap-card.tsx",
-  "utf8",
-);
-const patientChartSource = readFileSync(
-  "app/(dashboard)/patients/[id]/page.tsx",
-  "utf8",
-);
-const recordsSource = readFileSync("app/(dashboard)/records/page.tsx", "utf8");
+const workspaceSource = readTranslatedSource("app/(dashboard)/encounters/[appointmentId]/page.tsx");
+const scheduleSource = readTranslatedSource("app/(dashboard)/schedule/page.tsx");
+const soapSource = readTranslatedSource("app/(dashboard)/records/new-soap/[patientId]/page.tsx");
+const encounterVitalsSource = readTranslatedSource("components/records/encounter-vitals-card.tsx");
+const ambulatorySoapSource = readTranslatedSource("components/records/ambulatory-soap-card.tsx");
+const patientChartSource = readTranslatedSource("app/(dashboard)/patients/[id]/page.tsx");
+const recordsSource = readTranslatedSource("app/(dashboard)/records/page.tsx");
 
 describe("clinic encounter workspace", () => {
   it("opens from an appointment and keeps visit and patient context together", () => {
@@ -340,10 +322,7 @@ describe("clinic encounter workspace", () => {
     expect(workspaceSource).toContain("Link confirmed charge");
     expect(workspaceSource).toContain("No charge");
     expect(
-      readFileSync(
-        "components/records/reconciliation-reason-actions.tsx",
-        "utf8",
-      ),
+      readTranslatedSource("components/records/reconciliation-reason-actions.tsx"),
     ).toContain("Void/corrected");
     expect(workspaceSource).toContain("never bills a suggestion automatically");
   });
@@ -402,10 +381,7 @@ describe("clinic encounter workspace", () => {
   });
 
   it("guards unsaved vitals and charges without persisting clinical data in the browser", () => {
-    const guardSource = readFileSync(
-      "lib/use-unsaved-changes-guard.ts",
-      "utf8",
-    );
+    const guardSource = readTranslatedSource("lib/use-unsaved-changes-guard.ts");
     expect(encounterVitalsSource).toContain("useUnsavedChangesGuard(");
     expect(encounterVitalsSource).toContain("Offline — keep this page open.");
     expect(workspaceSource).toContain("hasUnsavedCharges");

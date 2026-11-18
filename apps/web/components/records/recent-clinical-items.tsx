@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { Clock3, Loader2 } from "lucide-react";
@@ -15,6 +17,7 @@ export function RecentClinicalItems({
   appointmentId?: string;
   enabled: boolean;
 }) {
+  const t = useTranslations("records.recent");
   const utils = trpc.useUtils();
   const recordedKey = useRef<string | null>(null);
   const recent = trpc.recentClinicalItems.list.useQuery(undefined, { enabled });
@@ -35,19 +38,19 @@ export function RecentClinicalItems({
   return (
     <nav
       className="mb-4 rounded-lg border border-border bg-card px-3 py-2"
-      aria-label="Recently viewed patients"
+      aria-label={t("label")}
     >
       <div className="flex items-center gap-3 overflow-x-auto">
         <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
           <Clock3 className="h-3.5 w-3.5" />
-          Recent
+          {t("title")}
         </span>
         {recent.isLoading ? (
           <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("loading")}
           </span>
         ) : recent.error ? (
-          <span className="text-xs text-destructive">Unavailable</span>
+          <span className="text-xs text-destructive">{t("unavailable")}</span>
         ) : recent.data?.length ? (
           recent.data.map((item) => {
             const resumeVisit =
@@ -68,7 +71,7 @@ export function RecentClinicalItems({
                 <span>{item.patientName}</span>
                 {resumeVisit ? (
                   <span className="text-xs font-medium text-primary">
-                    In visit
+                    {t("inVisit")}
                   </span>
                 ) : null}
               </Link>
@@ -76,7 +79,7 @@ export function RecentClinicalItems({
           })
         ) : (
           <span className="text-xs text-muted-foreground">
-            Open another patient to build this list.
+            {t("empty")}
           </span>
         )}
       </div>

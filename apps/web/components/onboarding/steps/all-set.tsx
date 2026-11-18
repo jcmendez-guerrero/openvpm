@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useEffect } from "react";
 import { CalendarPlus, CreditCard, UserPlus } from "lucide-react";
 import { FirstDayRecommendations } from "@/components/onboarding/first-day-recommendations";
@@ -20,6 +22,7 @@ export function AllSetStep({
   register: (h: StepHandle) => void;
   state: JourneyState;
 }) {
+  const t = useTranslations("onboarding.allSet");
   const hasImportedData = state.hasImportedData;
   const subscription = trpc.subscription.get.useQuery(undefined, {
     retry: false,
@@ -30,14 +33,14 @@ export function AllSetStep({
     register(
       inPreview
         ? {
-            continueLabel: "Start my free trial",
+            continueLabel: t("startMyFreeTrial"),
             finishPath: "/settings?tab=billing&from=setup",
             onContinue: async () => true,
           }
         : {
             continueLabel: hasImportedData
-              ? "Book the first appointment"
-              : "Add the first real client",
+              ? t("bookTheFirstAppointment")
+              : t("addTheFirstRealClient"),
             onContinue: async () => true,
           },
     );
@@ -54,7 +57,7 @@ export function AllSetStep({
           </span>
           <div className="max-w-3xl text-sm leading-6 text-slate-700">
             <p className="font-medium text-slate-900">
-              This is your clinic in OpenVPM. Ready to run it for real?
+              {t("thisIsYourClinicIn")}
             </p>
             <p className="mt-1">
               {`Start your ${TRIAL_DAYS}-day free trial to email and text clients, use the AI assistant, and invite your team. No charge until the trial ends, and everything you set up stays. Prefer to keep exploring? The trial button stays in the top bar.`}
@@ -69,8 +72,8 @@ export function AllSetStep({
         </span>
         <p className="max-w-3xl text-sm leading-6 text-slate-600">
           {hasImportedData
-            ? "Your reviewed records are saved. Start with one real appointment, then decide what deserves a larger rollout."
-            : "Your clinic basics are saved. Start with one real client and visit while your current PIMS stays safely in place."}
+            ? t("yourReviewedRecordsAreSaved")
+            : t("yourClinicBasicsAreSaved")}
         </p>
       </div>
 

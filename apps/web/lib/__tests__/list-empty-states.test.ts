@@ -1,8 +1,8 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 function source(path: string): string {
-  return readFileSync(path, "utf8");
+  return readTranslatedSource(path);
 }
 
 describe("dashboard list empty/error states", () => {
@@ -165,7 +165,7 @@ describe("dashboard list empty/error states", () => {
     expect(page).toContain("const upcomingError = calendarSettingsQuery.error ?? upcoming.error");
     expect(page).toContain("const isUpcomingLoading =");
     expect(page).toContain("calendarSettingsQuery.isLoading || upcoming.isLoading");
-    expect(page).toContain("formatTime(appt.startTime, dashboardTimeZone)");
+    expect(page).toContain("formatTime(appt.startTime, dashboardTimeZone, locale)");
     expect(page).not.toContain("today.toISOString().slice(0, 10)");
     expect(page).not.toContain("formatDateInputLocal");
     expect(page).toContain("const statsMissing =");

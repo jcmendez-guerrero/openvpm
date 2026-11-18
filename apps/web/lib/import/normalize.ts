@@ -9,6 +9,29 @@ import type { PatientSpecies } from "@/lib/patients/species";
 
 export type NormalizedSpecies = PatientSpecies;
 
+const LANGUAGE_ALIASES: Record<string, "en" | "es"> = {
+  en: "en",
+  eng: "en",
+  english: "en",
+  ingles: "en",
+  es: "es",
+  spa: "es",
+  spanish: "es",
+  espanol: "es",
+};
+
+/** "Spanish", "Español", "es-MX" → "es"; blank or unknown → undefined. */
+export function normalizeLanguageValue(raw: string | undefined): "en" | "es" | undefined {
+  if (!raw) return undefined;
+  const key = raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase()
+    .split(/[-_]/)[0]!;
+  return LANGUAGE_ALIASES[key];
+}
+
 const SPECIES_ALIASES: Record<string, NormalizedSpecies> = {
   canine: "canine",
   dog: "canine",

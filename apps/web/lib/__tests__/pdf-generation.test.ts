@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
   generateMedicalSummaryPdf,
@@ -7,7 +7,7 @@ import {
 } from "../pdf";
 
 describe("medical summary header", () => {
-  const source = readFileSync("lib/pdf.ts", "utf8");
+  const source = readTranslatedSource("lib/pdf.ts");
 
   it("stacks logo, clinic name, then the title so long names cannot collide", () => {
     const headerSection = source.slice(
@@ -139,18 +139,18 @@ describe("plain-text chart notes in medical summaries", () => {
 });
 
 describe("pdf generation date labels", () => {
-  const source = readFileSync("lib/pdf.ts", "utf8");
+  const source = readTranslatedSource("lib/pdf.ts");
 
   it("uses caller-provided generated dates for medical summaries", () => {
     expect(source).toContain("generatedDate?: string;");
-    expect(source).toContain("function formatGeneratedDateUtc()");
+    expect(source).toContain("function formatGeneratedDateUtc(language?: Language)");
     expect(source).toContain(
-      'return new Date().toLocaleDateString("en-US", { timeZone: "UTC" })',
+      'return new Date().toLocaleDateString(language === "es" ? "es" : "en-US", {\n    timeZone: "UTC",',
     );
     expect(source).toContain(
-      "const generatedDate = data.generatedDate ?? formatGeneratedDateUtc()",
+      "data.generatedDate ?? formatGeneratedDateUtc(data.language)",
     );
-    expect(source).toContain("`Generated on ${generatedDate}");
+    expect(source).toContain('"Generated on {date} — This document is for reference only"');
     expect(source).not.toContain(
       "const today = new Date().toLocaleDateString()",
     );
@@ -168,7 +168,7 @@ describe("pdf generation date labels", () => {
     expect(source).toContain('["Manufacturer", data.manufacturer]');
     expect(source).toContain('["Lot number", data.lotNumber]');
     expect(source).toContain(
-      "const generatedDate = data.generatedDate ?? formatGeneratedDateUtc()",
+      "data.generatedDate ?? formatGeneratedDateUtc(data.language)",
     );
   });
 
@@ -182,7 +182,7 @@ describe("pdf generation date labels", () => {
     expect(source).toContain(
       'doc.text(data.emptyMessage ?? "No report data available.", margin, y)',
     );
-    expect(source).toContain("doc.text(`Page ${i} of ${pageCount}`");
+    expect(source).toContain('"Page {page} of {count}"');
   });
 });
 
@@ -252,11 +252,11 @@ describe("staff vaccination certificate PDFs", () => {
 
     expect(doc.getNumberOfPages()).toBe(1);
     expect(doc.output("arraybuffer").byteLength).toBeGreaterThan(4_000);
-    const source = readFileSync("lib/pdf.ts", "utf8");
+    const source = readTranslatedSource("lib/pdf.ts");
     expect(source).toContain("Veterinarian signature");
     expect(source).toContain(
       "Routine vaccination record — not a travel health certificate",
     );
-    expect(source).toContain("Certificate ID: ${data.certificateId}");
+    expect(source).toContain('"Certificate ID: {id}"');
   });
 });

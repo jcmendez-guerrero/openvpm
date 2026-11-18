@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, PawPrint } from "lucide-react";
@@ -14,6 +16,7 @@ import {
 import { formatPortalDateInput } from "@/lib/portal/date";
 
 export default function BookAppointmentPage() {
+  const t = useTranslations("portal.book");
   const formId = useId();
   const patientFieldId = `${formId}-patient`;
   const typeFieldId = `${formId}-type`;
@@ -90,8 +93,8 @@ export default function BookAppointmentPage() {
         <EmptyState
           className="py-12"
           icon={AlertCircle}
-          title="Unable to load booking form"
-          description="This portal link is invalid or has expired. Please contact your veterinary clinic for a new link."
+          title={t("unableToLoadBookingForm")}
+          description={t("thisPortalLinkIsInvalid")}
         />
       </div>
     );
@@ -104,8 +107,8 @@ export default function BookAppointmentPage() {
         <EmptyState
           className="py-12"
           icon={AlertCircle}
-          title="Appointment requests are unavailable"
-          description="The clinic has not configured an active scheduling location. Please contact the clinic directly."
+          title={t("appointmentRequestsAreUnavailable")}
+          description={t("theClinicHasNotConfigured")}
         />
       </div>
     );
@@ -125,8 +128,8 @@ export default function BookAppointmentPage() {
         <EmptyState
           className="py-12"
           icon={AlertCircle}
-          title="Appointment requests are unavailable"
-          description="The clinic has not made any active visit types available. Please contact the clinic directly."
+          title={t("appointmentRequestsAreUnavailable")}
+          description={t("theClinicHasNotMade")}
         />
       </div>
     );
@@ -169,35 +172,35 @@ export default function BookAppointmentPage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
           </svg>
         </div>
-        <h1 className="text-xl font-bold text-gray-900 mb-2">Request sent!</h1>
+        <h1 className="text-xl font-bold text-gray-900 mb-2">{t("requestSent")}</h1>
         <p className="text-gray-600 max-w-sm mx-auto mb-6">{request.data.message}</p>
         <div className="mx-auto mb-6 max-w-sm rounded-xl border border-gray-200 bg-gray-50 p-4 text-left text-sm">
           <p className="mb-3 font-semibold text-gray-900">
-            Requested — not yet confirmed
+            {t("requestedNotYetConfirmed")}
           </p>
           <dl className="space-y-2 text-gray-600">
             <div className="flex justify-between gap-4">
-              <dt>Pet</dt>
+              <dt>{t("pet")}</dt>
               <dd className="font-medium text-gray-900">
-                {selectedPet?.name ?? "Patient"}
+                {selectedPet?.name ?? t("patient")}
               </dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt>Visit</dt>
+              <dt>{t("visit")}</dt>
               <dd className="font-medium text-gray-900">
-                {selectedType?.name ?? "Appointment"}
+                {selectedType?.name ?? t("appointment")}
               </dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt>Preferred time</dt>
+              <dt>{t("preferredTime")}</dt>
               <dd className="font-medium text-gray-900">
-                {preferredDate} at {preferredTime}
+                {t("dateAtTime", { date: preferredDate, time: preferredTime })}
               </dd>
             </div>
             <div className="flex justify-between gap-4">
-              <dt>Clinic</dt>
+              <dt>{t("clinic")}</dt>
               <dd className="text-right font-medium text-gray-900">
-                {selectedLocation?.name ?? "Clinic"}
+                {selectedLocation?.name ?? t("clinic")}
               </dd>
             </div>
           </dl>
@@ -206,7 +209,7 @@ export default function BookAppointmentPage() {
           href="/portal/appointments"
           className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80"
         >
-          View your appointments
+          {t("viewYourAppointments")}
         </Link>
       </div>
     );
@@ -221,20 +224,20 @@ export default function BookAppointmentPage() {
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
         </svg>
-        Back to appointments
+        {t("backToAppointments")}
       </Link>
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-2">Request an appointment</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("requestAnAppointment")}</h1>
       <p className="text-gray-500 text-sm mb-8">
-        Pick a time that works for you. The clinic will confirm the final time.
+        {t("pickATimeThatWorks")}
       </p>
 
       {pets.length === 0 ? (
         <EmptyState
           className="py-10"
           icon={PawPrint}
-          title="No pets on file yet"
-          description="Your clinic will add pets here when they create patient records."
+          title={t("noPetsOnFileYet")}
+          description={t("yourClinicWillAddPets")}
         />
       ) : (
         <form onSubmit={submit} className="space-y-5">
@@ -244,7 +247,7 @@ export default function BookAppointmentPage() {
                 htmlFor={locationFieldId}
                 className="block text-sm font-medium text-gray-700 mb-1.5"
               >
-                Clinic location
+                {t("clinicLocation")}
               </label>
               <select
                 id={locationFieldId}
@@ -257,7 +260,7 @@ export default function BookAppointmentPage() {
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               >
                 <option value="" disabled>
-                  Choose a location…
+                  {t("chooseALocation")}
                 </option>
                 {clientData.locations.map((location) => (
                   <option key={location.id} value={location.id}>
@@ -287,7 +290,7 @@ export default function BookAppointmentPage() {
               htmlFor={patientFieldId}
               className="block text-sm font-medium text-gray-700 mb-1.5"
             >
-              Pet
+              {t("pet")}
             </label>
             <select
               id={patientFieldId}
@@ -296,7 +299,7 @@ export default function BookAppointmentPage() {
               required
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
-              <option value="">Select a pet…</option>
+              <option value="">{t("selectAPet")}</option>
               {pets.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -310,7 +313,7 @@ export default function BookAppointmentPage() {
               htmlFor={typeFieldId}
               className="block text-sm font-medium text-gray-700 mb-1.5"
             >
-              Reason for visit
+              {t("reasonForVisit")}
             </label>
             <select
               id={typeFieldId}
@@ -323,7 +326,7 @@ export default function BookAppointmentPage() {
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="" disabled>
-                Select a visit type…
+                {t("selectAVisitType")}
               </option>
               {appointmentTypes.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -339,7 +342,7 @@ export default function BookAppointmentPage() {
                 htmlFor={dateFieldId}
                 className="block text-sm font-medium text-gray-700 mb-1.5"
               >
-                Preferred date
+                {t("preferredDate")}
               </label>
               <input
                 id={dateFieldId}
@@ -359,7 +362,7 @@ export default function BookAppointmentPage() {
                 htmlFor={timeFieldId}
                 className="block text-sm font-medium text-gray-700 mb-1.5"
               >
-                Preferred time
+                {t("preferredTime")}
               </label>
               <input
                 id={timeFieldId}
@@ -381,21 +384,21 @@ export default function BookAppointmentPage() {
                 }`}
               >
                 {showTimeBoundsError
-                  ? `Choose a start time from ${timeBounds.minTime} to ${timeBounds.maxTime}.`
+                  ? t("timeRange", { min: timeBounds.minTime, max: timeBounds.maxTime ?? "" })
                   : timeBounds.maxTime
-                  ? `Choose a start time from ${timeBounds.minTime} to ${timeBounds.maxTime}.`
-                  : "This visit type is longer than the online booking window."}
+                  ? t("timeRange", { min: timeBounds.minTime, max: timeBounds.maxTime ?? "" })
+                  : t("thisVisitTypeIsLonger")}
               </p>
             </div>
           </div>
 
           {preferredDate && slots.isLoading && (
-            <p className="text-xs text-gray-500">Checking suggested times…</p>
+            <p className="text-xs text-gray-500">{t("checkingSuggestedTimes")}</p>
           )}
 
           {slotsUnavailable && (
             <p className="text-xs text-red-600">
-              Suggested times could not be loaded. You can still enter a preferred time.
+              {t("suggestedTimesCouldNotBe")}
             </p>
           )}
 
@@ -405,7 +408,7 @@ export default function BookAppointmentPage() {
             slots.data &&
             slots.data.length === 0 && (
               <p className="text-xs text-gray-500">
-                No suggested request times are available for this date.
+                {t("noSuggestedRequestTimesAre")}
               </p>
             )}
 
@@ -416,7 +419,7 @@ export default function BookAppointmentPage() {
             slots.data.length > 0 && (
               <div>
                 <p className="text-xs font-medium text-gray-500 mb-2">
-                  Suggested request times on {preferredDate} (tap to pick)
+                  {t("suggestedTimes", { date: preferredDate })}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {slots.data.map((s) => (
@@ -442,7 +445,7 @@ export default function BookAppointmentPage() {
               htmlFor={reasonFieldId}
               className="block text-sm font-medium text-gray-700 mb-1.5"
             >
-              Anything we should know?
+              {t("anythingWeShouldKnow")}
             </label>
             <textarea
               id={reasonFieldId}
@@ -452,7 +455,7 @@ export default function BookAppointmentPage() {
               rows={3}
               maxLength={PORTAL_BOOKING_REASON_MAX_LENGTH}
               aria-invalid={reason.length > 0 && !hasValidReason}
-              placeholder="Briefly describe the reason for the visit"
+              placeholder={t("brieflyDescribeTheReasonFor")}
               className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
@@ -466,7 +469,7 @@ export default function BookAppointmentPage() {
             disabled={!canSubmit}
             className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
           >
-            {request.isPending ? "Sending…" : "Request appointment"}
+            {request.isPending ? t("sending") : t("requestAppointment")}
           </button>
         </form>
       )}

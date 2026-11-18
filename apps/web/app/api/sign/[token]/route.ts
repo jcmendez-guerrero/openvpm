@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { tokenPageLanguage } from "@/i18n/token-page";
 import { timingSafeEqual } from "node:crypto";
 import { and, eq, gt, isNull, lte, or, sql } from "drizzle-orm";
 import {
+  clients,
   auditLog,
   consentReceiptCapabilities,
   consentRequests,
@@ -178,6 +180,8 @@ type ConsentLookup = {
   tier: string | null;
   billingStatus: string | null;
   trialEndsAt: Date | null;
+  clientLanguage: string | null;
+  clinicDefaultLanguage: string | null;
 };
 
 async function lookupConsent(
@@ -212,6 +216,8 @@ async function lookupConsent(
       tier: practices.subscriptionTier,
       billingStatus: practices.billingStatus,
       trialEndsAt: practices.trialEndsAt,
+      clientLanguage: clients.preferredLanguage,
+      clinicDefaultLanguage: practices.defaultLanguage,
     })
     .from(consentRequests)
     .innerJoin(
@@ -228,6 +234,14 @@ async function lookupConsent(
         eq(patients.id, consentRequests.patientId),
         eq(patients.practiceId, consentRequests.practiceId),
         isNull(patients.deletedAt),
+      ),
+    )
+    .leftJoin(
+      clients,
+      and(
+        eq(clients.id, patients.clientId),
+        eq(clients.practiceId, patients.practiceId),
+        isNull(clients.deletedAt),
       ),
     )
     .where(
@@ -652,11 +666,16 @@ async function handleGet(
       return notFound();
     }
 
+    const language = tokenPageLanguage(
+      request,
+      { clientLanguage: session.clientLanguage, clinicDefault: session.clinicDefaultLanguage },
+      "sign",
+    );
     if (session.status === "signed") {
-      return NextResponse.json({ status: "signed" });
+      return NextResponse.json({ status: "signed", ...language });
     }
     if (session.status === "signing") {
-      return NextResponse.json({ status: "signing" });
+      return NextResponse.json({ status: "signing", ...language });
     }
     if (session.status !== "pending") return notFound();
 
@@ -666,6 +685,7 @@ async function handleGet(
       patientName: session.patientName,
       practiceName: session.practiceName,
       status: "pending",
+      ...language,
     });
   });
 }

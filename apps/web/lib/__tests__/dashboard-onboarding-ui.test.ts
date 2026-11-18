@@ -1,28 +1,13 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("dashboard onboarding UI states", () => {
-  const activationSource = readFileSync(
-    "components/dashboard/activation-checklist.tsx",
-    "utf8",
-  );
-  const tourProviderSource = readFileSync(
-    "components/tour/tour-provider.tsx",
-    "utf8",
-  );
-  const journeyProviderSource = readFileSync(
-    "components/onboarding/journey-overlay.tsx",
-    "utf8",
-  );
-  const journeyPlanSource = readFileSync(
-    "lib/onboarding/journey-plan.ts",
-    "utf8",
-  );
-  const migrationHelpSource = readFileSync(
-    "components/onboarding/migration-help-request.tsx",
-    "utf8",
-  );
-  const settingsRouter = readFileSync("server/routers/settings.ts", "utf8");
+  const activationSource = readTranslatedSource("components/dashboard/activation-checklist.tsx");
+  const tourProviderSource = readTranslatedSource("components/tour/tour-provider.tsx");
+  const journeyProviderSource = readTranslatedSource("components/onboarding/journey-overlay.tsx");
+  const journeyPlanSource = readTranslatedSource("lib/onboarding/journey-plan.ts");
+  const migrationHelpSource = readTranslatedSource("components/onboarding/migration-help-request.tsx");
+  const settingsRouter = readTranslatedSource("server/routers/settings.ts");
 
   it("surfaces activation checklist query failures before hiding for missing data", () => {
     expect(activationSource).toContain("function ActivationChecklistError");
@@ -111,7 +96,7 @@ describe("dashboard onboarding UI states", () => {
   it("retired the dormant welcome panel in favor of the welcome surface", () => {
     // The old ?welcome=1 panel is gone; the dashboard leads with the
     // activation checklist, and greeting lives in components/welcome/.
-    const dashboardSource = readFileSync("app/(dashboard)/page.tsx", "utf8");
+    const dashboardSource = readTranslatedSource("app/(dashboard)/page.tsx");
     expect(dashboardSource).not.toContain("WelcomePanel");
     expect(dashboardSource).toContain("<ActivationChecklist />");
   });
@@ -200,9 +185,9 @@ describe("dashboard onboarding UI states", () => {
   it("uses the selected pathway to put a tailored first win first", () => {
     expect(activationSource).toContain("getOnboardingIntentOption");
     expect(activationSource).toContain("pathway.firstWinTarget");
-    expect(activationSource).toContain("label: pathway.firstWin");
-    expect(activationSource).toContain("hint: pathway.firstWinHint");
-    expect(activationSource).toContain("{pathway.shortLabel} · {doneCount}");
+    expect(activationSource).toContain("intents.${pathway.value}.firstWin");
+    expect(activationSource).toContain("intents.${pathway.value}.firstWinHint");
+    expect(activationSource).toContain("{profileT(`intents.${pathway.value}.shortLabel`)} · {done} of {total} done");
   });
 
   it("turns the activation checklist into a mobile first-win path with a persisted help request", () => {

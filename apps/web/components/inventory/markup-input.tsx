@@ -1,4 +1,6 @@
 "use client";
+
+import { useTranslations } from "use-intl";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,12 +13,13 @@ export function MarkupInput({
   cost: string;
   onApply: (price: string) => void;
 }) {
+  const t = useTranslations("inventory.markup");
   const [markup, setMarkup] = useState("");
   const price = priceWithMarkup(cost, markup);
   return (
     <div className="mt-2 space-y-1">
       <label className="block text-xs text-muted-foreground">
-        Markup on cost (%)
+        {t("markupOnCost")}
         <Input
           type="number"
           min="0"
@@ -35,12 +38,12 @@ export function MarkupInput({
           if (price !== null) onApply(price);
         }}
       >
-        Apply markup
+        {t("applyMarkup")}
       </Button>
       <p className="text-xs text-muted-foreground">
         {price === null
-          ? "Enter cost per unit and a markup percentage."
-          : `Selling price per unit: ${price}. Save the product to keep this price.`}
+          ? t("enterCostPerUnitAnd")
+          : t("sellingPrice", { price })}
       </p>
     </div>
   );

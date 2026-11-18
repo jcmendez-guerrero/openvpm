@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import * as React from "react";
 import { usePathname } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
@@ -9,7 +11,6 @@ import {
   addDemoRoleSwitchMarker,
   type DemoSwitcherRole,
   demoRoleDestination,
-  demoRoleLabel,
   isDemoSwitcherRole,
   requestDemoRoleSwitch,
   shouldShowDemoRoleSwitcher,
@@ -30,8 +31,10 @@ export function DemoRoleSwitcherView({
   error,
   onRoleChange,
 }: DemoRoleSwitcherViewProps) {
+  const t = useTranslations("demo.roleSwitcher");
   const isSwitching = pendingRole !== null;
-  const currentLabel = demoRoleLabel(currentRole);
+  const roleT = useTranslations("demo.roles");
+  const currentLabel = roleT(currentRole);
 
   return (
     <div className="flex min-w-0 flex-col gap-1">
@@ -40,7 +43,7 @@ export function DemoRoleSwitcherView({
           htmlFor="demo-role-switcher"
           className="shrink-0 text-xs font-medium text-muted-foreground"
         >
-          Explore as
+          {t("exploreAs")}
         </label>
         <div className="relative">
           <UserRoundCog
@@ -51,7 +54,7 @@ export function DemoRoleSwitcherView({
             id="demo-role-switcher"
             value={currentRole}
             disabled={isSwitching}
-            aria-label={`Demo role. Current role: ${currentLabel}`}
+            aria-label={t("currentRoleLabel", { role: currentLabel })}
             onChange={(event) => {
               const nextRole = event.currentTarget.value;
               if (isDemoSwitcherRole(nextRole)) onRoleChange(nextRole);
@@ -60,7 +63,7 @@ export function DemoRoleSwitcherView({
           >
             {DEMO_ROLE_OPTIONS.map((role) => (
               <option key={role.value} value={role.value}>
-                {role.label}
+                {roleT(role.value)}
               </option>
             ))}
           </select>
@@ -81,8 +84,8 @@ export function DemoRoleSwitcherView({
       </div>
       <span className="sr-only" aria-live="polite">
         {pendingRole
-          ? `Switching to ${demoRoleLabel(pendingRole)}`
-          : `Viewing demo as ${currentLabel}`}
+          ? t("switchingTo", { role: roleT(pendingRole) })
+          : t("viewingAs", { role: currentLabel })}
       </span>
       {error ? (
         <p role="alert" className="max-w-64 text-xs text-destructive">
@@ -94,6 +97,7 @@ export function DemoRoleSwitcherView({
 }
 
 export function DemoRoleSwitcher() {
+  const t = useTranslations("demo.roleSwitcher");
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const [pendingRole, setPendingRole] =
@@ -117,7 +121,7 @@ export function DemoRoleSwitcher() {
     if (!switched) {
       setPendingRole(null);
       setError(
-        "We couldn't switch roles. Your current role is unchanged. Try again.",
+        t("weCouldnTSwitchRoles"),
       );
       return;
     }
@@ -134,7 +138,7 @@ export function DemoRoleSwitcher() {
       window.location.assign(addDemoRoleSwitchMarker(destination));
     } catch {
       setPendingRole(null);
-      setError("Role changed. Refresh this page to finish switching views.");
+      setError(t("refreshToFinish"));
     }
   }
 

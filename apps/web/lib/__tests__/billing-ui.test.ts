@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
   BILLING_ADJUSTMENT_REASON_MAX_LENGTH,
@@ -21,7 +21,7 @@ import {
 } from "../clients/policy";
 
 describe("billing invoice form UX", () => {
-  const source = readFileSync("app/(dashboard)/billing/new/page.tsx", "utf8");
+  const source = readTranslatedSource("app/(dashboard)/billing/new/page.tsx");
 
   it("keeps invoice line item controls aligned to shared bounds", () => {
     expect(BILLING_INVOICE_LINE_DESCRIPTION_MAX_LENGTH).toBe(500);
@@ -185,7 +185,7 @@ describe("billing invoice form UX", () => {
 });
 
 describe("billing invoice payment actions", () => {
-  const source = readFileSync("app/(dashboard)/billing/page.tsx", "utf8");
+  const source = readTranslatedSource("app/(dashboard)/billing/page.tsx");
 
   it("only offers payment collection for sent or overdue invoice balances", () => {
     expect(source).toContain(
@@ -348,10 +348,10 @@ describe("billing invoice payment actions", () => {
     expect(source).toContain("billingTimeZone={billingTimeZone}");
     expect(source).toContain("settingsReady={billingSettingsReady}");
     expect(source).toContain(
-      "formatBillingDateInput(invoice.dueDate, billingTimeZone)",
+      "formatBillingDateInput(invoice.dueDate, billingTimeZone, locale)",
     );
     expect(source).toContain(
-      "formatBillingInstantDate(invoice.createdAt, billingTimeZone)",
+      "formatBillingInstantDate(invoice.createdAt, billingTimeZone, locale)",
     );
     expect(source).toMatch(/formatBillingDateInput\(\s*row\.nextBillingDate/);
     expect(source).toMatch(
@@ -396,7 +396,7 @@ describe("billing invoice payment actions", () => {
 });
 
 describe("medication dispense billing queue", () => {
-  const source = readFileSync("app/(dashboard)/billing/page.tsx", "utf8");
+  const source = readTranslatedSource("app/(dashboard)/billing/page.tsx");
 
   it("shows every pending clinic-stock dispense with explicit outcomes", () => {
     expect(source).toContain("Unbilled medication dispenses");
@@ -427,5 +427,13 @@ describe("medication dispense billing queue", () => {
     );
     expect(source).toContain("canWaive={canWaiveDispenseCharges}");
     expect(source).toContain("Recently waived");
+  });
+
+  it("formats invoice PDF dates and amounts in the client's language", () => {
+    // Text, dates and amounts in one language, whoever prints it.
+    expect(source.match(/const docLanguage = documentLanguage\(d\.clientPreferredLanguage\)/g)).toHaveLength(2);
+    expect(source).toContain("formatCurrency(d.total, docLanguage)");
+    expect(source).toContain("billingTimeZone, docLanguage");
+    expect(source).not.toMatch(/generateInvoicePdf\(\{[\s\S]*?billingTimeZone, locale[\s\S]*?\}\)\.save/);
   });
 });

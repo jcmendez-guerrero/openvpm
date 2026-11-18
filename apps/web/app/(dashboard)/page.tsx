@@ -18,6 +18,7 @@ import { ActivationChecklist } from "@/components/dashboard/activation-checklist
 import { UnfinishedFieldVisits } from "@/components/dashboard/unfinished-field-visits";
 import { EmptyState } from "@/components/common/empty-state";
 import { cn } from "@/lib/utils";
+import { useLocale, useTranslations } from "use-intl";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/locale/format";
 import { formatDateInputForTimeZone } from "@/lib/date-input";
@@ -60,26 +61,26 @@ const DashboardCharts = dynamic(
   },
 );
 
-function formatTime(date: Date | string, timeZone?: string | null) {
+function formatTime(date: Date | string, timeZone?: string | null, locale = "en-US") {
   const options: Intl.DateTimeFormatOptions = {
     hour: "numeric",
     minute: "2-digit",
     timeZone: timeZone ?? undefined,
   };
   try {
-    return new Date(date).toLocaleTimeString("en-US", options);
+    return new Date(date).toLocaleTimeString(locale, options);
   } catch {
-    return new Date(date).toLocaleTimeString("en-US", {
+    return new Date(date).toLocaleTimeString(locale, {
       ...options,
       timeZone: undefined,
     });
   }
 }
 
-function formatDueDate(dateInput: string) {
+function formatDueDate(dateInput: string, locale = "en-US") {
   const [year, month, day] = dateInput.split("-").map(Number);
   return new Date(Date.UTC(year!, month! - 1, day!)).toLocaleDateString(
-    "en-US",
+    locale,
     {
       year: "numeric",
       month: "short",
@@ -105,29 +106,21 @@ function addDateInputDays(dateInput: string, days: number): string {
 const kpiConfig = [
   {
     key: "todayAppointments" as const,
-    label: "Today's Appointments",
-    description: "Scheduled for today",
     icon: Calendar,
     isCurrency: false,
   },
   {
     key: "patientsSeen" as const,
-    label: "Patients Seen Today",
-    description: "Checked out today",
     icon: PawPrint,
     isCurrency: false,
   },
   {
     key: "revenueMtd" as const,
-    label: "Net collections (MTD)",
-    description: "Payments less refunds this month",
     icon: DollarSign,
     isCurrency: true,
   },
   {
     key: "pendingInvoices" as const,
-    label: "Pending Invoices",
-    description: "Sent or overdue",
     icon: FileText,
     isCurrency: false,
   },
@@ -169,6 +162,9 @@ function AppointmentRowSkeleton() {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const t = useTranslations("dashboard");
+  const ts = useTranslations("schedule.status");
+  const locale = useLocale();
   const stats = trpc.dashboard.getStats.useQuery();
   const charts = trpc.dashboard.getCharts.useQuery();
   const pendingFollowUps = trpc.encounters.listPendingFollowUps.useQuery();
@@ -196,7 +192,7 @@ export default function DashboardPage() {
   const dashboardTimeZone = verifiedCalendarSettings
     ? verifiedCalendarSettings.timezone
     : null;
-  const fmtMoney = (v: number) => formatCurrency(v, currency, country);
+  const fmtMoney = (v: number) => formatCurrency(v, currency, country, locale);
 
   const today = new Date();
   const todayStr = formatDateInputForTimeZone(today, dashboardTimeZone);
@@ -270,8 +266,8 @@ export default function DashboardPage() {
       {/* KPI Cards */}
       {statsError || statsDisplayMissing ? (
         <div className="rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
-          Unable to load dashboard metrics.
-          {statsError ? ` ${statsError.message}` : " Please retry."}
+          {t("metricsFailed")}
+          {statsError ? ` ${statsError.message}` : ` ${t("pleaseRetry")}`}
         </div>
       ) : isStatsLoading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -294,14 +290,14 @@ export default function DashboardPage() {
                     <Icon className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">{kpi.label}</p>
+                    <p className="text-sm text-muted-foreground">{t(`kpi.${kpi.key}.label`)}</p>
                     <p className="font-heading text-2xl font-bold">
                       {kpi.isCurrency ? fmtMoney(value) : String(value)}
                     </p>
                   </div>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  {kpi.description}
+                  {t(`kpi.${kpi.key}.description`)}
                 </p>
               </div>
             );
@@ -319,23 +315,22 @@ export default function DashboardPage() {
               id="pending-follow-ups-heading"
               className="font-heading text-lg font-semibold"
             >
-              Follow-up work queue
+              {t("followUps.title")}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Signed visit obligations that still need an owner.
+              {t("followUps.intro")}
             </p>
           </div>
           {pendingFollowUps.data?.length ? (
             <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-300">
-              {pendingFollowUps.data.length} open
+              {t("followUps.open", { count: pendingFollowUps.data.length })}
             </span>
           ) : null}
         </div>
         <div className="space-y-2 p-4">
           {pendingFollowUps.error ? (
             <div className="rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
-              Follow-up obligations could not be loaded. Refresh before ending
-              the shift.
+              {t("followUps.loadFailed")}
             </div>
           ) : pendingFollowUps.isLoading ? (
             Array.from({ length: 2 }).map((_, index) => (
@@ -359,13 +354,14 @@ export default function DashboardPage() {
                     />
                     <div className="min-w-0">
                       <p className="font-medium">
-                        {followUp.patientName} · due {formatDueDate(dueDate)}
+                        {t("followUps.due", { patient: followUp.patientName, date: formatDueDate(dueDate, locale) })}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Owner: {followUp.clientFirstName}{" "}
-                        {followUp.clientLastName}
+                        {t("followUps.owner", {
+                          name: `${followUp.clientFirstName} ${followUp.clientLastName}`,
+                        })}
                         {followUp.assigneeName
-                          ? ` · Assigned to ${followUp.assigneeName}`
+                          ? ` · ${t("followUps.assigned", { name: followUp.assigneeName })}`
                           : ""}
                       </p>
                       {followUp.followUpNotes ? (
@@ -379,7 +375,7 @@ export default function DashboardPage() {
                     href={`/encounters/${followUp.appointmentId}#visit-closeout`}
                     className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary hover:underline"
                   >
-                    Resolve follow-up
+                    {t("followUps.resolve")}
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
@@ -387,7 +383,7 @@ export default function DashboardPage() {
             })
           ) : (
             <p className="py-4 text-center text-sm text-muted-foreground">
-              No pending follow-up obligations.
+              {t("followUps.empty")}
             </p>
           )}
         </div>
@@ -397,14 +393,14 @@ export default function DashboardPage() {
       <div className="rounded-lg border border-border bg-card">
         <div className="border-b border-border px-6 py-4">
           <h2 className="font-heading text-lg font-semibold">
-            Upcoming Appointments
+            {t("upcoming.title")}
           </h2>
         </div>
         <div className="space-y-2 p-4">
           {upcomingError || isUpcomingMissing ? (
             <div className="rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
-              Unable to load upcoming appointments.
-              {upcomingError ? ` ${upcomingError.message}` : " Please retry."}
+              {t("upcoming.loadFailed")}
+              {upcomingError ? ` ${upcomingError.message}` : ` ${t("pleaseRetry")}`}
             </div>
           ) : isUpcomingLoading ? (
             Array.from({ length: 3 }).map((_, i) => (
@@ -414,10 +410,10 @@ export default function DashboardPage() {
             <EmptyState
               className="border-0 bg-transparent py-8"
               icon={Calendar}
-              title="No visits booked yet"
-              description="Book your first visit and it shows up here."
+              title={t("upcoming.emptyTitle")}
+              description={t("upcoming.emptyHelp")}
               action={{
-                label: "Book your first visit",
+                label: t("upcoming.bookFirst"),
                 onClick: () => router.push("/schedule"),
                 icon: CalendarPlus,
               }}
@@ -430,7 +426,7 @@ export default function DashboardPage() {
               >
                 <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" />
-                  <span>{formatTime(appt.startTime, dashboardTimeZone)}</span>
+                  <span>{formatTime(appt.startTime, dashboardTimeZone, locale)}</span>
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">
@@ -439,9 +435,9 @@ export default function DashboardPage() {
                         href={`/patients/${appt.patientId}`}
                         className="text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                       >
-                        {appt.patientName ?? "Open patient"}
+                        {appt.patientName ?? t("upcoming.openPatient")}
                       </Link>
-                    ) : "Unknown Patient"}
+                    ) : t("upcoming.unknownPatient")}
                     {appt.clientLastName && (
                       <span className="ml-1 font-normal text-muted-foreground">
                         ({appt.clientFirstName} {appt.clientLastName})
@@ -451,7 +447,7 @@ export default function DashboardPage() {
                   {appt.typeName && (
                     <p className="text-xs text-muted-foreground">
                       {appt.typeName}
-                      {appt.doctorName ? ` with ${appt.doctorName}` : ""}
+                      {appt.doctorName ? ` ${t("upcoming.withDoctor", { name: appt.doctorName })}` : ""}
                     </p>
                   )}
                 </div>
@@ -467,7 +463,7 @@ export default function DashboardPage() {
                           : "bg-muted text-muted-foreground",
                   )}
                 >
-                  {appt.status.replace("_", " ")}
+                  {ts(appt.status)}
                 </span>
               </div>
             ))
@@ -478,8 +474,8 @@ export default function DashboardPage() {
       {/* Charts */}
       {chartsError || chartsDisplayMissing ? (
         <div className="rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
-          Unable to load dashboard charts.
-          {chartsError ? ` ${chartsError.message}` : " Please retry."}
+          {t("chartsFailed")}
+          {chartsError ? ` ${chartsError.message}` : ` ${t("pleaseRetry")}`}
         </div>
       ) : isChartsLoading ? (
         <>
@@ -495,8 +491,8 @@ export default function DashboardPage() {
       ) : chartData && !hasChartData ? (
         <EmptyState
           icon={TrendingUp}
-          title="Your charts show up once you start"
-          description="As you book visits and send bills, your trends and totals fill in here."
+          title={t("chartsEmptyTitle")}
+          description={t("chartsEmptyHelp")}
         />
       ) : chartData ? (
         <DashboardCharts

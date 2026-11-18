@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
   isWellnessPlanPriceInputValid,
@@ -11,7 +11,7 @@ import {
 
 describe("wellness settings UI", () => {
   it("keeps wellness plan setup reachable from Settings", () => {
-    const source = readFileSync("app/(dashboard)/settings/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/settings/page.tsx");
 
     expect(source).toContain('"wellness"');
     expect(source).toContain("Wellness Plans");
@@ -23,7 +23,7 @@ describe("wellness settings UI", () => {
   });
 
   it("keeps wellness plan form controls aligned to shared policy", () => {
-    const source = readFileSync("app/(dashboard)/settings/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/settings/page.tsx");
 
     expect(WELLNESS_PLAN_NAME_MAX_LENGTH).toBe(255);
     expect(WELLNESS_PLAN_DESCRIPTION_MAX_LENGTH).toBe(2000);
@@ -51,7 +51,7 @@ describe("wellness settings UI", () => {
   });
 
   it("lets admins retire and restore wellness plans from the settings table", () => {
-    const source = readFileSync("app/(dashboard)/settings/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/settings/page.tsx");
 
     expect(source).toContain("Deactivate");
     expect(source).toContain("Reactivate");

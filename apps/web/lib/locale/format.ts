@@ -13,17 +13,25 @@ const COUNTRY_LOCALE: Record<string, string> = {
   IT: "it-IT",
 };
 
-export function localeForCountry(country?: string | null): string {
-  return COUNTRY_LOCALE[(country ?? "US").toUpperCase()] ?? "en-US";
+/**
+ * Formatting locale. English keeps the existing country table so current
+ * output is unchanged; other languages combine with the clinic's country
+ * (e.g. "es" + "MX" → "es-MX").
+ */
+export function localeForCountry(country?: string | null, language: string = "en"): string {
+  const code = (country ?? "US").toUpperCase();
+  if (language === "en") return COUNTRY_LOCALE[code] ?? "en-US";
+  return `${language}-${code}`;
 }
 
 export function formatCurrency(
   amount: number | string | null | undefined,
   currency: string = "usd",
-  country?: string | null
+  country?: string | null,
+  language?: string
 ): string {
   const n = typeof amount === "string" ? parseFloat(amount) : amount ?? 0;
-  return new Intl.NumberFormat(localeForCountry(country), {
+  return new Intl.NumberFormat(localeForCountry(country, language), {
     style: "currency",
     currency: currency.toUpperCase(),
     // Group 4-digit amounts too: CLDR's it-IT default would print "1234,50 €".
@@ -31,9 +39,13 @@ export function formatCurrency(
   }).format(Number.isFinite(n) ? (n as number) : 0);
 }
 
-export function formatDate(date: Date | string, country?: string | null): string {
+export function formatDate(
+  date: Date | string,
+  country?: string | null,
+  language?: string
+): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat(localeForCountry(country), {
+  return new Intl.DateTimeFormat(localeForCountry(country, language), {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

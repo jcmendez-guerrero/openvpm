@@ -11,7 +11,12 @@
 
 import type { GuideId } from "@/lib/welcome/cards";
 import { GUIDE_SIGNALS } from "./guide-signals";
-import { TOUR_STEPS, type TourStep } from "./tour-steps";
+import {
+  buildTourSteps,
+  englishTour,
+  type TourStep,
+  type TourTranslator,
+} from "./tour-steps";
 
 export interface GuideStep extends TourStep {
   /**
@@ -34,23 +39,24 @@ export const AGENT_GUIDE_QUESTION = "Which pets are overdue for vaccines?";
 
 export function buildGuideSteps(
   recipe: GuideId,
-  ctx: GuideContext = {}
+  ctx: GuideContext = {},
+  t: TourTranslator = englishTour,
 ): GuideStep[] {
   switch (recipe) {
     case "tour":
-      return TOUR_STEPS;
+      return buildTourSteps({}, t);
 
     case "ask-ai": {
       const ready = ctx.agentConfigured !== false;
       return [
         {
           id: "ask",
-          route: `/agent?ask=${encodeURIComponent(AGENT_GUIDE_QUESTION)}`,
+          route: `/agent?ask=${encodeURIComponent(t("agentQuestion"))}`,
           anchor: "agent-input",
-          title: "Ask about a pet",
+          title: t("guides.askAi.title"),
           body: ready
-            ? "Your question is ready to go. Press send and watch the AI check every chart for you."
-            : "Your AI helper turns on once your workspace key is set. Here is where you will ask it questions in plain words.",
+            ? t("guides.askAi.bodyReady")
+            : t("guides.askAi.body"),
           advanceOn: ready ? GUIDE_SIGNALS.agentRunSucceeded : undefined,
         },
         {
@@ -58,8 +64,8 @@ export function buildGuideSteps(
           // Spotlight the real answer so the win lands. requiresAnchor lets
           // the guide end quietly if the user never pressed send.
           ...(ready ? { anchor: "agent-reply", requiresAnchor: true } : {}),
-          title: "That easy",
-          body: "The AI just read your charts so you did not have to. Ask it anything about your clinic, any time.",
+          title: t("guides.askAi.doneTitle"),
+          body: t("guides.askAi.doneBody"),
         },
       ];
     }
@@ -71,22 +77,22 @@ export function buildGuideSteps(
           id: "schedule",
           route: "/schedule",
           anchor: "schedule-calendar",
-          title: "Your day sheet",
+          title: t("guides.yourDay.title"),
           body: patient
-            ? `Every booked visit lives here. ${patient} is already on today's schedule.`
-            : "Every booked visit lives here, day by day. Click any open slot to book one.",
+            ? t("guides.yourDay.bodyWithPatient", { patient })
+            : t("guides.yourDay.body"),
         },
         {
           id: "whiteboard",
           route: "/whiteboard",
           anchor: "whiteboard-board",
-          title: "Who is here right now",
-          body: "When a pet checks in, the whole team sees it here. No sticky notes, no shouting down the hall.",
+          title: t("guides.yourDay.whiteboardTitle"),
+          body: t("guides.yourDay.whiteboardBody"),
         },
         {
           id: "done",
-          title: "That is your whole day",
-          body: "Front desk to exam room on one screen. Book a visit, check the pet in, and everyone stays in the loop.",
+          title: t("guides.yourDay.doneTitle"),
+          body: t("guides.yourDay.doneBody"),
         },
       ];
     }
@@ -97,8 +103,8 @@ export function buildGuideSteps(
           {
             id: "empty",
             route: "/clients",
-            title: "Every client gets a portal",
-            body: "Add your first client and they get their own private link right away. Pet parents can see visits and bills without calling you.",
+            title: t("guides.portal.emptyTitle"),
+            body: t("guides.portal.emptyBody"),
           },
         ];
       }
@@ -108,14 +114,14 @@ export function buildGuideSteps(
           id: "copy",
           route: `/clients/${ctx.portalClient.id}`,
           anchor: "client-portal-link",
-          title: "A private link for every client",
-          body: `${first} has a private portal link. Copy it here, then share it by text or email.`,
+          title: t("guides.portal.copyTitle"),
+          body: t("guides.portal.copyBody", { first }),
           advanceOn: GUIDE_SIGNALS.portalLinkCopied,
         },
         {
           id: "done",
-          title: "Fewer calls for you",
-          body: `Open the link to see what ${first} sees: pets, visits, and bills. Clients help themselves, and your phone rings less.`,
+          title: t("guides.portal.doneTitle"),
+          body: t("guides.portal.doneBody", { first }),
         },
       ];
     }
@@ -126,14 +132,14 @@ export function buildGuideSteps(
           id: "subscribe",
           route: "/schedule",
           anchor: "calendar-subscribe",
-          title: "Your schedule, in your calendar",
-          body: "Click this button to get your calendar link. Paste it into Google, Apple, or Outlook and it stays up to date on its own.",
+          title: t("guides.calendar.title"),
+          body: t("guides.calendar.body"),
           advanceOn: GUIDE_SIGNALS.calendarUrlCopied,
         },
         {
           id: "done",
-          title: "Set it and forget it",
-          body: "New visits now show up in your own calendar without any extra work.",
+          title: t("guides.calendar.doneTitle"),
+          body: t("guides.calendar.doneBody"),
         },
       ];
   }

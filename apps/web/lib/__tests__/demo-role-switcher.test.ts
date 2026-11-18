@@ -1,7 +1,9 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it, vi } from "vitest";
+import { IntlProvider } from "use-intl";
+import en from "@/messages/en.json";
 import { DemoRoleSwitcherView } from "@/components/demo/demo-role-switcher";
 import {
   DEMO_ROLE_OPTIONS,
@@ -12,6 +14,14 @@ import {
   shouldShowDemoRoleSwitcher,
   stripDemoRoleSwitchMarker,
 } from "@/lib/demo-role-switcher";
+
+
+/** Renders a translated component with the English catalog. */
+function renderInEnglish(element: React.ReactElement) {
+  return renderToStaticMarkup(
+    createElement(IntlProvider, { locale: "en", messages: en, children: element }),
+  );
+}
 
 describe("post-gate demo role switcher", () => {
   it("offers every seeded clinic role with a human-readable label", () => {
@@ -110,7 +120,7 @@ describe("post-gate demo role switcher", () => {
   });
 
   it("shows the current role and disables switching while a role change is pending", () => {
-    const currentMarkup = renderToStaticMarkup(
+    const currentMarkup = renderInEnglish(
       createElement(DemoRoleSwitcherView, {
         currentRole: "front_desk",
         pendingRole: null,
@@ -124,7 +134,7 @@ describe("post-gate demo role switcher", () => {
     expect(currentMarkup).toContain('value="front_desk" selected=""');
     expect(currentMarkup).not.toContain(' disabled=""');
 
-    const pendingMarkup = renderToStaticMarkup(
+    const pendingMarkup = renderInEnglish(
       createElement(DemoRoleSwitcherView, {
         currentRole: "admin",
         pendingRole: "technician",
@@ -138,7 +148,7 @@ describe("post-gate demo role switcher", () => {
   });
 
   it("surfaces role-switch failures without touching the pre-gate flow or funnel", () => {
-    const failureMarkup = renderToStaticMarkup(
+    const failureMarkup = renderInEnglish(
       createElement(DemoRoleSwitcherView, {
         currentRole: "admin",
         pendingRole: null,
@@ -149,19 +159,10 @@ describe("post-gate demo role switcher", () => {
     expect(failureMarkup).toContain('role="alert"');
     expect(failureMarkup).toContain("Your current role is unchanged.");
 
-    const componentSource = readFileSync(
-      "components/demo/demo-role-switcher.tsx",
-      "utf8",
-    );
-    const barSource = readFileSync(
-      "components/demo/demo-conversion-bar.tsx",
-      "utf8",
-    );
-    const loginSource = readFileSync("app/(auth)/login/page.tsx", "utf8");
-    const welcomeSource = readFileSync(
-      "components/welcome/welcome-provider.tsx",
-      "utf8",
-    );
+    const componentSource = readTranslatedSource("components/demo/demo-role-switcher.tsx");
+    const barSource = readTranslatedSource("components/demo/demo-conversion-bar.tsx");
+    const loginSource = readTranslatedSource("app/(auth)/login/page.tsx");
+    const welcomeSource = readTranslatedSource("components/welcome/welcome-provider.tsx");
 
     expect(componentSource).toContain("NEXT_PUBLIC_DEMO_MODE");
     expect(componentSource).toContain("signIn(provider, options)");

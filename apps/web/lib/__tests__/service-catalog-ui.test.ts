@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
   BILLING_SERVICE_CATEGORY_MAX_LENGTH,
@@ -8,11 +8,8 @@ import {
 } from "../billing/policy";
 
 describe("service catalog settings UX", () => {
-  const settingsSource = readFileSync(
-    "app/(dashboard)/settings/page.tsx",
-    "utf8"
-  );
-  const source = readFileSync("components/settings/services-tab.tsx", "utf8");
+  const settingsSource = readTranslatedSource("app/(dashboard)/settings/page.tsx");
+  const source = readTranslatedSource("components/settings/services-tab.tsx");
 
   it("wires an administrator service-pricing section into settings", () => {
     expect(settingsSource).toContain(
@@ -20,7 +17,7 @@ describe("service catalog settings UX", () => {
     );
     expect(settingsSource).toContain('| "services"');
     expect(settingsSource).toContain(
-      '{ id: "services", label: "Services & Pricing", icon: ReceiptText }'
+      '{ id: "services", icon: ReceiptText }'
     );
     expect(settingsSource).toContain(
       'activeTab === "services" && <ServicesTab />'

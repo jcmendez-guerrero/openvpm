@@ -41,7 +41,7 @@ describe("portal vaccination certificate UI", () => {
       "lotNumber: certificate.vaccination.lotNumber ?? undefined"
     );
     expect(source).toContain(
-      "generatedDate: formatDate(new Date(), certificateTimeZone)"
+      "generatedDate: shownDate(new Date(), certificateTimeZone)"
     );
     expect(source).toContain("certificate.vaccination.vaccineName");
   });

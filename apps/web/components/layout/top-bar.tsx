@@ -15,26 +15,27 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TrialBadge } from "@/components/layout/trial-badge";
+import { useTranslations } from "use-intl";
 
 const routeLabels: Record<string, string> = {
-  "/": "Dashboard",
-  "/patients": "Patients",
-  "/clients": "Clients",
-  "/schedule": "Schedule",
-  "/records": "Records",
-  "/lab-results": "Lab Inbox",
-  "/lab-reports": "Lab Inbox",
-  "/billing": "Billing",
-  "/inventory": "Inventory",
-  "/inbox": "Inbox",
-  "/recalls": "Vaccination Recalls",
-  "/care-reminders": "Care Reminders",
-  "/migration-archive": "Imported History",
-  "/whiteboard": "Whiteboard",
-  "/agent": "Agent",
-  "/controlled-substances": "Controlled Substances",
-  "/reports": "Reports",
-  "/settings": "Settings",
+  "/": "dashboard",
+  "/patients": "patients",
+  "/clients": "clients",
+  "/schedule": "schedule",
+  "/records": "records",
+  "/lab-results": "labInbox",
+  "/lab-reports": "labInbox",
+  "/billing": "billing",
+  "/inventory": "inventory",
+  "/inbox": "inbox",
+  "/recalls": "vaccinationRecalls",
+  "/care-reminders": "careReminders",
+  "/migration-archive": "importedHistory",
+  "/whiteboard": "whiteboard",
+  "/agent": "agent",
+  "/controlled-substances": "controlledSubstances",
+  "/reports": "reports",
+  "/settings": "settings",
 };
 
 type UserRole =
@@ -45,7 +46,7 @@ type UserRole =
   | "viewer";
 
 type NewAction = {
-  label: string;
+  labelKey: string;
   href: string;
   Icon: React.ElementType;
   roles: UserRole[];
@@ -53,25 +54,25 @@ type NewAction = {
 
 const NEW_ACTIONS: NewAction[] = [
   {
-    label: "New Client",
+    labelKey: "client",
     href: "/clients/new",
     Icon: Users,
     roles: ["admin", "veterinarian", "technician", "front_desk"],
   },
   {
-    label: "New Patient",
+    labelKey: "patient",
     href: "/patients/new",
     Icon: PawPrint,
     roles: ["admin", "veterinarian", "technician", "front_desk"],
   },
   {
-    label: "New Appointment",
+    labelKey: "appointment",
     href: "/schedule",
     Icon: Calendar,
     roles: ["admin", "veterinarian", "front_desk"],
   },
   {
-    label: "New Invoice",
+    labelKey: "invoice",
     href: "/billing/new",
     Icon: Receipt,
     roles: ["admin", "front_desk"],
@@ -87,7 +88,9 @@ export function TopBar({
 }) {
   const pathname = usePathname();
   const basePath = "/" + (pathname.split("/")[1] ?? "");
-  const label = routeLabels[basePath] ?? "OpenVPM";
+  const t = useTranslations("shell");
+  const labelKey = routeLabels[basePath];
+  const label = labelKey ? t(`nav.${labelKey}`) : "OpenVPM";
   const { data: session } = useSession();
   const role = session?.user?.role as UserRole | undefined;
   const availableNewActions = role
@@ -124,7 +127,7 @@ export function TopBar({
         <button
           type="button"
           onClick={onMenuOpen}
-          aria-label="Open navigation"
+          aria-label={t("openNavigation")}
           className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground lg:hidden"
         >
           <Menu className="h-5 w-5" />
@@ -140,11 +143,11 @@ export function TopBar({
         <button
           type="button"
           onClick={onSearchOpen}
-          aria-label="Open search"
+          aria-label={t("openSearch")}
           className="flex h-9 items-center gap-2 rounded-md border border-input bg-background px-2 text-sm text-muted-foreground transition-colors hover:bg-accent sm:w-64 sm:px-3 md:w-80"
         >
           <Search className="h-4 w-4 shrink-0" />
-          <span className="hidden sm:inline">Search...</span>
+          <span className="hidden sm:inline">{t("searchButton")}</span>
           <kbd className="ml-auto hidden rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium md:inline">
             ⌘K
           </kbd>
@@ -160,7 +163,7 @@ export function TopBar({
               aria-expanded={newMenuOpen}
             >
               <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">New</span>
+              <span className="hidden sm:inline">{t("newActions.button")}</span>
             </Button>
             {newMenuOpen && (
               <div
@@ -168,7 +171,7 @@ export function TopBar({
                 className="absolute right-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-md border border-border bg-popover shadow-md"
               >
                 {availableNewActions.map(
-                  ({ label: actionLabel, href, Icon }) => (
+                  ({ labelKey: actionKey, href, Icon }) => (
                     <Link
                       key={href}
                       href={href}
@@ -177,7 +180,7 @@ export function TopBar({
                       className="flex items-center gap-2 px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                     >
                       <Icon className="h-4 w-4 text-muted-foreground" />
-                      {actionLabel}
+                      {t(`newActions.${actionKey}`)}
                     </Link>
                   ),
                 )}

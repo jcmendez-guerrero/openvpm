@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 const PDF_ACTION_PAGES = [
@@ -46,10 +47,7 @@ describe("heavy client imports", () => {
   });
 
   it("loads the Tiptap SOAP editor as a route-level dynamic chunk", () => {
-    const source = readFileSync(
-      "app/(dashboard)/records/new-soap/[patientId]/page.tsx",
-      "utf8"
-    );
+    const source = readTranslatedSource("app/(dashboard)/records/new-soap/[patientId]/page.tsx");
     expect(source).toContain('from "next/dynamic"');
     expect(source).toContain('import("@/components/SoapNoteEditor")');
     expect(source).not.toMatch(/from ["']@\/components\/SoapNoteEditor["']/);

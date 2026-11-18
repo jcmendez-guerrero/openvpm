@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "use-intl";
+
 import { useId, useState } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { AlertTriangle, Loader2 } from "lucide-react";
@@ -35,6 +37,8 @@ export function ClinicalCorrectionControl({
   triggerLabel?: string;
   timeZone?: string | null;
 }) {
+  const t = useTranslations("records.correction");
+  const locale = useLocale();
   const [editing, setEditing] = useState(false);
   const [reason, setReason] = useState("");
   const reasonId = useId();
@@ -43,19 +47,20 @@ export function ClinicalCorrectionControl({
     const dateLabel = formatClinicalDateTime(
       correction.correctedAt,
       timeZone,
-      "Unknown time",
+      t("unknownTime"),
+      locale,
     );
     return (
       <div className="mt-3 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
         <div className="flex items-center gap-2 font-medium text-destructive">
           <AlertTriangle className="h-4 w-4" />
-          Entered in error — retained in chart history
+          {t("enteredInError")}
         </div>
         <p className="mt-1 whitespace-pre-wrap text-foreground">
           {correction.reason}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Corrected by {correction.correctedByName ?? "Unknown user"} ·{" "}
+          {t("correctedBy", { name: correction.correctedByName ?? t("unknownUser") })} ·{" "}
           {dateLabel}
         </p>
       </div>
@@ -84,7 +89,7 @@ export function ClinicalCorrectionControl({
             variant="outline"
             className="text-destructive"
           >
-            {triggerLabel ?? "Mark entered in error"}
+            {triggerLabel ?? t("trigger")}
           </Button>
         </DialogPrimitive.Trigger>
       </div>
@@ -92,18 +97,17 @@ export function ClinicalCorrectionControl({
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50" />
         <DialogPrimitive.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-background p-6 shadow-lg">
           <DialogPrimitive.Title className="text-lg font-semibold">
-            Mark record entered in error?
+            {t("title")}
           </DialogPrimitive.Title>
           <DialogPrimitive.Description className="mt-2 text-sm text-muted-foreground">
-            {description ??
-              "The original record will remain visible in staff chart history, but it will no longer be used for current clinical summaries, client portal records, reminders, or certificates."}
+            {description ?? t("description")}
           </DialogPrimitive.Description>
           <div className="mt-4">
             <label
               htmlFor={reasonId}
               className="block text-sm font-medium text-foreground"
             >
-              Why is this record incorrect?
+              {t("why")}
             </label>
             <Textarea
               id={reasonId}
@@ -112,14 +116,14 @@ export function ClinicalCorrectionControl({
               maxLength={CLINICAL_CORRECTION_REASON_MAX_LENGTH}
               rows={4}
               autoFocus
-              placeholder="Required. Be specific; this reason becomes permanent chart history."
+              placeholder={t("placeholder")}
               onChange={(event) => setReason(event.currentTarget.value)}
             />
           </div>
           <div className="mt-5 flex justify-end gap-2">
             <DialogPrimitive.Close asChild>
               <Button type="button" variant="ghost" disabled={isPending}>
-                Cancel
+                {t("cancel")}
               </Button>
             </DialogPrimitive.Close>
             <Button
@@ -140,7 +144,7 @@ export function ClinicalCorrectionControl({
               {isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
-              Confirm correction
+              {t("confirm")}
             </Button>
           </div>
         </DialogPrimitive.Content>

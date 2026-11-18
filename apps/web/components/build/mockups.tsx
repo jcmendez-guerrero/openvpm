@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -187,9 +189,10 @@ export interface StoryWin {
 
 /** The payoff of a story scene: one win for the client, one for the clinic. */
 export function WinCards({ win, show }: { win: StoryWin; show: boolean }) {
+  const t = useTranslations("build.mockups");
   const cards = [
     { who: win.clientLabel, text: win.client },
-    { who: "For you", text: win.you },
+    { who: t("forYou"), text: win.you },
   ];
   return (
     <div className="grid h-full grid-cols-2 gap-3" aria-live="polite">
@@ -282,6 +285,7 @@ export function AppWindow({
   width?: number;
   children: ReactNode;
 }) {
+  const t = useTranslations("build.mockups");
   return (
     <div className={windowFrame} style={{ width }}>
       <WindowBar />
@@ -314,7 +318,7 @@ export function AppWindow({
                   }
                 >
                   <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                  {module}
+                  {module in MODULE_ICONS ? t(`modules.${module}`) : module}
                 </motion.li>
               );
             })}
@@ -405,6 +409,7 @@ export function PortalHeader({
   clinicName: string;
   logo?: string | null;
 }) {
+  const t = useTranslations("build.mockups");
   return (
     <div className="flex items-center gap-2 border-b border-slate-100 bg-white px-3 py-2">
       <ClinicMark name={clinicName} logo={logo} size={28} />
@@ -414,7 +419,7 @@ export function PortalHeader({
           className="text-[10px] font-medium transition-colors duration-500"
           style={{ color: "var(--b)" }}
         >
-          Pet Portal
+          {t("petPortal")}
         </div>
       </div>
     </div>
@@ -429,12 +434,13 @@ export function BookingHeader({
   clinicName: string;
   logo?: string | null;
 }) {
+  const t = useTranslations("build.mockups");
   return (
     <div className="flex items-center gap-2.5 rounded-xl bg-white p-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.06)]">
       <ClinicMark name={clinicName} logo={logo} size={30} className="rounded-lg" />
       <div className="min-w-0">
         <div className="truncate text-[11.5px] font-bold">{clinicName}</div>
-        <div className="text-[10px] text-slate-500">Request an appointment</div>
+        <div className="text-[10px] text-slate-500">{t("requestAnAppointment")}</div>
       </div>
     </div>
   );

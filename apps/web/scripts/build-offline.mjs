@@ -6,9 +6,15 @@ import { fileURLToPath } from "node:url";
 import postcss from "postcss";
 import tailwind from "tailwindcss";
 import autoprefixer from "autoprefixer";
+import { renderOfflineMessages } from "./offline-messages.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const output = path.join(root, "public/offline");
+// Committed so typecheck works without a build; a test keeps it in step with the catalogs.
+await writeFile(
+  path.join(root, "offline/messages.generated.ts"),
+  await renderOfflineMessages(root),
+);
 const compiled = await build({
   absWorkingDir: root,
   entryPoints: ["offline/index.tsx"],
@@ -20,7 +26,13 @@ const compiled = await build({
   platform: "browser",
   format: "iife",
   target: ["es2022"],
-  define: { "process.env.NODE_ENV": '"production"' },
+  define: {
+    "process.env.NODE_ENV": '"production"',
+    // The shell has no server, so the language release flag is fixed at build time.
+    "process.env.LANGUAGE_SELECTION_ENABLED": JSON.stringify(
+      process.env.LANGUAGE_SELECTION_ENABLED ?? "",
+    ),
+  },
   tsconfig: path.join(root, "tsconfig.json"),
 });
 const javascript = compiled.outputFiles[0].text;

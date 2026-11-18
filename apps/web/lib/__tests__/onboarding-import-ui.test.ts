@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import en from "@/messages/en.json";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
   IMPORT_CSV_MAX_BYTES,
@@ -8,22 +9,10 @@ import {
 import { MIGRATION_STEPS } from "../import/sources";
 
 describe("onboarding import UI", () => {
-  const source = readFileSync(
-    "components/onboarding/steps/bring-data.tsx",
-    "utf8",
-  );
-  const journeySource = readFileSync(
-    "components/onboarding/journey-overlay.tsx",
-    "utf8",
-  );
-  const journeyPlanSource = readFileSync(
-    "lib/onboarding/journey-plan.ts",
-    "utf8",
-  );
-  const migrationHelpSource = readFileSync(
-    "components/onboarding/migration-help-request.tsx",
-    "utf8",
-  );
+  const source = readTranslatedSource("components/onboarding/steps/bring-data.tsx");
+  const journeySource = readTranslatedSource("components/onboarding/journey-overlay.tsx");
+  const journeyPlanSource = readTranslatedSource("lib/onboarding/journey-plan.ts");
+  const migrationHelpSource = readTranslatedSource("components/onboarding/migration-help-request.tsx");
 
   it("offers the complete four-stage clinic migration in safe order", () => {
     expect(MIGRATION_STEPS.map((step) => step.mode)).toEqual([
@@ -82,7 +71,7 @@ describe("onboarding import UI", () => {
     );
     expect(source).toContain("? activePreview.errors");
     expect(source).not.toContain("if (activePreview.total === 0) {");
-    expect(source).toContain("`all ${errors.length} issues`");
+    expect(source).toContain("{count, plural, one {issue report} other {all # issues}}");
     expect(source).not.toContain("clientCsv:");
     expect(source).not.toContain("function parseCSV");
     expect(source).not.toContain("row.first_name");
@@ -132,18 +121,16 @@ describe("onboarding import UI", () => {
     expect(source).toContain("csvMetaByMode[mode].sizeValid");
     expect(source).toContain("maxLength={IMPORT_CSV_MAX_BYTES}");
     expect(source).toContain("aria-invalid={tooLarge || undefined}");
-    expect(source).toContain(
-      "aria-label={`Paste ${step.label.toLowerCase()} CSV text`}",
-    );
+    expect(source).toContain("Paste {label} CSV text");
     expect(source).toContain("aria-pressed={active}");
     expect(source).toContain("`${step.mode}-csv-size-error`");
   });
 
   it("shows complete result and issue summaries", () => {
-    expect(source).toContain("result.imported.clients");
-    expect(source).toContain("result.imported.patients");
-    expect(source).toContain("result.imported.vaccinations");
-    expect(source).toContain("result.imported.soapNotes");
+    expect(source).toContain("Added {clients} clients");
+    for (const field of ["clients", "patients", "vaccinations", "soapNotes"]) {
+      expect(en.onboarding.bringData.addedRecords).toContain(`{${field}}`);
+    }
     expect(source).toContain("result.reconciled");
     expect(source).toContain("result.errors");
     expect(

@@ -1,4 +1,6 @@
 "use client";
+
+import { useTranslations } from "use-intl";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +21,7 @@ export function ReconciliationReasonActions({
     reason: string;
   }) => void;
 }) {
+  const t = useTranslations("records.reconciliation");
   const [status, setStatus] = useState<"no_charge" | "voided" | null>(null);
   const [reason, setReason] = useState("");
   return (
@@ -32,7 +35,7 @@ export function ReconciliationReasonActions({
             disabled={disabled}
             onClick={() => setStatus("no_charge")}
           >
-            No charge
+            {t("noCharge")}
           </Button>
         )}
         {canVoid && (
@@ -43,41 +46,39 @@ export function ReconciliationReasonActions({
             disabled={disabled}
             onClick={() => setStatus("voided")}
           >
-            Void/corrected
+            {t("void")}
           </Button>
         )}
       </div>
       {!canNoCharge && (
         <p className="text-xs text-muted-foreground">
-          Only an administrator or front desk teammate can mark performed work
-          as no charge.
+          {t("noChargeRole")}
         </p>
       )}
       {status && (
         <div className="space-y-2 rounded-md border p-3">
           <label className="block text-sm">
             {status === "voided"
-              ? "Why is this work void or corrected?"
-              : "Why is there no charge?"}
+              ? t("whyVoid")
+              : t("whyNoCharge")}
             <Input
               autoFocus
               value={reason}
               maxLength={500}
-              aria-label={`Reconciliation reason for ${label}`}
+              aria-label={t("reasonLabel", { label })}
               disabled={disabled}
               onChange={(event) => setReason(event.target.value)}
             />
           </label>
           <p className="text-xs text-muted-foreground">
-            Enter at least 3 characters. This reason and your name will be
-            recorded.
+            {t("reasonHelp")}
           </p>
           <Button
             type="button"
             disabled={disabled || reason.trim().length < 3}
             onClick={() => onResolve({ status, reason: reason.trim() })}
           >
-            Confirm {status === "voided" ? "void/correction" : "no charge"}
+            {status === "voided" ? t("confirmVoid") : t("confirmNoCharge")}
           </Button>
         </div>
       )}

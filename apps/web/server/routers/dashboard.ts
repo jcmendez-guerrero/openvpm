@@ -266,6 +266,7 @@ export const dashboardRouter = createRouter({
       string,
       {
         date: string;
+        dateInput: string;
         scheduled: number;
         completed: number;
         cancelled: number;
@@ -276,6 +277,7 @@ export const dashboardRouter = createRouter({
       const label = dateInputWeekdayLabel(dateInput);
       dayMap.set(label, {
         date: label,
+        dateInput,
         scheduled: 0,
         completed: 0,
         cancelled: 0,
@@ -328,6 +330,7 @@ export const dashboardRouter = createRouter({
 
     const revenueByDay = revenueByDayRows.map((r) => ({
       date: r.day,
+      dateInput: r.dayOrder,
       revenue: parseFloat(String(r.revenue)),
     }));
 
@@ -353,6 +356,7 @@ export const dashboardRouter = createRouter({
 
     const speciesDistribution = speciesRows.map((r) => ({
       name: speciesLabels[r.species] ?? r.species,
+      species: r.species,
       value: Number(r.count),
     }));
 

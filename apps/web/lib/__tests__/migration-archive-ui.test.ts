@@ -1,27 +1,25 @@
-import { readFileSync } from "node:fs";
+import en from "@/messages/en.json";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
-const page = readFileSync(
+const page = readTranslatedSource(
   new URL("../../app/(dashboard)/migration-archive/page.tsx", import.meta.url),
-  "utf8",
 );
-const sidebar = readFileSync(
+const sidebar = readTranslatedSource(
   new URL("../../components/layout/sidebar.tsx", import.meta.url),
-  "utf8",
 );
-const router = readFileSync(
+const router = readTranslatedSource(
   new URL("../../server/routers/migration-archive.ts", import.meta.url),
-  "utf8",
 );
-const checklist = readFileSync(
+const checklist = readTranslatedSource(
   new URL("../../components/migration/migration-review-checklist.tsx", import.meta.url),
-  "utf8",
 );
 
 describe("imported history workspace", () => {
   it("is discoverable and explains its non-operational safety boundary", () => {
     expect(sidebar).toContain('href: "/migration-archive"');
-    expect(sidebar).toContain('label: "Imported History"');
+    expect(sidebar).toContain('labelKey: "importedHistory"');
+    expect(en.shell.nav.importedHistory).toBe("Imported History");
     expect(page).toContain("Source-attributed history from a prior system");
     expect(page).toContain("do not silently create live");
   });
@@ -30,7 +28,7 @@ describe("imported history workspace", () => {
     expect(page).toContain('role="tablist"');
     expect(page).toContain('role="tab"');
     expect(page).toContain("aria-selected={section === item.id}");
-    expect(page).toContain("Search ${activeSection.label.toLowerCase()}");
+    expect(page).toContain("Search {section}");
     expect(page).toContain("Previous");
     expect(page).toContain("Next");
     expect(page).toContain("href={`/patients/${item.patientId}`}");
@@ -70,7 +68,9 @@ describe("imported history workspace", () => {
     expect(checklist).toContain("never paste names, contact information");
     expect(checklist).toContain('href="/clients"');
     expect(checklist).toContain('href="/patients"');
-    expect(checklist).toContain("OpenVPM remains responsible for the bulk reconciliation queue");
+    expect(en.migration.reviewChecklist.steps.exceptions.detail).toContain(
+      "OpenVPM remains responsible for the bulk reconciliation queue",
+    );
     expect(checklist).toContain("never releases");
     expect(checklist).toContain('role="progressbar"');
   });

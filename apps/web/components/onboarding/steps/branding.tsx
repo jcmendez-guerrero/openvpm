@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, ImageIcon, Loader2, Upload } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -33,6 +35,7 @@ export function BrandingStep({
 }: {
   register: (h: StepHandle) => void;
 }) {
+  const t = useTranslations("onboarding.branding");
   const {
     data: practice,
     error: practiceError,
@@ -102,7 +105,7 @@ export function BrandingStep({
           kind: "response",
           status: res.status,
         });
-        throw new Error(json.error ?? "Upload failed");
+        throw new Error(json.error ?? t("uploadFailed"));
       }
       uploadAttemptRef.current = settleManagedUploadAttempt(attempt, {
         kind: "success",
@@ -112,14 +115,14 @@ export function BrandingStep({
         utils.settings.getPractice.invalidate(),
         utils.settings.getBranding.invalidate(),
       ]);
-      toast.success("Logo saved");
+      toast.success(t("logoSaved"));
     } catch (err) {
       if (uploadAttemptRef.current === attempt) {
         uploadAttemptRef.current = settleManagedUploadAttempt(attempt, {
           kind: "ambiguous",
         });
       }
-      const message = err instanceof Error ? err.message : "Upload failed";
+      const message = err instanceof Error ? err.message : t("uploadFailed");
       setUploadError(message);
       toast.error(message);
     } finally {
@@ -130,15 +133,14 @@ export function BrandingStep({
   function pickColor(color: string) {
     updatePractice.mutate(
       { brandColor: color },
-      { onSuccess: () => toast.success("Color saved") },
+      { onSuccess: () => toast.success(t("colorSaved")) },
     );
   }
 
   return (
     <div className="space-y-6">
       <p className="text-sm leading-6 text-slate-600">
-        Add your logo and pick a color. This is just for looks, so feel free to
-        skip it and come back later.
+        {t("addYourLogoAndPick")}
       </p>
 
       {practiceError ? (
@@ -147,7 +149,7 @@ export function BrandingStep({
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
             <div>
               <p className="font-medium text-destructive">
-                Saved branding could not load
+                {t("savedBrandingCouldNotLoad")}
               </p>
               <p className="mt-1 text-slate-600">{practiceError.message}</p>
               <Button
@@ -157,7 +159,7 @@ export function BrandingStep({
                 onClick={() => void refetchPractice()}
                 className="mt-3"
               >
-                Retry
+                {t("retry")}
               </Button>
             </div>
           </div>
@@ -166,13 +168,13 @@ export function BrandingStep({
 
       {/* Logo */}
       <div className="space-y-2">
-        <span className="text-sm font-medium text-slate-700">Your logo</span>
+        <span className="text-sm font-medium text-slate-700">{t("yourLogo")}</span>
         <div className="flex items-center gap-4">
           {currentLogo ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={currentLogo}
-              alt="Practice logo"
+              alt={t("practiceLogo")}
               className="h-16 w-16 rounded-lg border border-slate-200 object-cover"
             />
           ) : (
@@ -204,10 +206,10 @@ export function BrandingStep({
               ) : (
                 <Upload className="mr-2 h-4 w-4" />
               )}
-              {currentLogo ? "Replace logo" : "Upload logo"}
+              {currentLogo ? t("replaceLogo") : t("uploadLogo")}
             </Button>
             <p className="mt-1.5 text-xs text-slate-500">
-              PNG, JPG, or WebP. Square images look best.
+              {t("pngJpgOrWebpSquare")}
             </p>
             {uploadError ? (
               <div className="mt-2 flex items-center gap-2 text-xs text-red-600">
@@ -219,7 +221,7 @@ export function BrandingStep({
                     onClick={() => void handleFile()}
                     className="font-medium underline underline-offset-2 disabled:opacity-50"
                   >
-                    Try again
+                    {t("tryAgain")}
                   </button>
                 ) : null}
               </div>
@@ -230,7 +232,7 @@ export function BrandingStep({
 
       {/* Accent color */}
       <div className="space-y-2">
-        <span className="text-sm font-medium text-slate-700">Accent color</span>
+        <span className="text-sm font-medium text-slate-700">{t("accentColor")}</span>
         <AccentColorPicker
           value={savedColor ?? SUGGESTED_ACCENT}
           onChange={pickColor}
@@ -238,7 +240,7 @@ export function BrandingStep({
         />
         {!savedColor ? (
           <p className="text-xs text-slate-500">
-            We picked a color to start. Tap another if you like.
+            {t("wePickedAColorTo")}
           </p>
         ) : null}
       </div>

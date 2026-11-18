@@ -1,26 +1,17 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("signup billing copy", () => {
-  const registerSource = readFileSync("app/(auth)/register/register-form.tsx", "utf8");
+  const registerSource = readTranslatedSource("app/(auth)/register/register-form.tsx");
   // The dormant WelcomePanel was replaced by the welcome surface; its copy
   // deck is now the customer-facing first-run voice to hold to account.
-  const welcomeCopySource = readFileSync(
-    "components/welcome/welcome-copy.ts",
-    "utf8"
-  );
-  const activationChecklistSource = readFileSync(
-    "components/dashboard/activation-checklist.tsx",
-    "utf8"
-  );
-  const welcomeEmailSource = readFileSync(
-    "../../packages/email/src/templates/WelcomeEmail.tsx",
-    "utf8"
-  );
-  const readmeSource = readFileSync("../../README.md", "utf8");
+  const welcomeCopySource = readTranslatedSource("components/welcome/welcome-copy.ts");
+  const activationChecklistSource = readTranslatedSource("components/dashboard/activation-checklist.tsx");
+  const welcomeEmailSource = readTranslatedSource("../../packages/email/src/templates/WelcomeEmail.tsx");
+  const readmeSource = readTranslatedSource("../../README.md");
 
   it("discloses card-required trial terms and distinguishes pending billing in email", () => {
-    const pageSource = readFileSync("app/(auth)/register/page.tsx", "utf8");
+    const pageSource = readTranslatedSource("app/(auth)/register/page.tsx");
     expect(pageSource).toContain("hostedBilling && !noCardTrialEnabled()");
     expect(registerSource).toContain("Continue to secure checkout");
     expect(registerSource).toContain("Card required. No charge today.");

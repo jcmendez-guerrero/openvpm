@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import {
   createContext,
   useCallback,
@@ -221,6 +223,8 @@ function JourneyShell({
     JourneyState["migrationCompletedModes"]
   >;
 }) {
+  const t = useTranslations("onboarding.journey");
+  const profileT = useTranslations("onboarding.profile");
   const utils = trpc.useUtils();
   const router = useRouter();
   const completeOnboarding = trpc.settings.completeOnboarding.useMutation();
@@ -361,7 +365,7 @@ function JourneyShell({
       }
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Something went wrong. Try again.",
+        err instanceof Error ? err.message : t("somethingWentWrongTryAgain"),
       );
     } finally {
       setBusy(false);
@@ -393,7 +397,7 @@ function JourneyShell({
       setIndex(prev);
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Progress could not be saved.",
+        err instanceof Error ? err.message : t("progressCouldNotBeSaved"),
       );
     } finally {
       setBusy(false);
@@ -419,12 +423,12 @@ function JourneyShell({
       setIndex(null);
       if (state.hasPartialImport) {
         toast.success(
-          "Completed records are saved. Reopen setup or use Settings, then Data, to finish the remaining files.",
+          t("completedRecordsAreSavedReopen"),
         );
       }
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Progress could not be saved.",
+        err instanceof Error ? err.message : t("progressCouldNotBeSaved"),
       );
     } finally {
       setBusy(false);
@@ -453,7 +457,7 @@ function JourneyShell({
           onPointerDownOutside={(event) => event.preventDefault()}
         >
           <DialogPrimitive.Description className="sr-only">
-            Guided setup for your OpenVPM clinic.
+            {t("guidedSetupForYourOpenvpm")}
           </DialogPrimitive.Description>
           <div className="flex min-h-full items-center justify-center">
             <div
@@ -478,7 +482,7 @@ function JourneyShell({
                 </div>
                 <div className="flex min-w-[132px] items-center gap-3 sm:min-w-[230px]">
                   <span className="shrink-0 text-xs font-medium text-slate-500">
-                    Step {index + 1} of {total}
+                    {t("stepOf", { step: index + 1, total })}
                   </span>
                   <div className="flex flex-1 gap-1.5" aria-hidden="true">
                     {steps.map((s, i) => (
@@ -511,7 +515,7 @@ function JourneyShell({
                         : "font-heading text-2xl font-bold sm:text-3xl",
                     )}
                   >
-                    {step.title}
+                    {profileT(`journey.${step.id}`)}
                   </h2>
                 </DialogPrimitive.Title>
 
@@ -558,12 +562,12 @@ function JourneyShell({
                           }
                         >
                           <ArrowLeft className="mr-1.5 h-4 w-4" />
-                          Back
+                          {t("back")}
                         </Button>
                       ) : (
                         <span className="hidden items-center gap-2 text-xs text-slate-500 sm:flex">
                           <ShieldCheck className="h-4 w-4 text-primary" />
-                          You can change this later.
+                          {t("youCanChangeThisLater")}
                         </span>
                       )}
                       {!isLast ? (
@@ -574,8 +578,8 @@ function JourneyShell({
                           className="min-h-10 rounded-lg px-2 text-sm font-medium text-slate-500 transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
                         >
                           {state.hasPartialImport
-                            ? "Finish remaining import later"
-                            : "I'll finish later"}
+                            ? t("finishRemainingImportLater")
+                            : t("iLlFinishLater")}
                         </button>
                       ) : null}
                     </div>
@@ -584,8 +588,7 @@ function JourneyShell({
                         id="onboarding-back-disabled-reason"
                         className="max-w-sm text-xs leading-5 text-slate-500"
                       >
-                        Back is unavailable after records are saved. Finish the
-                        remaining import now or continue it later.
+                        {t("backIsUnavailableAfterRecords")}
                       </p>
                     ) : null}
                   </div>
@@ -599,7 +602,7 @@ function JourneyShell({
                     {busy ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    {continueLabel ?? (isLast ? "Finish" : "Continue")}
+                    {continueLabel ?? (isLast ? t("finish") : t("continue"))}
                     {!busy ? <ArrowRight className="ml-2 h-4 w-4" /> : null}
                   </Button>
                 </div>

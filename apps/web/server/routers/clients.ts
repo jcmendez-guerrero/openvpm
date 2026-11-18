@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { languageSchema } from "@/i18n/config";
 import { TRPCError } from "@trpc/server";
 import {
   eq,
@@ -384,6 +385,8 @@ export const clientsRouter = createRouter({
         zip: optionalClientString(CLIENT_ZIP_MAX_LENGTH),
         notes: clientNotesInput,
         preferredContactMethod: clientPreferredContactInput.optional(),
+        // Language for the portal and client messages; null follows the clinic default.
+        preferredLanguage: languageSchema.nullable().optional(),
         smsConsent: z.boolean().optional(),
       }),
     )
@@ -501,6 +504,8 @@ export const clientsRouter = createRouter({
         zip: optionalClientString(CLIENT_ZIP_MAX_LENGTH),
         notes: clientNotesInput,
         preferredContactMethod: clientPreferredContactInput.optional(),
+        // Language for the portal and client messages; null follows the clinic default.
+        preferredLanguage: languageSchema.nullable().optional(),
         smsConsent: z.boolean().optional(),
       }),
     )

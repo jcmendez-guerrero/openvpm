@@ -1,3 +1,4 @@
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import {
@@ -40,10 +41,7 @@ describe("ambulatory workspace rollout", () => {
   });
 
   it("lets the server advertise availability without exposing an enable control while dark", () => {
-    const pageSource = readFileSync(
-      new URL("../../app/(dashboard)/settings/page.tsx", import.meta.url),
-      "utf8",
-    );
+    const pageSource = readTranslatedSource(new URL("../../app/(dashboard)/settings/page.tsx", import.meta.url));
     const cardSource = readFileSync(
       new URL(
         "../../components/settings/ambulatory-workspace-settings.tsx",

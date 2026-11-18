@@ -1,4 +1,6 @@
-import { readFileSync } from "node:fs";
+import { PRACTICE_BACKUP_JSON_SIZE_MESSAGE } from "@/lib/backup/policy";
+import en from "@/messages/en.json";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
   AUTH_PASSWORD_MAX_LENGTH,
@@ -30,7 +32,7 @@ import {
 } from "../settings-policy";
 
 describe("settings UI states", () => {
-  const source = readFileSync("app/(dashboard)/settings/page.tsx", "utf8");
+  const source = readTranslatedSource("app/(dashboard)/settings/page.tsx");
 
   it("checks settings access before rendering admin-only tabs", () => {
     expect(source).toContain("const { data: session, status } = useSession()");
@@ -74,7 +76,7 @@ describe("settings UI states", () => {
     );
     expect(source).toContain("function redirectToHostedBillingUrl");
     expect(source).toContain("if (!isSafeCheckoutRedirectUrl(url))");
-    expect(source).toContain("redirectToHostedBillingUrl(r.url)");
+    expect(source).toContain("redirectToHostedBillingUrl(r.url, ");
     expect(source).not.toContain("if (r.url) window.location.href = r.url");
     expect(billingTab.indexOf("if (billingError)")).toBeLessThan(
       billingTab.indexOf("if (isLoading)"),
@@ -247,7 +249,8 @@ describe("settings UI states", () => {
     expect(source).toContain("isPracticeBackupJsonSizeValid(text)");
     expect(source).toContain("isPracticeBackupJsonSizeValid(backupPayload)");
     expect(source).toContain("reader.onerror");
-    expect(source).toContain("{PRACTICE_BACKUP_JSON_SIZE_MESSAGE}");
+    expect(source).toContain(PRACTICE_BACKUP_JSON_SIZE_MESSAGE);
+    expect(en.settings.page.backupTooLarge).toBe(PRACTICE_BACKUP_JSON_SIZE_MESSAGE);
     expect(source).toContain("dryRun: true");
     expect(source).toContain("dryRun: false");
     expect(source).toContain("confirmFreshPractice: true");
@@ -435,7 +438,7 @@ describe("settings UI states", () => {
       "const settingsTimeZone = verifiedPracticeSettings\n    ? verifiedPracticeSettings.timezone\n    : null",
     );
     expect(source).toContain(
-      "formatSettingsDateTime(deletionRequest.requestedAt, settingsTimeZone)",
+      "formatSettingsDateTime(deletionRequest.requestedAt, settingsTimeZone, locale)",
     );
     expect(source).toContain("const deletionSettingsMissing =");
     expect(source).toContain(
@@ -470,7 +473,7 @@ describe("settings UI states", () => {
       "AUTH_PASSWORD_MAX_LENGTH,\n  AUTH_PASSWORD_MIN_LENGTH,",
     );
     expect(source).toContain(
-      "placeholder={`Password (min ${AUTH_PASSWORD_MIN_LENGTH} chars)`}",
+      "Password (min {min} chars)",
     );
     expect(source).toContain("maxLength={AUTH_PASSWORD_MAX_LENGTH}");
     expect(source).toContain("password.length >= AUTH_PASSWORD_MIN_LENGTH");

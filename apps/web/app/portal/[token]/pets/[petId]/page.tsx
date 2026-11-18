@@ -1,5 +1,10 @@
 "use client";
 
+import { useLocale, useTranslations } from "use-intl";
+import { codeLabel } from "@/i18n/code-label";
+import { isSupportedLanguage } from "@/i18n/config";
+import { usePortalAge } from "@/components/portal/use-portal-age";
+
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -8,19 +13,11 @@ import { trpc } from "@/lib/trpc";
 import { EmptyState } from "@/components/common/empty-state";
 import { PATIENT_SPECIES_EMOJI } from "@/lib/patients/species";
 import {
-  calculatePortalAge,
   formatPortalDate,
   portalCalendarDayDifference,
 } from "@/lib/portal/date";
 
 const speciesEmoji: Record<string, string> = PATIENT_SPECIES_EMOJI;
-
-function formatDate(
-  d: string | Date | null,
-  timeZone?: string | null
-): string {
-  return formatPortalDate(d, undefined, timeZone);
-}
 
 type Tab = "vaccinations" | "prescriptions" | "weights";
 
@@ -42,6 +39,14 @@ function certificateFilename(patientName: string, vaccineName: string): string {
 }
 
 export default function PetDetailPage() {
+  const t = useTranslations("portal.pet");
+  const speciesT = useTranslations("patients.species");
+  const sexT = useTranslations("patients.sex");
+  const age = usePortalAge();
+  const locale = useLocale();
+  // Dates on the page and in the certificate PDF follow the page language.
+  const shownDate = (d: string | Date | null, timeZone?: string | null) =>
+    formatPortalDate(d, undefined, timeZone, locale);
   const params = useParams();
   const petId = params.petId as string;
   const [activeTab, setActiveTab] = useState<Tab>("vaccinations");
@@ -69,14 +74,14 @@ export default function PetDetailPage() {
         <EmptyState
           className="py-12"
           icon={AlertCircle}
-          title="Unable to load pet information"
-          description="Please refresh this page or return to the portal home."
+          title={t("unableToLoadPetInformation")}
+          description={t("pleaseRefreshThisPageOr")}
         />
         <Link
           href="/portal"
           className="mt-4 inline-block text-sm font-medium text-primary hover:text-primary/80"
         >
-          Back to portal
+          {t("backToPortal")}
         </Link>
       </div>
     );
@@ -104,6 +109,7 @@ export default function PetDetailPage() {
       const { generateVaccinationCertificatePdf } = await import("@/lib/pdf");
       const certificateTimeZone = certificate.practice.timezone;
       generateVaccinationCertificatePdf({
+        language: isSupportedLanguage(locale) ? locale : "en",
         practiceName: certificate.practice.name,
         practiceAddress: certificate.practice.address ?? undefined,
         practicePhone: certificate.practice.phone ?? undefined,
@@ -111,26 +117,26 @@ export default function PetDetailPage() {
         patientName: certificate.patient.name,
         species: certificate.patient.species,
         breed: certificate.patient.breed ?? undefined,
-        sex: certificate.patient.sex?.replace("_", " "),
+        sex: certificate.patient.sex ? codeLabel(t, "certificateSex", certificate.patient.sex) : undefined,
         dob: certificate.patient.dob
-          ? formatDate(certificate.patient.dob, certificateTimeZone)
+          ? shownDate(certificate.patient.dob, certificateTimeZone)
           : undefined,
         color: certificate.patient.color ?? undefined,
         clientName: certificate.clientName,
         vaccineName: certificate.vaccination.vaccineName,
-        administeredAt: formatDate(
+        administeredAt: shownDate(
           certificate.vaccination.administeredAt,
           certificateTimeZone
         ),
         nextDueDate: certificate.vaccination.nextDueDate
-          ? formatDate(
+          ? shownDate(
               certificate.vaccination.nextDueDate,
               certificateTimeZone
             )
           : undefined,
         manufacturer: certificate.vaccination.manufacturer ?? undefined,
         lotNumber: certificate.vaccination.lotNumber ?? undefined,
-        generatedDate: formatDate(new Date(), certificateTimeZone),
+        generatedDate: shownDate(new Date(), certificateTimeZone),
       }).save(
         certificateFilename(
           certificate.patient.name,
@@ -139,7 +145,7 @@ export default function PetDetailPage() {
       );
     } catch {
       setCertificateError(
-        "This certificate is no longer available. Refresh to see current vaccination records."
+        t("thisCertificateIsNoLonger")
       );
       await utils.portal.getPetDetail.invalidate({
         patientId: petId,
@@ -150,27 +156,27 @@ export default function PetDetailPage() {
   }
 
   const tabs: { key: Tab; label: string; count: number }[] = [
-    { key: "vaccinations", label: "Vaccinations", count: data.vaccinations.length },
-    { key: "prescriptions", label: "Prescriptions", count: data.prescriptions.length },
-    { key: "weights", label: "Weight History", count: data.weights.length },
+    { key: "vaccinations", label: t("vaccinations"), count: data.vaccinations.length },
+    { key: "prescriptions", label: t("prescriptions"), count: data.prescriptions.length },
+    { key: "weights", label: t("weightHistory"), count: data.weights.length },
   ];
 
   function vaccinationStatus(nextDue: string | null): {
     label: string;
     className: string;
   } {
-    if (!nextDue) return { label: "No due date", className: "bg-gray-100 text-gray-600" };
+    if (!nextDue) return { label: t("noDueDate"), className: "bg-gray-100 text-gray-600" };
     const daysUntil = portalCalendarDayDifference(
       nextDue,
       new Date(),
       practiceTimeZone
     );
     if (daysUntil === null) {
-      return { label: "No due date", className: "bg-gray-100 text-gray-600" };
+      return { label: t("noDueDate"), className: "bg-gray-100 text-gray-600" };
     }
-    if (daysUntil < 0) return { label: "Overdue", className: "bg-red-100 text-red-700" };
-    if (daysUntil <= 30) return { label: "Due soon", className: "bg-amber-100 text-amber-700" };
-    return { label: "Up to date", className: "bg-green-100 text-green-700" };
+    if (daysUntil < 0) return { label: t("overdue"), className: "bg-red-100 text-red-700" };
+    if (daysUntil <= 30) return { label: t("dueSoon"), className: "bg-amber-100 text-amber-700" };
+    return { label: t("upToDate"), className: "bg-green-100 text-green-700" };
   }
 
   return (
@@ -183,7 +189,7 @@ export default function PetDetailPage() {
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
         </svg>
-        Back to all pets
+        {t("backToAllPets")}
       </Link>
 
       {/* Pet Header */}
@@ -194,11 +200,11 @@ export default function PetDetailPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{data.name}</h1>
           <p className="text-gray-500">
-            {data.breed || data.species} &middot; {data.color || ""} &middot;{" "}
-            {calculatePortalAge(data.dob)}
+            {data.breed || speciesT(data.species as never)} &middot; {data.color || ""} &middot;{" "}
+            {age(data.dob)}
           </p>
           <p className="text-sm text-gray-400 capitalize">
-            {data.sex?.replace("_", " ")}
+            {data.sex && sexT.has(data.sex as never) ? sexT(data.sex as never) : data.sex?.replace("_", " ")}
           </p>
         </div>
       </div>
@@ -210,7 +216,7 @@ export default function PetDetailPage() {
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
             </svg>
-            Allergy Alerts
+            {t("allergyAlerts")}
           </h3>
           <ul className="space-y-1">
             {data.allergies.map((a) => (
@@ -273,18 +279,18 @@ export default function PetDetailPage() {
             <EmptyState
               className="py-10"
               icon={Shield}
-              title="No vaccination records yet"
+              title={t("noVaccinationRecordsYet")}
             />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 text-left text-gray-500">
-                    <th className="pb-2 font-medium">Vaccine</th>
-                    <th className="pb-2 font-medium">Given</th>
-                    <th className="pb-2 font-medium">Next Due</th>
-                    <th className="pb-2 font-medium">Status</th>
-                    <th className="pb-2 font-medium">Certificate</th>
+                    <th className="pb-2 font-medium">{t("vaccine")}</th>
+                    <th className="pb-2 font-medium">{t("given")}</th>
+                    <th className="pb-2 font-medium">{t("nextDue")}</th>
+                    <th className="pb-2 font-medium">{t("status")}</th>
+                    <th className="pb-2 font-medium">{t("certificate")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -294,10 +300,10 @@ export default function PetDetailPage() {
                       <tr key={v.id}>
                         <td className="py-3 font-medium text-gray-900">{v.vaccineName}</td>
                         <td className="py-3 text-gray-600">
-                          {formatDate(v.administeredAt, practiceTimeZone)}
+                          {shownDate(v.administeredAt, practiceTimeZone)}
                         </td>
                         <td className="py-3 text-gray-600">
-                          {formatDate(v.nextDueDate, practiceTimeZone)}
+                          {shownDate(v.nextDueDate, practiceTimeZone)}
                         </td>
                         <td className="py-3">
                           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.className}`}>
@@ -313,8 +319,8 @@ export default function PetDetailPage() {
                           >
                             <Download className="h-3.5 w-3.5" aria-hidden="true" />
                             {certificatePendingId === v.id
-                              ? "Checking..."
-                              : "Download"}
+                              ? t("checking")
+                              : t("download")}
                           </button>
                         </td>
                       </tr>
@@ -334,18 +340,18 @@ export default function PetDetailPage() {
             <EmptyState
               className="py-10"
               icon={Pill}
-              title="No active prescriptions"
+              title={t("noActivePrescriptions")}
             />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 text-left text-gray-500">
-                    <th className="pb-2 font-medium">Medication</th>
-                    <th className="pb-2 font-medium">Dosage</th>
-                    <th className="pb-2 font-medium">Frequency</th>
-                    <th className="pb-2 font-medium">Refills</th>
-                    <th className="pb-2 font-medium">End Date</th>
+                    <th className="pb-2 font-medium">{t("medication")}</th>
+                    <th className="pb-2 font-medium">{t("dosage")}</th>
+                    <th className="pb-2 font-medium">{t("frequency")}</th>
+                    <th className="pb-2 font-medium">{t("refills")}</th>
+                    <th className="pb-2 font-medium">{t("endDate")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -356,7 +362,7 @@ export default function PetDetailPage() {
                       <td className="py-3 text-gray-600">{rx.frequency}</td>
                       <td className="py-3 text-gray-600">{rx.refillsRemaining}</td>
                       <td className="py-3 text-gray-600">
-                        {formatDate(rx.endDate, practiceTimeZone)}
+                        {shownDate(rx.endDate, practiceTimeZone)}
                       </td>
                     </tr>
                   ))}
@@ -386,7 +392,7 @@ export default function PetDetailPage() {
             <EmptyState
               className="py-10"
               icon={Activity}
-              title="No weight records yet"
+              title={t("noWeightRecordsYet")}
             />
           ) : (
             <div className="space-y-3">
@@ -410,7 +416,7 @@ export default function PetDetailPage() {
                         </span>
                       </p>
                       <p className="text-xs text-gray-400">
-                        {formatDate(w.recordedAt, practiceTimeZone)}
+                        {shownDate(w.recordedAt, practiceTimeZone)}
                       </p>
                     </div>
                     {diff !== null && (

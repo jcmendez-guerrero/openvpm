@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { Loader2, Save, Stethoscope } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -18,6 +20,7 @@ export function AmbulatoryWorkspaceSettingsCard({
   settings: unknown;
   rolloutEnabled: boolean;
 }) {
+  const t = useTranslations("settings.ambulatory");
   const utils = trpc.useUtils();
   const [draft, setDraft] = useState<AmbulatoryWorkspaceSettings | null>(null);
   const persisted = ambulatoryWorkspaceSettings(settings);
@@ -26,7 +29,7 @@ export function AmbulatoryWorkspaceSettingsCard({
     onSuccess: async (saved) => {
       setDraft(saved);
       await utils.settings.getPractice.invalidate();
-      toast.success("Ambulatory workspace settings saved");
+      toast.success(t("ambulatoryWorkspaceSettingsSaved"));
     },
     onError: (error) => toast.error(error.message),
   });
@@ -40,11 +43,9 @@ export function AmbulatoryWorkspaceSettingsCard({
           <Stethoscope className="h-5 w-5" />
         </div>
         <div>
-          <h3 className="text-sm font-semibold">Ambulatory workspace</h3>
+          <h3 className="text-sm font-semibold">{t("ambulatoryWorkspace")}</h3>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            A field-first patient workflow with direct visit start, one-page
-            clinical entry, large-animal measurements, and compact closeout.
-            Existing clinic workflows stay unchanged until this is enabled.
+            {t("aFieldFirstPatientWorkflow")}
           </p>
         </div>
       </div>
@@ -59,18 +60,17 @@ export function AmbulatoryWorkspaceSettingsCard({
         />
         <span>
           <span className="block text-sm font-medium">
-            Enable ambulatory workspace
+            {t("enableAmbulatoryWorkspace")}
           </span>
           <span className="mt-1 block text-xs text-muted-foreground">
-            Adds “Start field visit” to active patient charts. Scheduled clinic
-            workflows remain unchanged.
+            {t("addsStartFieldVisitTo")}
           </span>
         </span>
       </label>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <label className="space-y-1.5">
-          <span className="text-sm font-medium">Measurements</span>
+          <span className="text-sm font-medium">{t("measurements")}</span>
           <select
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
             value={current.measurementSystem}
@@ -84,13 +84,13 @@ export function AmbulatoryWorkspaceSettingsCard({
               })
             }
           >
-            <option value="metric">Kilograms / Celsius</option>
-            <option value="us_customary">Pounds / Fahrenheit</option>
+            <option value="metric">{t("kilogramsCelsius")}</option>
+            <option value="us_customary">{t("poundsFahrenheit")}</option>
           </select>
         </label>
 
         <label className="space-y-1.5">
-          <span className="text-sm font-medium">Body condition scale</span>
+          <span className="text-sm font-medium">{t("bodyConditionScale")}</span>
           <select
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
             value={current.bodyConditionScale}
@@ -118,7 +118,7 @@ export function AmbulatoryWorkspaceSettingsCard({
               })
             }
           />
-          <span className="text-sm font-medium">Compact closeout</span>
+          <span className="text-sm font-medium">{t("compactCloseout")}</span>
         </label>
       </div>
 
@@ -133,7 +133,7 @@ export function AmbulatoryWorkspaceSettingsCard({
           ) : (
             <Save className="mr-2 h-4 w-4" />
           )}
-          Save ambulatory settings
+          {t("saveAmbulatorySettings")}
         </Button>
       </div>
     </section>

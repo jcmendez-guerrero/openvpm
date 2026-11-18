@@ -18,6 +18,17 @@ import {
   trustedProxyNotForwarding,
 } from "@/lib/request-ip";
 import { knownDeviceCookieFromHeader } from "@/lib/known-device";
+import {
+  isLanguageSelectionEnabled,
+  languageCookieFromHeader,
+  type Language,
+} from "@/i18n/config";
+import { getClinicDefaultLanguage } from "@/i18n/clinic-default-cache";
+import { resolveLanguage } from "@/i18n/resolve";
+import {
+  resolveRequestLanguage,
+  translateServerMessage,
+} from "@/i18n/server-errors";
 import { sessionVersionIsCurrent } from "@/lib/session-version";
 import { externallyVisibleRequestOrigin } from "@/lib/request-origin";
 import { practices, users } from "@openpims/db";
@@ -66,6 +77,19 @@ interface AppSession extends Session {
 export type TRPCContext = {
   db: Database;
   session: AppSession | null;
+  /**
+   * Language for user-facing error messages. Read only by the error
+   * formatter; it never affects authorization or data access.
+   */
+  language?: Language;
+  /**
+   * Language the visitor picked with the switch (cookie), or null. Saved into
+   * a new account at registration or invite acceptance; null while the
+   * release flag is off.
+   */
+  languageChoice?: Language | null;
+  /** Raw Accept-Language header, for portal error messages. */
+  acceptLanguage?: string | null;
   ip?: string | null;
   portalSessionToken?: string | null;
   /**
@@ -199,9 +223,21 @@ export async function createTRPCContext(opts?: {
     ? null
     : ((await getServerSession(authOptions)) as AppSession | null);
   const session = await activeSessionOrNull(db, rawSession);
+  const language = await resolveRequestLanguage({
+    cookieHeader: opts?.req?.headers.get("cookie"),
+    acceptLanguage: opts?.req?.headers.get("accept-language"),
+    practiceId: session?.user?.practiceId,
+    loadClinicDefault: getClinicDefaultLanguage,
+  });
+  const languageChoice = isLanguageSelectionEnabled()
+    ? (languageCookieFromHeader(opts?.req?.headers.get("cookie")) ?? null)
+    : null;
   return {
     db,
     session,
+    language,
+    languageChoice,
+    acceptLanguage: opts?.req?.headers.get("accept-language") ?? null,
     ip: clientIp(opts?.req),
     portalSessionToken: portalSessionTokenFromCookie(
       opts?.req?.headers.get("cookie"),
@@ -219,11 +255,18 @@ export async function createTRPCContext(opts?: {
   };
 }
 
+/** Per-error language override, set where a procedure knows better than the request (portal). */
+const errorLanguage = new WeakMap<Error, Language>();
+
 const t = initTRPC.context<TRPCContext>().create({
   transformer: superjson,
-  errorFormatter({ shape, error }) {
+  errorFormatter({ shape, error, ctx }) {
+    const language = errorLanguage.get(error) ?? ctx?.language;
     return {
       ...shape,
+      message: language
+        ? translateServerMessage(shape.message, language)
+        : shape.message,
       data: {
         ...shape.data,
         zodError:
@@ -428,13 +471,30 @@ export const portalProcedure = publicProcedure.use(
     ) {
       throw new TRPCError({ code: "FORBIDDEN", message: "Invalid request origin" });
     }
-    return next({
+    const result = await next({
       ctx: {
         ...ctx,
         portalClient: portalSession.client as PortalSessionClient,
         portalSessionId: portalSession.sessionId,
       },
     });
+    if (!result.ok && isLanguageSelectionEnabled()) {
+      // Portal errors follow the client's saved language, not the visitor order.
+      errorLanguage.set(
+        result.error,
+        resolveLanguage({
+          enabled: true,
+          surface: "client",
+          cookie: ctx.languageChoice,
+          clientLanguage: portalSession.client.preferredLanguage,
+          acceptLanguage: ctx.acceptLanguage,
+          clinicDefault: await getClinicDefaultLanguage(
+            portalSession.client.practiceId,
+          ).catch(() => undefined),
+        }),
+      );
+    }
+    return result;
   },
 );
 

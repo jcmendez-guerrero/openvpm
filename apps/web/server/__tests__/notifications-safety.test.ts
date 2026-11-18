@@ -2446,7 +2446,9 @@ describe("notification query scoping", () => {
     expect(source).toContain("function practiceDisplayName");
     expect(source).toContain("async function practiceNotificationSettings");
     expect(source).toContain("practiceName: appt.practiceName");
-    expect(source).toContain("name: practiceDisplayName(practice.name)");
+    expect(source).toContain(
+      "name: practiceDisplayName(practice.name, practice.defaultLanguage)",
+    );
     expect(source).not.toContain("practice?.name");
     expect(source).not.toContain("practice?.phone");
     expect(source).not.toContain("practice?.timezone");

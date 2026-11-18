@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { AlertTriangle, Clock, CreditCard, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useTranslations } from "use-intl";
 import { cn } from "@/lib/utils";
 import { trialCalendarDaysLeft } from "@/lib/billing/trial-days";
 
@@ -14,6 +15,7 @@ import { trialCalendarDaysLeft } from "@/lib/billing/trial-days";
  * clinic can compare monthly and annual billing before entering Stripe.
  */
 export function TrialBadge() {
+  const t = useTranslations("shell.trial");
   const { data: session, status } = useSession();
   const isAdmin = status === "authenticated" && session?.user?.role === "admin";
 
@@ -29,11 +31,11 @@ export function TrialBadge() {
   if (isLoading) {
     return (
       <span
-        aria-label="Checking billing status"
+        aria-label={t("checking")}
         className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground"
       >
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        Billing
+        {t("billing")}
       </span>
     );
   }
@@ -45,7 +47,7 @@ export function TrialBadge() {
         className="inline-flex items-center gap-1.5 rounded-full border border-destructive/30 bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/20"
       >
         <AlertTriangle className="h-3.5 w-3.5" />
-        Billing status unavailable
+        {t("unavailable")}
       </Link>
     );
   }
@@ -61,7 +63,7 @@ export function TrialBadge() {
         className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800 transition-colors hover:bg-amber-100"
       >
         <CreditCard className="h-3.5 w-3.5" />
-        Payment retrying · Review billing
+        {t("pastDue")}
       </Link>
     );
   }
@@ -73,7 +75,7 @@ export function TrialBadge() {
         className="inline-flex items-center gap-1.5 rounded-full border border-destructive/30 bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/20"
       >
         <CreditCard className="h-3.5 w-3.5" />
-        Payment unpaid · Read only
+        {t("unpaid")}
       </Link>
     );
   }
@@ -88,7 +90,7 @@ export function TrialBadge() {
         className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-medium text-teal-800 transition-colors hover:bg-teal-100"
       >
         <CreditCard className="h-3.5 w-3.5" />
-        Billing connected · Manage billing
+        {t("connected")}
       </Link>
     );
   }
@@ -100,7 +102,14 @@ export function TrialBadge() {
         className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-medium text-teal-800 transition-colors hover:bg-teal-100"
       >
         <Clock className="h-3.5 w-3.5" />
-        {previewTimeLeftLabel(data.previewEndsAt)} · Start free trial
+        {t("previewStart", {
+          timeLeft: (() => {
+            const left = previewTimeLeft(data.previewEndsAt);
+            return "hours" in left
+              ? t("previewHours", { hours: left.hours })
+              : t("previewDays", { days: left.days });
+          })(),
+        })}
       </Link>
     );
   }
@@ -112,7 +121,7 @@ export function TrialBadge() {
         className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-medium text-teal-800 transition-colors hover:bg-teal-100"
       >
         <CreditCard className="h-3.5 w-3.5" />
-        Start trial · Add a card
+        {t("startTrial")}
       </Link>
     );
   }
@@ -124,7 +133,7 @@ export function TrialBadge() {
     return (
       <Link
         href="/settings?tab=billing"
-        aria-label="Activate account"
+        aria-label={t("activate")}
         className={cn(
           "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
           urgent
@@ -133,10 +142,8 @@ export function TrialBadge() {
         )}
       >
         <Clock className="h-3.5 w-3.5" />
-        {days === 0
-          ? "Trial ends today"
-          : `${days} day${days === 1 ? "" : "s"} left in trial`}
-        <span className="font-semibold">· Activate account</span>
+        {days === 0 ? t("endsToday") : t("daysLeft", { days })}
+        <span className="font-semibold">{t("activateSuffix")}</span>
       </Link>
     );
   }
@@ -149,7 +156,7 @@ export function TrialBadge() {
         className="inline-flex items-center gap-1.5 rounded-full border border-destructive/30 bg-destructive/10 px-3 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/20"
       >
         <Clock className="h-3.5 w-3.5" />
-        Trial ended, read only · Turn it back on
+        {t("ended")}
       </Link>
     );
   }
@@ -157,14 +164,13 @@ export function TrialBadge() {
   return null;
 }
 
-/** "Preview: 2 days left", or hours on the last day. */
-export function previewTimeLeftLabel(
+/** Preview time left: hours on the last day, otherwise days. */
+export function previewTimeLeft(
   endsAt: Date | string,
   now: Date = new Date(),
-): string {
+): { hours: number } | { days: number } {
   const msLeft = new Date(endsAt).getTime() - now.getTime();
   const hours = Math.max(1, Math.ceil(msLeft / (60 * 60 * 1000)));
-  if (hours < 24) return `Preview: ${hours}h left`;
-  const days = Math.ceil(hours / 24);
-  return `Preview: ${days} day${days === 1 ? "" : "s"} left`;
+  if (hours < 24) return { hours };
+  return { days: Math.ceil(hours / 24) };
 }

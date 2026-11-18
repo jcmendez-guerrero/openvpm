@@ -73,6 +73,7 @@ describe("loadClientReceipt", () => {
       country: "US",
       amountPaidCents: 12500,
       balanceRemainingCents: 0,
+      language: "en",
     });
   });
 

@@ -20,6 +20,8 @@ import {
   MapPin,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLocale, useTranslations } from "use-intl";
+import { useSpeciesLabel } from "@/lib/patients/use-species-label";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -113,15 +115,7 @@ const STATUS_COLORS: Record<AppointmentStatus, string> = {
   cancelled: "bg-red-500",
 };
 
-const STATUS_LABELS: Record<AppointmentStatus, string> = {
-  scheduled: "Scheduled",
-  confirmed: "Confirmed",
-  checked_in: "Checked In",
-  in_exam: "In Exam",
-  checked_out: "Checked Out",
-  no_show: "No Show",
-  cancelled: "Cancelled",
-};
+type Translate = ReturnType<typeof useTranslations>;
 
 function canCreateAppointmentsRole(role?: string | null): boolean {
   return role === "admin" || role === "veterinarian" || role === "front_desk";
@@ -142,8 +136,8 @@ function canSendAppointmentRemindersRole(role?: string | null): boolean {
 
 // --- Helpers ---
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("en-US", {
+function formatDate(date: Date, locale = "en-US"): string {
+  return date.toLocaleDateString(locale, {
     weekday: "long",
     year: "numeric",
     month: "long",
@@ -151,8 +145,8 @@ function formatDate(date: Date): string {
   });
 }
 
-function formatTime(date: Date, timeZone?: string | null): string {
-  return date.toLocaleTimeString("en-US", {
+function formatTime(date: Date, timeZone?: string | null, locale = "en-US"): string {
+  return date.toLocaleTimeString(locale, {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
@@ -220,17 +214,15 @@ function getAppointmentColor(appointment: Appointment): string {
   return appointment.typeColor || DEFAULT_APPOINTMENT_COLOR;
 }
 
-function appointmentStatusLabel(appointment: Appointment): string {
+function appointmentStatusLabel(appointment: Appointment, t: Translate): string {
   if (
     appointment.status === "scheduled" &&
     (appointment.notes?.startsWith("[Online request]") ||
       appointment.notes?.startsWith("[Portal request]"))
   ) {
-    return "Needs confirmation";
+    return t("needsConfirmation");
   }
-  return (
-    STATUS_LABELS[appointment.status as AppointmentStatus] || appointment.status
-  );
+  return t(`status.${appointment.status as AppointmentStatus}`);
 }
 
 function sortAppointments(appointments: Appointment[]): Appointment[] {
@@ -259,7 +251,8 @@ function buildOverlapLayout(
  * Unassigned appointments (tech work like nail trims) share a Team lane.
  */
 function buildDayLanes(
-  appointments: Appointment[]
+  appointments: Appointment[],
+  names: { doctor: string; team: string }
 ): { key: string; label: string; appointments: Appointment[] }[] {
   const byDoctor = new Map<string, { label: string; appointments: Appointment[] }>();
   for (const appt of appointments) {
@@ -269,7 +262,7 @@ function buildDayLanes(
       existing.appointments.push(appt);
     } else {
       byDoctor.set(key, {
-        label: appt.doctorId ? appt.doctorName ?? "Doctor" : "Team",
+        label: appt.doctorId ? appt.doctorName ?? names.doctor : names.team,
         appointments: [appt],
       });
     }
@@ -288,9 +281,9 @@ function buildDayLanes(
   return lanes;
 }
 
-function formatToolbarDate(date: Date, view: CalendarView): string {
+function formatToolbarDate(date: Date, view: CalendarView, locale = "en-US"): string {
   if (view === "month") {
-    return date.toLocaleDateString("en-US", {
+    return date.toLocaleDateString(locale, {
       month: "long",
       year: "numeric",
     });
@@ -300,27 +293,35 @@ function formatToolbarDate(date: Date, view: CalendarView): string {
     const days = buildWeekDays(date);
     const start = days[0]!;
     const end = days[6]!;
+    // Other languages order day, month and year their own way.
+    if (!locale.startsWith("en")) {
+      return new Intl.DateTimeFormat(locale, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }).formatRange(start, end);
+    }
     const sameMonth =
       start.getMonth() === end.getMonth() &&
       start.getFullYear() === end.getFullYear();
 
     if (sameMonth) {
-      return `${start.toLocaleDateString("en-US", {
+      return `${start.toLocaleDateString(locale, {
         month: "short",
       })} ${start.getDate()}-${end.getDate()}, ${end.getFullYear()}`;
     }
 
-    return `${start.toLocaleDateString("en-US", {
+    return `${start.toLocaleDateString(locale, {
       month: "short",
       day: "numeric",
-    })} - ${end.toLocaleDateString("en-US", {
+    })} - ${end.toLocaleDateString(locale, {
       month: "short",
       day: "numeric",
       year: "numeric",
     })}`;
   }
 
-  return formatDate(date);
+  return formatDate(date, locale);
 }
 
 function getSnappedTimeFromY(y: number): string {
@@ -386,16 +387,14 @@ function StatusDot({ status }: { status: string }) {
 }
 
 function TimeSlots() {
+  const locale = useLocale();
   const slots = [];
   for (let hour = START_HOUR; hour <= END_HOUR; hour++) {
-    const label =
-      hour === 0
-        ? "12 AM"
-        : hour < 12
-          ? `${hour} AM`
-          : hour === 12
-            ? "12 PM"
-            : `${hour - 12} PM`;
+    // "8 AM" in English; 24-hour locales need the minutes ("8:00").
+    const label = new Date(2000, 0, 1, hour).toLocaleTimeString(
+      locale,
+      locale.startsWith("en") ? { hour: "numeric" } : { hour: "numeric", minute: "2-digit" },
+    );
     slots.push(
       <div
         key={hour}
@@ -452,6 +451,8 @@ function AppointmentBlock({
   onClick: () => void;
   position?: OverlapPosition;
 }) {
+  const t = useTranslations("schedule");
+  const locale = useLocale();
   const start = new Date(appointment.startTime);
   const end = new Date(appointment.endTime);
   const { top, height } = getAppointmentLayout(start, end, timeZone);
@@ -477,12 +478,12 @@ function AppointmentBlock({
     >
       <div className="flex items-center gap-1.5 font-medium text-foreground truncate">
         <StatusDot status={appointment.status} />
-        <span className="truncate">{appointment.patientName || "Unknown Patient"}</span>
+        <span className="truncate">{appointment.patientName || t("unknownPatient")}</span>
       </div>
       {height >= 36 && (
         <div className="text-muted-foreground truncate mt-0.5">
-          {appointment.typeName || "Appointment"} &middot;{" "}
-          {formatTime(start, timeZone)} - {formatTime(end, timeZone)}
+          {appointment.typeName || t("appointment")} &middot;{" "}
+          {formatTime(start, timeZone, locale)} - {formatTime(end, timeZone, locale)}
           {appointment.locationName ? ` · ${appointment.locationName}` : ""}
         </div>
       )}
@@ -508,7 +509,11 @@ function DayCalendar({
   // A real clinic day: one lane per doctor (plus a Team lane for
   // unassigned/tech work). With one provider or none it stays the single
   // clean column it always was.
-  const lanes = buildDayLanes(appointments);
+  const t = useTranslations("schedule");
+  const lanes = buildDayLanes(appointments, {
+    doctor: t("lanes.doctor"),
+    team: t("lanes.team"),
+  });
   const showLanes = lanes.length > 1;
 
   const laneColumn = (laneAppointments: Appointment[], key: string) => {
@@ -572,8 +577,7 @@ function DayCalendar({
                 >
                   <p className="truncate text-sm font-medium">{lane.label}</p>
                   <p className="text-xs text-muted-foreground">
-                    {lane.appointments.length} appointment
-                    {lane.appointments.length !== 1 ? "s" : ""}
+                    {t("appointmentCount", { count: lane.appointments.length })}
                   </p>
                 </div>
               ))}
@@ -610,7 +614,7 @@ function DayCalendar({
                   <div className="text-center">
                     <Calendar className="mx-auto h-8 w-8 text-muted-foreground/40" />
                     <p className="mt-2 text-sm text-muted-foreground">
-                      No appointments for this day
+                      {t("noAppointmentsForDay")}
                     </p>
                   </div>
                 </div>
@@ -622,8 +626,8 @@ function DayCalendar({
 
       {appointments.length > 0 && (
         <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground">
-          {appointments.length} appointment{appointments.length !== 1 ? "s" : ""}
-          {showLanes && ` · ${lanes.length} lanes`}
+          {t("appointmentCount", { count: appointments.length })}
+          {showLanes && ` · ${t("laneCount", { count: lanes.length })}`}
         </div>
       )}
     </div>
@@ -641,6 +645,9 @@ function PhoneAgenda({
   view: CalendarView;
   onAppointmentClick: (appointment: Appointment) => void;
 }) {
+  const t = useTranslations("schedule");
+  const locale = useLocale();
+  const speciesLabel = useSpeciesLabel();
   const appointmentsByDay = new Map<string, Appointment[]>();
 
   for (const appointment of appointments) {
@@ -653,28 +660,26 @@ function PhoneAgenda({
     }
   }
 
-  const rangeLabel =
-    view === "day" ? "Day" : view === "week" ? "Week" : "Month";
+  const rangeLabel = t(`views.${view}`);
 
   return (
     <section
-      aria-label={`${rangeLabel} appointment agenda`}
+      aria-label={t("agenda.label", { range: rangeLabel })}
       className="mt-4 max-w-full space-y-4 overflow-hidden sm:hidden"
     >
       <div className="flex items-center justify-between gap-3">
-        <h4 className="text-sm font-semibold">{rangeLabel} agenda</h4>
+        <h4 className="text-sm font-semibold">{t("agenda.title", { range: rangeLabel })}</h4>
         <span className="text-xs text-muted-foreground">
-          {appointments.length} appointment
-          {appointments.length !== 1 ? "s" : ""}
+          {t("appointmentCount", { count: appointments.length })}
         </span>
       </div>
 
       {appointments.length === 0 ? (
         <div className="rounded-lg border border-border bg-card px-4 py-8 text-center">
           <Calendar className="mx-auto h-8 w-8 text-muted-foreground/40" />
-          <p className="mt-2 text-sm font-medium">No appointments</p>
+          <p className="mt-2 text-sm font-medium">{t("agenda.empty")}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            The selected {view} is clear.
+            {t("agenda.clear", { view })}
           </p>
         </div>
       ) : (
@@ -685,7 +690,7 @@ function PhoneAgenda({
                 <h5 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {new Date(
                     dayAppointments[0]!.startTime
-                  ).toLocaleDateString("en-US", {
+                  ).toLocaleDateString(locale, {
                     weekday: "long",
                     month: "short",
                     day: "numeric",
@@ -697,7 +702,7 @@ function PhoneAgenda({
                 const start = new Date(appointment.startTime);
                 const end = new Date(appointment.endTime);
                 const patientName =
-                  appointment.patientName || "Unknown Patient";
+                  appointment.patientName || t("unknownPatient");
                 const clientName = [
                   appointment.clientFirstName,
                   appointment.clientLastName,
@@ -706,7 +711,7 @@ function PhoneAgenda({
                   .join(" ");
                 const careTeam = providerDisplayName(
                   appointment.doctorName,
-                  "Team",
+                  t("lanes.team"),
                 );
                 const place = [
                   appointment.locationName,
@@ -720,7 +725,7 @@ function PhoneAgenda({
                     key={appointment.id}
                     type="button"
                     onClick={() => onAppointmentClick(appointment)}
-                    aria-label={`Open ${patientName} appointment at ${formatTime(start, timeZone)}`}
+                    aria-label={t("agenda.open", { patient: patientName, time: formatTime(start, timeZone, locale) })}
                     className="min-h-11 w-full overflow-hidden rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-muted/30 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     style={{
                       borderLeftColor: getAppointmentColor(appointment),
@@ -730,8 +735,8 @@ function PhoneAgenda({
                     <span className="flex min-w-0 items-start justify-between gap-3">
                       <span className="min-w-0">
                         <span className="block text-xs font-medium text-muted-foreground">
-                          {formatTime(start, timeZone)}–
-                          {formatTime(end, timeZone)}
+                          {formatTime(start, timeZone, locale)}–
+                          {formatTime(end, timeZone, locale)}
                         </span>
                         <span className="mt-0.5 block truncate text-sm font-semibold text-foreground">
                           {patientName}
@@ -739,16 +744,16 @@ function PhoneAgenda({
                       </span>
                       <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-muted px-2 py-1 text-[11px] font-medium text-muted-foreground">
                         <StatusDot status={appointment.status} />
-                        {appointmentStatusLabel(appointment)}
+                        {appointmentStatusLabel(appointment, t)}
                       </span>
                     </span>
                     <span className="mt-2 block min-w-0 space-y-1 text-xs text-muted-foreground">
                       <span className="flex min-w-0 items-center gap-1.5">
                         <User className="h-3.5 w-3.5 shrink-0" />
                         <span className="truncate">
-                          {clientName || "Client not listed"}
+                          {clientName || t("clientNotListed")}
                           {appointment.patientSpecies
-                            ? ` · ${appointment.patientSpecies}`
+                            ? ` · ${speciesLabel(appointment.patientSpecies)}`
                             : ""}
                         </span>
                       </span>
@@ -760,7 +765,7 @@ function PhoneAgenda({
                         </span>
                       </span>
                       <span className="block truncate font-medium text-foreground">
-                        {appointment.typeName || "Appointment"}
+                        {appointment.typeName || t("appointment")}
                       </span>
                     </span>
                   </button>
@@ -793,6 +798,7 @@ function WeekCalendar({
   onSlotClick?: (date: Date, y: number) => void;
   onAppointmentClick: (appointment: Appointment) => void;
 }) {
+  const locale = useLocale();
   return (
     <div className="mt-4 overflow-hidden rounded-lg border border-border bg-card">
       <div className="overflow-auto">
@@ -816,7 +822,7 @@ function WeekCalendar({
                     <div className="flex items-center justify-between gap-2">
                       <div>
                         <p className="text-xs font-medium uppercase text-muted-foreground">
-                          {day.toLocaleDateString("en-US", { weekday: "short" })}
+                          {day.toLocaleDateString(locale, { weekday: "short" })}
                         </p>
                         <p
                           className={cn(
@@ -900,6 +906,8 @@ function AppointmentChip({
   timeZone?: string | null;
   onClick: () => void;
 }) {
+  const t = useTranslations("schedule");
+  const locale = useLocale();
   const start = new Date(appointment.startTime);
   const color = getAppointmentColor(appointment);
 
@@ -918,7 +926,7 @@ function AppointmentChip({
         style={{ backgroundColor: color }}
       />
       <span className="min-w-0 flex-1 truncate">
-        {formatTime(start, timeZone)} {appointment.patientName || "Unknown"}
+        {formatTime(start, timeZone, locale)} {appointment.patientName || t("unknown")}
         {appointment.locationName ? ` · ${appointment.locationName}` : ""}
       </span>
     </button>
@@ -946,8 +954,10 @@ function MonthCalendar({
   onDayOpen: (date: Date) => void;
   onAppointmentClick: (appointment: Appointment) => void;
 }) {
+  const t = useTranslations("schedule");
+  const locale = useLocale();
   const weekLabels = buildWeekDays(currentDate).map((day) =>
-    day.toLocaleDateString("en-US", { weekday: "short" })
+    day.toLocaleDateString(locale, { weekday: "short" })
   );
 
   return (
@@ -998,9 +1008,9 @@ function MonthCalendar({
                     type="button"
                     className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                     onClick={() => onCreateClick(day.date)}
-                    aria-label={`Create appointment on ${day.date.toLocaleDateString(
-                      "en-US"
-                    )}`}
+                    aria-label={t("createOn", {
+                      date: day.date.toLocaleDateString(locale),
+                    })}
                   >
                     <Plus className="h-3.5 w-3.5" />
                   </button>
@@ -1022,7 +1032,7 @@ function MonthCalendar({
                     className="w-full rounded-md px-2 py-1 text-left text-[11px] font-medium text-muted-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring"
                     onClick={() => onDayOpen(day.date)}
                   >
-                    +{hiddenCount} more
+                    {t("more", { count: hiddenCount })}
                   </button>
                 )}
               </div>
@@ -1076,6 +1086,9 @@ function AppointmentDetailPopover({
   isRescheduling: boolean;
   isCancellingSeries: boolean;
 }) {
+  const t = useTranslations("schedule");
+  const locale = useLocale();
+  const speciesLabel = useSpeciesLabel();
   const [deleteReason, setDeleteReason] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -1224,7 +1237,7 @@ function AppointmentDetailPopover({
 
   const clientName = [appointment.clientFirstName, appointment.clientLastName]
     .filter(Boolean)
-    .join(" ") || "Unknown Client";
+    .join(" ") || t("unknownClient");
 
   const statusActions: {
     label: string;
@@ -1248,44 +1261,44 @@ function AppointmentDetailPopover({
 
   if (current === "scheduled") {
     statusActions.push({
-      label: "Confirm",
+      label: t("actions.confirm"),
       status: "confirmed",
       variant: "default",
       disabled: doctorRequiredForAdvance,
       disabledReason: doctorRequiredForAdvance
-        ? "Assign a doctor before confirming this appointment."
+        ? t("detail.doctorBeforeConfirm")
         : undefined,
     });
     statusActions.push({
-      label: "Check In",
+      label: t("actions.checkIn"),
       status: "checked_in",
       variant: "outline",
       disabled: doctorRequiredForAdvance,
       disabledReason: doctorRequiredForAdvance
-        ? "Assign a doctor before checking in this appointment."
+        ? t("detail.doctorBeforeCheckIn")
         : undefined,
     });
-    statusActions.push({ label: "No Show", status: "no_show", variant: "outline" });
-    statusActions.push({ label: "Cancel", status: "cancelled", variant: "destructive" });
+    statusActions.push({ label: t("actions.noShow"), status: "no_show", variant: "outline" });
+    statusActions.push({ label: t("actions.cancel"), status: "cancelled", variant: "destructive" });
   } else if (current === "confirmed") {
-    statusActions.push({ label: "Check In", status: "checked_in", variant: "default" });
-    statusActions.push({ label: "No Show", status: "no_show", variant: "outline" });
-    statusActions.push({ label: "Cancel", status: "cancelled", variant: "destructive" });
+    statusActions.push({ label: t("actions.checkIn"), status: "checked_in", variant: "default" });
+    statusActions.push({ label: t("actions.noShow"), status: "no_show", variant: "outline" });
+    statusActions.push({ label: t("actions.cancel"), status: "cancelled", variant: "destructive" });
   } else if (current === "checked_in") {
     const missingClinicalTarget =
       !appointment.patientId || !appointment.clientId;
     statusActions.push({
-      label: "In Exam",
+      label: t("actions.inExam"),
       status: "in_exam",
       variant: "default",
       disabled: missingClinicalTarget,
       disabledReason: missingClinicalTarget
-        ? "Open the visit and attach a patient before starting the exam."
+        ? t("detail.patientBeforeExam")
         : undefined,
     });
-    statusActions.push({ label: "No Show", status: "no_show", variant: "outline" });
+    statusActions.push({ label: t("actions.noShow"), status: "no_show", variant: "outline" });
   } else if (current === "no_show" || current === "cancelled") {
-    statusActions.push({ label: "Reopen", status: "scheduled", variant: "outline" });
+    statusActions.push({ label: t("actions.reopen"), status: "scheduled", variant: "outline" });
   }
   const visibleStatusActions = canUpdateStatus ? statusActions : [];
   const canSubmitReschedule =
@@ -1327,12 +1340,12 @@ function AppointmentDetailPopover({
           <div className="flex items-center gap-2">
             <StatusDot status={appointment.status} />
             <span className="text-sm font-medium">
-              {appointmentStatusLabel(appointment)}
+              {appointmentStatusLabel(appointment, t)}
             </span>
           </div>
           <button
             type="button"
-            aria-label="Close appointment details"
+            aria-label={t("whiteboard.closeDetails")}
             onClick={onClose}
             className="rounded-md p-1 hover:bg-muted transition-colors"
           >
@@ -1344,22 +1357,22 @@ function AppointmentDetailPopover({
         <div className="px-4 py-3 space-y-3">
           <div>
             <h3 id={dialogTitleId} className="font-semibold text-base">
-              {appointment.patientName || "Unknown Patient"}
+              {appointment.patientName || t("unknownPatient")}
             </h3>
             {appointment.patientSpecies && (
-              <p className="text-xs text-muted-foreground">{appointment.patientSpecies}</p>
+              <p className="text-xs text-muted-foreground">{speciesLabel(appointment.patientSpecies)}</p>
             )}
           </div>
 
           <div className="space-y-2 text-sm">
             <div className="flex items-center gap-2 text-muted-foreground">
               <User className="h-3.5 w-3.5" />
-              <span>Client: {clientName}</span>
+              <span>{t("clientLabel", { name: clientName })}</span>
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
               <Clock className="h-3.5 w-3.5" />
               <span>
-                {formatTime(start, timeZone)} - {formatTime(end, timeZone)}
+                {formatTime(start, timeZone, locale)} - {formatTime(end, timeZone, locale)}
               </span>
             </div>
             {appointment.doctorName && (
@@ -1383,7 +1396,7 @@ function AppointmentDetailPopover({
             {appointment.recurringSeriesId && (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Repeat2 className="h-3.5 w-3.5" />
-                <span>Recurring series</span>
+                <span>{t("detail.recurringSeries")}</span>
               </div>
             )}
             {appointment.roomName && (
@@ -1399,8 +1412,7 @@ function AppointmentDetailPopover({
             )}
             {doctorRequiredForAdvance && (
               <p className="rounded-md bg-amber-50 px-2.5 py-2 text-xs text-amber-900">
-                Assign a doctor before confirming or checking in this appointment
-                request.
+                {t("detail.doctorRequired")}
               </p>
             )}
           </div>
@@ -1414,7 +1426,7 @@ function AppointmentDetailPopover({
                   htmlFor={rescheduleDateId}
                   className="text-xs font-medium text-muted-foreground"
                 >
-                  Date
+                  {t("detail.date")}
                 </label>
                 <Input
                   id={rescheduleDateId}
@@ -1430,7 +1442,7 @@ function AppointmentDetailPopover({
                   htmlFor={rescheduleTimeId}
                   className="text-xs font-medium text-muted-foreground"
                 >
-                  Time
+                  {t("detail.time")}
                 </label>
                 <select
                   id={rescheduleTimeId}
@@ -1440,7 +1452,7 @@ function AppointmentDetailPopover({
                 >
                   {TIME_SLOTS.map((slot) => (
                     <option key={slot.value} value={slot.value}>
-                      {slot.label}
+                      {timeSlotLabel(slot.value, locale)}
                     </option>
                   ))}
                 </select>
@@ -1450,7 +1462,7 @@ function AppointmentDetailPopover({
                   htmlFor={rescheduleDurationId}
                   className="text-xs font-medium text-muted-foreground"
                 >
-                  Duration
+                  {t("detail.duration")}
                 </label>
                 <Input
                   id={rescheduleDurationId}
@@ -1467,9 +1479,7 @@ function AppointmentDetailPopover({
             </div>
             {current === "confirmed" ? (
               <p className="mt-2 rounded-md bg-amber-50 px-2.5 py-2 text-xs text-amber-900">
-                Changing the date, time, duration, or clinic location returns
-                this appointment to requested status. Contact the client and
-                record confirmation again before reminders can be sent.
+                {t("detail.movedWarning")}
               </p>
             ) : null}
             <div className="mt-3">
@@ -1477,7 +1487,7 @@ function AppointmentDetailPopover({
                 htmlFor={rescheduleLocationFieldId}
                 className="text-xs font-medium text-muted-foreground"
               >
-                Clinic Location
+                {t("detail.location")}
               </label>
               <select
                 id={rescheduleLocationFieldId}
@@ -1489,7 +1499,7 @@ function AppointmentDetailPopover({
                 disabled={locationsQuery.isLoading || Boolean(locationsQuery.error)}
                 className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
               >
-                <option value="">Select location...</option>
+                <option value="">{t("detail.selectLocation")}</option>
                 {(locationsQuery.data ?? []).map((location) => (
                   <option key={location.id} value={location.id}>
                     {location.name}
@@ -1503,7 +1513,7 @@ function AppointmentDetailPopover({
                   htmlFor={rescheduleDoctorFieldId}
                   className="text-xs font-medium text-muted-foreground"
                 >
-                  Doctor
+                  {t("detail.doctor")}
                 </label>
                 <select
                   id={rescheduleDoctorFieldId}
@@ -1512,7 +1522,7 @@ function AppointmentDetailPopover({
                   disabled={resourceOptionsUnavailable}
                   className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
                 >
-                  <option value="">Unassigned</option>
+                  <option value="">{t("detail.unassigned")}</option>
                   {eligibleRescheduleDoctors.map((doctor) => (
                     <option key={doctor.id} value={doctor.id}>
                       {providerDisplayName(doctor.name)}
@@ -1525,7 +1535,7 @@ function AppointmentDetailPopover({
                   htmlFor={rescheduleRoomFieldId}
                   className="text-xs font-medium text-muted-foreground"
                 >
-                  Room
+                  {t("detail.room")}
                 </label>
                 <select
                   id={rescheduleRoomFieldId}
@@ -1534,7 +1544,7 @@ function AppointmentDetailPopover({
                   disabled={resourceOptionsUnavailable}
                   className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
                 >
-                  <option value="">Unassigned</option>
+                  <option value="">{t("detail.unassigned")}</option>
                   {(roomsQuery.data ?? []).map((room) => (
                     <option key={room.id} value={room.id}>
                       {room.name}
@@ -1546,8 +1556,7 @@ function AppointmentDetailPopover({
             {(locationsQuery.error || doctorsQuery.error || roomsQuery.error) && (
               <div className="mt-2 flex items-center justify-between gap-2 rounded-md bg-destructive/10 px-2.5 py-2">
                 <p className="text-xs text-destructive">
-                  Location, doctor, or room options could not be loaded. Retry before
-                  changing this appointment.
+                  {t("detail.optionsFailed")}
                 </p>
                 <Button
                   type="button"
@@ -1561,7 +1570,7 @@ function AppointmentDetailPopover({
                     ]);
                   }}
                 >
-                  Retry options
+                  {t("detail.retryOptions")}
                 </Button>
               </div>
             )}
@@ -1571,7 +1580,7 @@ function AppointmentDetailPopover({
                 variant="outline"
                 onClick={() => setShowRescheduleForm(false)}
               >
-                Cancel
+                {t("actions.cancel")}
               </Button>
               <Button
                 size="sm"
@@ -1581,7 +1590,7 @@ function AppointmentDetailPopover({
                 {isRescheduling && (
                   <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
                 )}
-                Save changes
+                {t("detail.saveChanges")}
               </Button>
             </div>
           </div>
@@ -1591,11 +1600,10 @@ function AppointmentDetailPopover({
           <div className="border-t border-border px-4 py-3">
             <fieldset>
               <legend className="text-sm font-semibold">
-                Record client confirmation
+                {t("detail.recordConfirmationTitle")}
               </legend>
               <p className="mt-1 text-xs text-muted-foreground">
-                Contact the client first. This records how they agreed to the
-                appointment; it does not send a message.
+                {t("detail.recordConfirmationHelp")}
               </p>
               <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <label
@@ -1613,10 +1621,10 @@ function AppointmentDetailPopover({
                     className="mt-0.5 h-4 w-4"
                   />
                   <span>
-                    Phone
+                    {t("detail.phone")}
                     {!appointment.clientPhone ? (
                       <span className="block text-xs text-muted-foreground">
-                        No phone on file
+                        {t("detail.noPhone")}
                       </span>
                     ) : null}
                   </span>
@@ -1636,10 +1644,10 @@ function AppointmentDetailPopover({
                     className="mt-0.5 h-4 w-4"
                   />
                   <span>
-                    Email
+                    {t("detail.email")}
                     {!appointment.clientEmail ? (
                       <span className="block text-xs text-muted-foreground">
-                        No email on file
+                        {t("detail.noEmail")}
                       </span>
                     ) : null}
                   </span>
@@ -1656,7 +1664,7 @@ function AppointmentDetailPopover({
                   setConfirmationContactMethod("");
                 }}
               >
-                Cancel
+                {t("actions.cancel")}
               </Button>
               <Button
                 type="button"
@@ -1674,7 +1682,7 @@ function AppointmentDetailPopover({
                 {isUpdating ? (
                   <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
                 ) : null}
-                Record confirmation
+                {t("detail.recordConfirmation")}
               </Button>
             </div>
           </div>
@@ -1705,8 +1713,8 @@ function AppointmentDetailPopover({
               >
                 <Stethoscope className="mr-1.5 h-3 w-3" />
                 {current === "in_exam"
-                  ? "Review closeout"
-                  : "Open visit"}
+                  ? t("whiteboard.reviewCloseout")
+                  : t("whiteboard.openVisit")}
               </Link>
             </Button>
             {appointment.patientId && (
@@ -1717,7 +1725,7 @@ function AppointmentDetailPopover({
                     restoreFocusRef.current = false;
                   }}
                 >
-                  View chart
+                  {t("detail.viewChart")}
                 </Link>
               </Button>
             )}
@@ -1729,7 +1737,7 @@ function AppointmentDetailPopover({
                 onClick={() => setShowRescheduleForm((show) => !show)}
               >
                 <Clock className="mr-1.5 h-3 w-3" />
-                Edit appointment
+                {t("detail.edit")}
               </Button>
             )}
             {canSendReminders && current === "confirmed" && (
@@ -1747,17 +1755,17 @@ function AppointmentDetailPopover({
                 ) : (
                   <Repeat2 className="mr-1.5 h-3 w-3" />
                 )}
-                Cancel Future Series
+                {t("detail.cancelSeries")}
               </Button>
             )}
             {canManageSchedule && ["scheduled", "confirmed", "cancelled", "no_show"].includes(current) && (
               <div className="w-full space-y-2">
-                <Button size="sm" variant="destructive" disabled={isDeleting} onClick={() => setConfirmDelete(true)}>Delete appointment</Button>
+                <Button size="sm" variant="destructive" disabled={isDeleting} onClick={() => setConfirmDelete(true)}>{t("detail.delete")}</Button>
                 {confirmDelete && <div className="space-y-2 rounded-md border p-3">
-                  <p className="text-sm">Remove this appointment from the schedule? Appointments with clinical or billing records must be corrected in the visit workspace.</p>
-                  <Input aria-label="Reason for deleting appointment" placeholder="Reason for deleting (required)" value={deleteReason} maxLength={500} onChange={(event) => setDeleteReason(event.target.value)} />
-                  <Button size="sm" variant="destructive" disabled={isDeleting || deleteReason.trim().length < 3} onClick={() => onDelete(appointment.id, deleteReason.trim())}>Confirm deletion</Button>
-                  <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)}>Keep appointment</Button>
+                  <p className="text-sm">{t("detail.deletePrompt")}</p>
+                  <Input aria-label={t("detail.deleteReasonLabel")} placeholder={t("detail.deleteReasonPlaceholder")} value={deleteReason} maxLength={500} onChange={(event) => setDeleteReason(event.target.value)} />
+                  <Button size="sm" variant="destructive" disabled={isDeleting || deleteReason.trim().length < 3} onClick={() => onDelete(appointment.id, deleteReason.trim())}>{t("detail.confirmDelete")}</Button>
+                  <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)}>{t("detail.keep")}</Button>
                 </div>}
               </div>
             )}
@@ -1791,9 +1799,10 @@ function AppointmentDetailPopover({
 }
 
 function SendReminderButton({ appointmentId }: { appointmentId: string }) {
+  const t = useTranslations("schedule.reminder");
   const sendReminder = trpc.notifications.sendAppointmentReminder.useMutation({
     onSuccess: () => {
-      toast.success("Reminder sent");
+      toast.success(t("sent"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -1812,23 +1821,28 @@ function SendReminderButton({ appointmentId }: { appointmentId: string }) {
       ) : (
         <Mail className="mr-1.5 h-3 w-3" />
       )}
-      Send Reminder
+      {t("send")}
     </Button>
   );
 }
 
 // --- Time slot helpers for booking form ---
 
-function generateTimeSlots(): { label: string; value: string }[] {
-  const slots: { label: string; value: string }[] = [];
+function timeSlotLabel(value: string, locale: string): string {
+  const [hour, minute] = value.split(":").map(Number);
+  return new Date(2000, 0, 1, hour, minute).toLocaleTimeString(locale, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function generateTimeSlots(): { value: string }[] {
+  const slots: { value: string }[] = [];
   for (let hour = 8; hour <= 17; hour++) {
     for (const min of [0, 30]) {
       if (hour === 17 && min > 30) break;
-      const h12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-      const ampm = hour < 12 ? "AM" : "PM";
-      const label = `${h12}:${String(min).padStart(2, "0")} ${ampm}`;
       const value = `${String(hour).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
-      slots.push({ label, value });
+      slots.push({ value });
     }
   }
   return slots;
@@ -1860,6 +1874,9 @@ function BookingForm({
   defaultPatientSearch?: string;
   timeZone?: string | null;
 }) {
+  const t = useTranslations("schedule");
+  const locale = useLocale();
+  const speciesLabel = useSpeciesLabel();
   const modalRef = useRef<HTMLDivElement>(null);
   const utils = trpc.useUtils();
 
@@ -1960,9 +1977,9 @@ function BookingForm({
 
   const createAppointment = trpc.appointments.create.useMutation({
     onSuccess: (appointment) => {
-      toast.success("Appointment created", {
+      toast.success(t("booking.created"), {
         action: {
-          label: "Open visit",
+          label: t("whiteboard.openVisit"),
           onClick: () =>
             window.location.assign(`/encounters/${appointment.id}`),
         },
@@ -1977,10 +1994,11 @@ function BookingForm({
 
   const createRecurringAppointment = trpc.appointments.createRecurring.useMutation({
     onSuccess: (result) => {
-      const skippedMessage =
-        result.skipped > 0 ? `; skipped ${result.skipped} conflicts` : "";
       toast.success(
-        `Created ${result.created} recurring appointments${skippedMessage}`
+        t("booking.createdRecurring", {
+          created: result.created,
+          skipped: result.skipped,
+        })
       );
       utils.appointments.list.invalidate();
       onClose();
@@ -2088,7 +2106,7 @@ function BookingForm({
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <h3 className="text-sm font-semibold">New Appointment</h3>
+          <h3 className="text-sm font-semibold">{t("booking.title")}</h3>
           <button
             type="button"
             onClick={onClose}
@@ -2105,7 +2123,7 @@ function BookingForm({
               htmlFor="new-appointment-location"
               className="text-xs font-medium text-muted-foreground"
             >
-              Clinic Location
+              {t("detail.location")}
             </label>
             <select
               id="new-appointment-location"
@@ -2120,8 +2138,8 @@ function BookingForm({
             >
               <option value="">
                 {locationsUnavailable
-                  ? "Locations unavailable"
-                  : "Select location..."}
+                  ? t("booking.locationsUnavailable")
+                  : t("detail.selectLocation")}
               </option>
               {locations?.map((location) => (
                 <option key={location.id} value={location.id}>
@@ -2132,20 +2150,20 @@ function BookingForm({
             {locationsQuery.error || locationsMissing ? (
               <p className="mt-1 text-xs text-destructive">
                 {locationsQuery.error?.message ??
-                  "Unable to load clinic locations. Please retry."}
+                  t("booking.locationsFailed")}
               </p>
             ) : null}
           </div>
 
           {/* Patient search */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Patient</label>
+            <label className="text-xs font-medium text-muted-foreground">{t("booking.patient")}</label>
             {selectedPatient ? (
               <div className="mt-1 flex items-center gap-2 rounded-md border border-input bg-muted/50 px-3 py-2 text-sm">
                 <span className="flex-1">
                   {selectedPatient.name}
                   {selectedPatient.species && (
-                    <span className="text-muted-foreground"> ({selectedPatient.species})</span>
+                    <span className="text-muted-foreground"> ({speciesLabel(selectedPatient.species)})</span>
                   )}
                 </span>
                 <button
@@ -2162,7 +2180,7 @@ function BookingForm({
             ) : (
               <div className="relative mt-1">
                 <Input
-                  placeholder="Search patients or owners..."
+                  placeholder={t("booking.searchPlaceholder")}
                   value={patientSearch}
                   maxLength={APPOINTMENT_PATIENT_SEARCH_MAX_LENGTH}
                   aria-invalid={!canSearchPatients}
@@ -2184,11 +2202,11 @@ function BookingForm({
                     {patientSearchError || patientSearchMissing ? (
                       <div className="px-3 py-2 text-sm text-destructive">
                         {patientSearchError?.message ??
-                          "Unable to search patients. Please retry."}
+                          t("booking.searchFailed")}
                       </div>
                     ) : isSearchingPatients ? (
                       <div className="px-3 py-2 text-sm text-muted-foreground">
-                        Searching patients...
+                        {t("booking.searching")}
                       </div>
                     ) : searchResults && searchResults.length > 0 ? (
                       searchResults.map((p) => (
@@ -2204,16 +2222,16 @@ function BookingForm({
                         >
                           <div className="font-medium">{p.name}</div>
                           <div className="text-xs text-muted-foreground">
-                            {p.species}
+                            {speciesLabel(p.species)}
                             {(p.clientFirstName || p.clientLastName) && (
-                              <> &middot; Owner: {[p.clientFirstName, p.clientLastName].filter(Boolean).join(" ")}</>
+                              <> &middot; {t("booking.owner", { name: [p.clientFirstName, p.clientLastName].filter(Boolean).join(" ") })}</>
                             )}
                           </div>
                         </button>
                       ))
                     ) : (
                       <div className="px-3 py-2 text-sm text-muted-foreground">
-                        No patients found
+                        {t("booking.noPatients")}
                       </div>
                     )}
                   </div>
@@ -2221,13 +2239,13 @@ function BookingForm({
               </div>
             )}
             {clientName && (
-              <p className="mt-1 text-xs text-muted-foreground">Client: {clientName}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t("clientLabel", { name: clientName })}</p>
             )}
           </div>
 
           {/* Appointment Type */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Appointment Type</label>
+            <label className="text-xs font-medium text-muted-foreground">{t("booking.type")}</label>
             <select
               value={typeId}
               onChange={(e) => setTypeId(e.target.value)}
@@ -2236,30 +2254,30 @@ function BookingForm({
             >
               <option value="">
                 {appointmentTypesUnavailable
-                  ? "Appointment types unavailable"
-                  : "Select type..."}
+                  ? t("booking.typesUnavailable")
+                  : t("booking.selectType")}
               </option>
-              {appointmentTypes?.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name} ({t.durationMinutes} min)
+              {appointmentTypes?.map((type) => (
+                <option key={type.id} value={type.id}>
+                  {t("booking.typeOption", { name: type.name, minutes: type.durationMinutes })}
                 </option>
               ))}
             </select>
             {appointmentTypesQuery.error || appointmentTypesMissing ? (
               <p className="mt-1 text-xs text-destructive">
                 {appointmentTypesQuery.error?.message ??
-                  "Unable to load appointment types. Please retry."}
+                  t("booking.typesFailed")}
               </p>
             ) : appointmentTypesQuery.isLoading ? (
               <p className="mt-1 text-xs text-muted-foreground">
-                Loading appointment types...
+                {t("booking.typesLoading")}
               </p>
             ) : null}
           </div>
 
           {/* Doctor */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Doctor</label>
+            <label className="text-xs font-medium text-muted-foreground">{t("detail.doctor")}</label>
             <select
               value={doctorId}
               onChange={(e) => setDoctorId(e.target.value)}
@@ -2267,7 +2285,7 @@ function BookingForm({
               className="mt-1 h-9 w-full appearance-none rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">
-                {doctorsUnavailable ? "Doctors unavailable" : "Select doctor..."}
+                {doctorsUnavailable ? t("booking.doctorsUnavailable") : t("booking.selectDoctor")}
               </option>
               {eligibleDoctors?.map((doc) => (
                 <option key={doc.id} value={doc.id}>
@@ -2278,18 +2296,18 @@ function BookingForm({
             {doctorsQuery.error || doctorsMissing ? (
               <p className="mt-1 text-xs text-destructive">
                 {doctorsQuery.error?.message ??
-                  "Unable to load doctors. Please retry."}
+                  t("booking.doctorsFailed")}
               </p>
             ) : doctorsQuery.isLoading ? (
               <p className="mt-1 text-xs text-muted-foreground">
-                Loading doctors...
+                {t("booking.doctorsLoading")}
               </p>
             ) : null}
           </div>
 
           {/* Room */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Room</label>
+            <label className="text-xs font-medium text-muted-foreground">{t("detail.room")}</label>
             <select
               value={roomId}
               onChange={(e) => setRoomId(e.target.value)}
@@ -2297,7 +2315,7 @@ function BookingForm({
               className="mt-1 h-9 w-full appearance-none rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">
-                {roomsUnavailable ? "Rooms unavailable" : "Select room..."}
+                {roomsUnavailable ? t("booking.roomsUnavailable") : t("booking.selectRoom")}
               </option>
               {roomsList?.map((r) => (
                 <option key={r.id} value={r.id}>
@@ -2308,18 +2326,18 @@ function BookingForm({
             {roomsQuery.error || roomsMissing ? (
               <p className="mt-1 text-xs text-destructive">
                 {roomsQuery.error?.message ??
-                  "Unable to load rooms. Please retry."}
+                  t("booking.roomsFailed")}
               </p>
             ) : roomsQuery.isLoading ? (
               <p className="mt-1 text-xs text-muted-foreground">
-                Loading rooms...
+                {t("booking.roomsLoading")}
               </p>
             ) : null}
           </div>
 
           {/* Date */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Date</label>
+            <label className="text-xs font-medium text-muted-foreground">{t("detail.date")}</label>
             <Input
               type="date"
               value={date}
@@ -2331,7 +2349,7 @@ function BookingForm({
 
           {/* Start Time */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Start Time</label>
+            <label className="text-xs font-medium text-muted-foreground">{t("booking.startTime")}</label>
             <select
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
@@ -2339,7 +2357,7 @@ function BookingForm({
             >
               {TIME_SLOTS.map((slot) => (
                 <option key={slot.value} value={slot.value}>
-                  {slot.label}
+                  {timeSlotLabel(slot.value, locale)}
                 </option>
               ))}
             </select>
@@ -2347,7 +2365,7 @@ function BookingForm({
 
           {/* Duration */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Duration (minutes)</label>
+            <label className="text-xs font-medium text-muted-foreground">{t("booking.durationMinutes")}</label>
             <Input
               type="number"
               min={APPOINTMENT_DURATION_MIN_MINUTES}
@@ -2368,13 +2386,13 @@ function BookingForm({
                 onChange={(e) => setIsRecurring(e.target.checked)}
               />
               <Repeat2 className="h-3.5 w-3.5 text-muted-foreground" />
-              Repeat appointment
+              {t("booking.repeat")}
             </label>
             {isRecurring && (
               <div className="mt-3 grid gap-3 sm:grid-cols-3">
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">
-                    Frequency
+                    {t("booking.frequency")}
                   </label>
                   <select
                     value={recurrenceFrequency}
@@ -2383,14 +2401,14 @@ function BookingForm({
                     }
                     className="mt-1 h-9 w-full appearance-none rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   >
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="annual">Annual</option>
+                    <option value="weekly">{t("booking.weekly")}</option>
+                    <option value="monthly">{t("booking.monthly")}</option>
+                    <option value="annual">{t("booking.annual")}</option>
                   </select>
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">
-                    Every
+                    {t("booking.every")}
                   </label>
                   <Input
                     type="number"
@@ -2405,7 +2423,7 @@ function BookingForm({
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">
-                    Occurrences
+                    {t("booking.occurrences")}
                   </label>
                   <Input
                     type="number"
@@ -2422,7 +2440,7 @@ function BookingForm({
                 </div>
                 {!hasRecurringPatient && (
                   <p className="sm:col-span-3 text-xs text-destructive">
-                    Select a patient for recurring appointments.
+                    {t("booking.recurringNeedsPatient")}
                   </p>
                 )}
               </div>
@@ -2431,7 +2449,7 @@ function BookingForm({
 
           {/* Notes */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Notes</label>
+            <label className="text-xs font-medium text-muted-foreground">{t("booking.notes")}</label>
             <textarea
               value={notes}
               maxLength={APPOINTMENT_NOTES_MAX_LENGTH}
@@ -2439,7 +2457,7 @@ function BookingForm({
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-              placeholder="Optional notes..."
+              placeholder={t("booking.notesPlaceholder")}
             />
           </div>
         </div>
@@ -2447,7 +2465,7 @@ function BookingForm({
         {/* Footer */}
         <div className="flex justify-end gap-2 border-t border-border px-4 py-3">
           <Button variant="outline" size="sm" onClick={onClose}>
-            Cancel
+            {t("actions.cancel")}
           </Button>
           <Button
             size="sm"
@@ -2458,7 +2476,7 @@ function BookingForm({
               createRecurringAppointment.isPending) && (
               <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
             )}
-            Save
+            {t("booking.save")}
           </Button>
         </div>
       </div>
@@ -2469,12 +2487,13 @@ function BookingForm({
 // --- Main Page ---
 
 export default function SchedulePage() {
+  const t = useTranslations("schedule");
   return (
     <Suspense
       fallback={
         <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card p-8 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading schedule...
+          {t("loadingSchedule")}
         </div>
       }
     >
@@ -2484,6 +2503,8 @@ export default function SchedulePage() {
 }
 
 function SchedulePageContent() {
+  const t = useTranslations("schedule");
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
   const userRole = session?.user?.role;
@@ -2607,7 +2628,7 @@ function SchedulePageContent() {
 
   const updateStatus = trpc.appointments.updateStatus.useMutation({
     onSuccess: () => {
-      toast.success("Appointment status updated");
+      toast.success(t("toasts.statusUpdated"));
       setSelectedAppointment(null);
     },
     onError: (err) => {
@@ -2619,7 +2640,7 @@ function SchedulePageContent() {
 
   const deleteAppointment = trpc.appointments.delete.useMutation({
     onSuccess: () => {
-      toast.success("Appointment deleted from the schedule");
+      toast.success(t("toasts.deleted"));
       setSelectedAppointment(null);
       utils.appointments.list.invalidate();
       utils.dashboard.invalidate();
@@ -2631,8 +2652,8 @@ function SchedulePageContent() {
     onSuccess: (result) => {
       toast.success(
         result.confirmationRequired
-          ? "Appointment moved; contact the client and confirm the new time"
-          : "Appointment updated"
+          ? t("toasts.movedConfirm")
+          : t("toasts.updated")
       );
       setSelectedAppointment(null);
       utils.appointments.list.invalidate();
@@ -2644,13 +2665,7 @@ function SchedulePageContent() {
 
   const cancelRecurringSeries = trpc.appointments.cancelRecurringSeries.useMutation({
     onSuccess: (result) => {
-      const message =
-        result.cancelledCount === 0
-          ? "Recurring series ended; no future appointments needed cancellation"
-          : result.cancelledCount === 1
-            ? "Cancelled 1 future appointment in the recurring series"
-            : `Cancelled ${result.cancelledCount} future appointments in the recurring series`;
-      toast.success(message);
+      toast.success(t("toasts.seriesCancelled", { count: result.cancelledCount }));
       setSelectedAppointment(null);
       utils.appointments.list.invalidate();
     },
@@ -2688,7 +2703,7 @@ function SchedulePageContent() {
   const handleCancelRecurringSeries = (seriesId: string) => {
     if (
       !window.confirm(
-        "Cancel future appointments in this recurring series? Past, completed, and in-progress appointments will stay unchanged."
+        t("confirmCancelSeries")
       )
     ) {
       return;
@@ -2754,9 +2769,9 @@ function SchedulePageContent() {
   ]);
 
   const viewOptions: { id: CalendarView; label: string }[] = [
-    { id: "day", label: "Day" },
-    { id: "week", label: "Week" },
-    { id: "month", label: "Month" },
+    { id: "day", label: t("views.day") },
+    { id: "week", label: t("views.week") },
+    { id: "month", label: t("views.month") },
   ];
 
   // Current time indicator position
@@ -2774,22 +2789,21 @@ function SchedulePageContent() {
       {firstClinicDay ? (
         <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">
-            First clinic day · Step 3 of 3
+            {t("firstDay.step")}
           </p>
           <p className="mt-1 text-sm font-semibold text-foreground">
-            Book the pet&apos;s first real appointment.
+            {t("firstDay.title")}
           </p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Choose the pet, time, location, and visit type. Your current PIMS
-            can stay in place while the team validates this visit end to end.
+            {t("firstDay.body")}
           </p>
         </div>
       ) : null}
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className="font-heading text-xl font-semibold">Schedule</h2>
-          <p className="text-sm text-muted-foreground">Appointment calendar</p>
+          <h2 className="font-heading text-xl font-semibold">{t("title")}</h2>
+          <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
         </div>
         <CalendarSubscribe />
       </div>
@@ -2804,7 +2818,7 @@ function SchedulePageContent() {
               size="icon"
               onClick={goPrev}
               className="h-11 w-11 sm:h-9 sm:w-9"
-              aria-label="Previous date range"
+              aria-label={t("toolbar.previous")}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -2814,21 +2828,21 @@ function SchedulePageContent() {
               onClick={goToday}
               className="h-11 sm:h-9"
             >
-              Today
+              {t("toolbar.today")}
             </Button>
             <Button
               variant="outline"
               size="icon"
               onClick={goNext}
               className="h-11 w-11 sm:h-9 sm:w-9"
-              aria-label="Next date range"
+              aria-label={t("toolbar.next")}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
 
           <h3 className="min-w-0 truncate text-right text-sm font-medium sm:text-left">
-            {formatToolbarDate(currentDate, view)}
+            {formatToolbarDate(currentDate, view, locale)}
           </h3>
         </div>
 
@@ -2860,7 +2874,7 @@ function SchedulePageContent() {
             <div className="relative min-w-0 flex-1 sm:flex-none">
               <MapPin className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
               <select
-                aria-label="Filter schedule by clinic location"
+                aria-label={t("toolbar.locationFilter")}
                 value={locationFilter}
                 onChange={(event) => {
                   setLocationFilter(event.target.value);
@@ -2868,7 +2882,7 @@ function SchedulePageContent() {
                 }}
                 className="h-11 w-full min-w-0 appearance-none rounded-md border border-input bg-background pl-8 pr-8 text-xs focus:outline-none focus:ring-2 focus:ring-ring sm:h-9 sm:w-auto"
               >
-                <option value="all">All Locations</option>
+                <option value="all">{t("toolbar.allLocations")}</option>
                 {scheduleLocations.map((location) => (
                   <option key={location.id} value={location.id}>
                     {location.name}
@@ -2885,7 +2899,7 @@ function SchedulePageContent() {
               onChange={(e) => setDoctorFilter(e.target.value)}
               className="h-11 w-full min-w-0 appearance-none rounded-md border border-input bg-background pl-8 pr-8 text-xs focus:outline-none focus:ring-2 focus:ring-ring sm:h-9 sm:w-auto"
             >
-              <option value="all">All Doctors</option>
+              <option value="all">{t("toolbar.allDoctors")}</option>
               {doctors?.map((doc) => (
                 <option key={doc.id} value={doc.id}>
                   {providerDisplayName(doc.name)}
@@ -2905,7 +2919,7 @@ function SchedulePageContent() {
               }}
             >
               <Plus className="mr-1.5 h-3.5 w-3.5" />
-              New Appointment
+              {t("toolbar.newAppointment")}
             </Button>
           )}
         </div>
@@ -2915,12 +2929,12 @@ function SchedulePageContent() {
       <div data-tour="schedule-calendar">
       {scheduleError || scheduleMissing ? (
         <div className="mt-4 rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
-          {scheduleError?.message ?? "Unable to load schedule. Please retry."}
+          {scheduleError?.message ?? t("loadFailed")}
         </div>
       ) : isScheduleLoading ? (
         <div className="mt-6 flex items-center justify-center gap-2 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading appointments...
+          {t("loadingAppointments")}
         </div>
       ) : (
         <>
@@ -2951,8 +2965,8 @@ function SchedulePageContent() {
           <>
             <EmptyState
               icon={Calendar}
-              title="No appointments this week"
-              description="The selected schedule is clear for this week."
+              title={t("empty.weekTitle")}
+              description={t("empty.weekDescription")}
               className="mt-4"
             />
             <WeekCalendar
@@ -2991,8 +3005,8 @@ function SchedulePageContent() {
           <>
             <EmptyState
               icon={Calendar}
-              title="No appointments in this month"
-              description="The selected schedule is clear for this month."
+              title={t("empty.monthTitle")}
+              description={t("empty.monthDescription")}
               className="mt-4"
             />
             <MonthCalendar

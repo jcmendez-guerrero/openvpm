@@ -27,6 +27,7 @@ import {
 import { AUTH_PASSWORD_MAX_LENGTH } from "@/lib/auth-password";
 import { AUTH_EMAIL_MAX_LENGTH } from "@/lib/auth-input-policy";
 import { nextAuthSecret } from "@/lib/auth-secret";
+import { syncLanguageCookieAtSignIn } from "@/i18n/sign-in-cookie";
 import {
   DEMO_ROLE_EMAILS,
   demoModeEnabled,
@@ -172,6 +173,7 @@ export const authOptions: NextAuthOptions = {
 
         await releaseLoginAttempt(throttleKeys, gate);
         await rememberKnownDevice(deviceCookie, email);
+        await syncLanguageCookieAtSignIn(user.language);
 
         // Email verification is a SOFT requirement on hosted: new users sign in
         // immediately after signup (so the trial + onboarding aren't blocked by
@@ -227,6 +229,7 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user) return null;
+        await syncLanguageCookieAtSignIn(user.language);
         return {
           id: user.id,
           email: user.email,

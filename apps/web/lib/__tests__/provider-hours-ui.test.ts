@@ -1,14 +1,9 @@
-import { readFileSync } from "node:fs";
+import en from "@/messages/en.json";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
-const settingsPage = readFileSync(
-  new URL("../../app/(dashboard)/settings/page.tsx", import.meta.url),
-  "utf8",
-);
-const providerHours = readFileSync(
-  new URL("../../components/settings/provider-hours.tsx", import.meta.url),
-  "utf8",
-);
+const settingsPage = readTranslatedSource(new URL("../../app/(dashboard)/settings/page.tsx", import.meta.url));
+const providerHours = readTranslatedSource(new URL("../../components/settings/provider-hours.tsx", import.meta.url));
 
 describe("provider hours settings UI", () => {
   it("keeps working hours in the Staff tab", () => {
@@ -28,7 +23,8 @@ describe("provider hours settings UI", () => {
     expect(providerHours).toContain("Use Mon–Fri, 8–6");
     expect(providerHours).toContain("Mark all closed");
     expect(providerHours).toContain("Add window");
-    expect(providerHours).toContain("working windows cannot overlap");
+    expect(providerHours).toContain('t("noOverlap"');
+    expect(en.settings.providerHours.noOverlap).toContain("working windows cannot overlap.");
     expect(providerHours).toContain("Provider hours clinic location");
     expect(providerHours).toContain("Doctor-required client requests");
     expect(providerHours).toContain("locationSchedules.find");

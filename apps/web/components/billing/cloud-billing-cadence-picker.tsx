@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { CalendarDays, Check, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -34,16 +36,16 @@ export function CloudBillingCadencePicker({
   availableCadences = ["month", "year"],
   disabled = false,
 }: CloudBillingCadencePickerProps) {
+  const t = useTranslations("billing.cadence");
   const normalizedLocationCount = Math.max(1, locationCount);
 
   return (
     <fieldset disabled={disabled} className="min-w-0 w-full max-w-full">
       <legend className="font-heading text-base font-semibold">
-        Choose a billing schedule
+        {t("chooseABillingSchedule")}
       </legend>
       <p className="mt-1 text-sm text-muted-foreground">
-        One Cloud plan with unlimited staff. Annual billing includes two months
-        free.
+        {t("oneCloudPlanWithUnlimited")}
       </p>
 
       <div className="mt-4 grid min-w-0 w-full max-w-full gap-3 sm:grid-cols-2">
@@ -87,7 +89,7 @@ export function CloudBillingCadencePicker({
                       <Icon className="size-4" aria-hidden="true" />
                     </span>
                     {savings > 0 ? (
-                      <Badge variant="success">Save {dollars(savings)}</Badge>
+                      <Badge variant="success">{t("saveAmount", { amount: dollars(savings) })}</Badge>
                     ) : null}
                   </div>
                   <div>
@@ -107,7 +109,7 @@ export function CloudBillingCadencePicker({
                     </span>
                     {normalizedLocationCount > 1 ? (
                       <p className="mt-1 text-xs text-muted-foreground">
-                        {dollars(option.priceUsd)} per active location
+                        {t("perActiveLocation", { price: dollars(option.priceUsd) })}
                       </p>
                     ) : null}
                   </div>
@@ -118,20 +120,20 @@ export function CloudBillingCadencePicker({
                         className="size-3.5 text-primary"
                         aria-hidden="true"
                       />
-                      Unlimited staff included
+                      {t("unlimitedStaffIncluded")}
                     </span>
                     <span className="flex items-center gap-2">
                       <Check
                         className="size-3.5 text-primary"
                         aria-hidden="true"
                       />
-                      Secure checkout powered by Stripe
+                      {t("secureCheckoutPoweredByStripe")}
                     </span>
                   </div>
 
                   {!available ? (
                     <p className="text-xs font-medium text-destructive">
-                      Temporarily unavailable
+                      {t("temporarilyUnavailable")}
                     </p>
                   ) : null}
                 </CardContent>

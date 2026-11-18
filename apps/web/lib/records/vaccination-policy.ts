@@ -6,8 +6,13 @@ export const VACCINATION_RABIES_TAG_MAX_LENGTH = 64;
 export const VACCINATION_LICENSED_DURATION_MIN_MONTHS = 1;
 export const VACCINATION_LICENSED_DURATION_MAX_MONTHS = 120;
 
+// English "rabies" plus Spanish "rabia" / "antirrábica" (accent optional), so
+// rabies certificate checks apply whichever language staff type the name in.
+const RABIES_VACCINE_NAME =
+  /(^|\s|[-_/])(rabies|rabia|antirr[aá]bic[ao]s?)($|\s|[-_/])/i;
+
 export function isRabiesVaccineName(value: string): boolean {
-  return /(^|\s|[-_/])rabies($|\s|[-_/])/i.test(value.trim());
+  return RABIES_VACCINE_NAME.test(value.normalize("NFC").trim());
 }
 
 const DATE_INPUT_RE = /^\d{4}-\d{2}-\d{2}$/;

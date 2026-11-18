@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useTranslations } from "use-intl";
 
 type ReasonInput = {
   label: string;
@@ -38,6 +39,7 @@ export function ActionConfirmationDialog({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const tActions = useTranslations("common.actions");
   const titleId = useId();
   const descriptionId = useId();
   const reasonId = useId();
@@ -150,7 +152,7 @@ export function ActionConfirmationDialog({
 
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="outline" disabled={isPending} onClick={onCancel}>
-            Cancel
+            {tActions("cancel")}
           </Button>
           <Button
             ref={confirmRef}

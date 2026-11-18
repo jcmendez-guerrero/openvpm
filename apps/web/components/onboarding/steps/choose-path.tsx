@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useEffect } from "react";
 import { ClinicIntentBuilder } from "@/components/onboarding/clinic-intent-builder";
 import { FUNNEL_EVENTS } from "@/lib/funnel-analytics";
@@ -17,12 +19,13 @@ import type { StepProps } from "../journey-types";
  * Neither value contains patient, client, or clinical information.
  */
 export function ChoosePathStep({ register, state, setState }: StepProps) {
+  const t = useTranslations("onboarding.choosePath");
   const utils = trpc.useUtils();
   const saveIntent = trpc.settings.setOnboardingIntent.useMutation();
 
   useEffect(() => {
     register({
-      continueLabel: "Build my first day",
+      continueLabel: t("buildMyFirstDay"),
       async onContinue() {
         await saveIntent.mutateAsync({
           intent: state.onboardingIntent,

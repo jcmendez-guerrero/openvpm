@@ -1,5 +1,6 @@
 "use client";
 
+import { useDocumentLanguage } from "@/components/common/use-document-language";
 import dynamic from "next/dynamic";
 import { Fragment, useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -111,6 +112,10 @@ import {
   isVitalsOptionalWeightInputValid,
 } from "@/lib/records/vitals-policy";
 import { PATIENT_SPECIES_EMOJI } from "@/lib/patients/species";
+import { useSpeciesLabel } from "@/lib/patients/use-species-label";
+import { useLocale, useTranslations } from "use-intl";
+import { createTranslator } from "use-intl/core";
+import en from "@/messages/en.json";
 import {
   celsiusToFahrenheit,
   fahrenheitToCelsius,
@@ -154,19 +159,20 @@ const VitalsTrendChart = dynamic(
 
 const speciesEmoji: Record<string, string> = PATIENT_SPECIES_EMOJI;
 
-function formatSex(sex: string | null): string {
-  if (!sex) return "Unknown";
-  const labels: Record<string, string> = {
-    male: "Male (Intact)",
-    female: "Female (Intact)",
-    male_neutered: "Male (Neutered)",
-    female_spayed: "Female (Spayed)",
-  };
-  return labels[sex] ?? sex;
+type Translate = ReturnType<typeof useTranslations>;
+
+const SEXES = ["male", "female", "male_neutered", "female_spayed"];
+
+// Rabies certificates are regulatory text and stay in English (glossary rule).
+const certificateT = createTranslator({ locale: "en", messages: en, namespace: "patients" }) as unknown as Translate;
+
+function formatSex(sex: string | null, t: Translate): string {
+  if (!sex) return t("chart.unknown");
+  return SEXES.includes(sex) ? t(`sex.${sex}`) : sex;
 }
 
-function calculateAge(dob: string | null): string {
-  if (!dob) return "Unknown";
+function calculateAge(dob: string | null, t: Translate): string {
+  if (!dob) return t("chart.unknown");
   const birth = new Date(dob);
   const now = new Date();
   const years = now.getFullYear() - birth.getFullYear();
@@ -175,12 +181,12 @@ function calculateAge(dob: string | null): string {
   const adjustedYears = months < 0 ? years - 1 : years;
 
   if (adjustedYears === 0) {
-    return `${adjustedMonths} month${adjustedMonths !== 1 ? "s" : ""}`;
+    return t("chart.ageMonths", { count: adjustedMonths });
   }
   if (adjustedMonths === 0) {
-    return `${adjustedYears} year${adjustedYears !== 1 ? "s" : ""}`;
+    return t("chart.ageYears", { count: adjustedYears });
   }
-  return `${adjustedYears}y ${adjustedMonths}m`;
+  return t("chart.ageYearsMonths", { years: adjustedYears, months: adjustedMonths });
 }
 
 type Tab =
@@ -193,15 +199,15 @@ type Tab =
   | "vaccinations"
   | "invoices";
 
-const tabs: { id: Tab; label: string }[] = [
-  { id: "overview", label: "Overview" },
-  { id: "records", label: "Medical Records" },
-  { id: "documents", label: "Documents" },
-  { id: "appointments", label: "Appointments" },
-  { id: "weight", label: "Weight History" },
-  { id: "vitals", label: "Vitals" },
-  { id: "vaccinations", label: "Vaccinations" },
-  { id: "invoices", label: "Invoices" },
+const tabs: { id: Tab }[] = [
+  { id: "overview" },
+  { id: "records" },
+  { id: "documents" },
+  { id: "appointments" },
+  { id: "weight" },
+  { id: "vitals" },
+  { id: "vaccinations" },
+  { id: "invoices" },
 ];
 
 function canManagePatientDetailRole(role?: string | null): boolean {
@@ -314,8 +320,12 @@ function PatientDetailLoadingPanel({ label }: { label: string }) {
 }
 
 export default function PatientDetailPage() {
+  const documentLanguage = useDocumentLanguage();
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const t = useTranslations("patients");
+  const locale = useLocale();
+  const speciesLabel = useSpeciesLabel();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
   const [fieldVisitLocationId, setFieldVisitLocationId] = useState("");
@@ -434,14 +444,14 @@ export default function PatientDetailPage() {
           kind: "response",
           status: res.status,
         });
-        throw new Error(json.error ?? "Upload failed");
+        throw new Error(json.error ?? t("chart.uploadFailed"));
       }
 
       photoUploadAttemptRef.current = settleManagedUploadAttempt(attempt, {
         kind: "success",
       });
       await refreshPatientDetail();
-      toast.success("Patient photo updated");
+      toast.success(t("chart.photoUpdated"));
     } catch (err) {
       if (photoUploadAttemptRef.current === attempt) {
         photoUploadAttemptRef.current = settleManagedUploadAttempt(attempt, {
@@ -449,7 +459,7 @@ export default function PatientDetailPage() {
         });
       }
       const message =
-        err instanceof Error ? err.message : "Failed to upload photo";
+        err instanceof Error ? err.message : t("chart.photoFailed");
       setPhotoUploadError(message);
       toast.error(message);
     } finally {
@@ -499,7 +509,7 @@ export default function PatientDetailPage() {
     ? verifiedRecordsSettings.timezone
     : undefined;
   const weightTrend = useMemo(
-    () => buildWeightTrend(patient?.weights ?? [], recordsSettingsTimeZone),
+    () => buildWeightTrend(patient?.weights ?? [], recordsSettingsTimeZone, locale),
     [patient?.weights, recordsSettingsTimeZone],
   );
   const [weightKg, setWeightKg] = useState("");
@@ -520,7 +530,7 @@ export default function PatientDetailPage() {
   );
   const addWeight = trpc.patients.addWeight.useMutation({
     onSuccess: () => {
-      toast.success("Weight recorded");
+      toast.success(t("chart.weightRecorded"));
       setWeightMeasuredAt("");
       void refreshPatientDetail();
       setWeightKg("");
@@ -553,7 +563,7 @@ export default function PatientDetailPage() {
   const [allergyReaction, setAllergyReaction] = useState("");
   const addAllergy = trpc.patients.addAllergy.useMutation({
     onSuccess: () => {
-      toast.success("Allergy recorded");
+      toast.success(t("chart.allergyRecorded"));
       void refreshPatientDetail();
       setAllergyName("");
       setAllergyReaction("");
@@ -565,7 +575,7 @@ export default function PatientDetailPage() {
   const startFieldVisit = trpc.appointments.startFieldVisit.useMutation({
     onSuccess: ({ appointment, created }) => {
       toast.success(
-        created ? "Field visit started" : "Open field visit resumed",
+        created ? t("chart.fieldVisitStarted") : t("chart.fieldVisitResumed"),
       );
       router.push(`/encounters/${appointment.id}`);
     },
@@ -573,7 +583,7 @@ export default function PatientDetailPage() {
   });
   const correctAllergy = trpc.patients.markAllergyEnteredInError.useMutation({
     onSuccess: () => {
-      toast.success("Allergy correction recorded");
+      toast.success(t("chart.allergyCorrected"));
       void refreshPatientDetail();
     },
     onError: (err) => toast.error(err.message),
@@ -598,7 +608,7 @@ export default function PatientDetailPage() {
   const isPageLoading = !loadError && (isLoading || recordsSettingsLoading);
 
   if (isPageLoading) {
-    return <PatientDetailLoadingPanel label="Loading patient..." />;
+    return <PatientDetailLoadingPanel label={t("form.loadingPatient")} />;
   }
 
   if (
@@ -610,15 +620,15 @@ export default function PatientDetailPage() {
     return (
       <EmptyState
         icon={AlertTriangle}
-        title="Unable to load patient"
+        title={t("form.loadFailedTitle")}
         description={
           loadError?.message ??
           (recordsSettingsMissing || !verifiedRecordsSettings
-            ? "Unable to load clinical settings. Please retry."
-            : "Choose a patient from the Patients list before opening the detail page.")
+            ? t("chart.settingsFailed")
+            : t("chart.loadFailedHelp"))
         }
         action={{
-          label: "Back to Patients",
+          label: t("form.back"),
           onClick: () => router.push("/patients"),
           icon: ArrowLeft,
         }}
@@ -661,7 +671,7 @@ export default function PatientDetailPage() {
     ? ambulatoryProfile.measurementSystem === "us_customary"
       ? `${roundClinicalMeasurement(kilogramsToPounds(Number(latestWeightKg)))} lb`
       : `${roundClinicalMeasurement(Number(latestWeightKg), 3)} kg`
-    : "Not recorded";
+    : t("chart.notRecorded");
   const latestVisit = recentVisitsQuery.data?.[0];
   const latestSnapshotVitals = snapshotVitalsQuery.data?.find(
     (vital) => !vital.correctionId,
@@ -678,10 +688,10 @@ export default function PatientDetailPage() {
             )
           : null,
         latestSnapshotVitals.heartRateBpm != null
-          ? "HR " + latestSnapshotVitals.heartRateBpm
+          ? t("chart.hr", { value: latestSnapshotVitals.heartRateBpm })
           : null,
         latestSnapshotVitals.respiratoryRateBpm != null
-          ? "RR " + latestSnapshotVitals.respiratoryRateBpm
+          ? t("chart.rr", { value: latestSnapshotVitals.respiratoryRateBpm })
           : null,
         latestSnapshotVitals.weightKg != null
           ? formatClinicalWeight(
@@ -691,8 +701,8 @@ export default function PatientDetailPage() {
           : null,
       ]
         .filter((value): value is string => Boolean(value))
-        .join(" · ") || "Recorded without summary values"
-    : "None recorded";
+        .join(" · ") || t("chart.noSummaryValues")
+    : t("chart.noneRecorded");
   const currentVaccinations = (vaccinationsQuery.data ?? []).filter(
     (vaccination) => !vaccination.correctionId,
   );
@@ -702,13 +712,14 @@ export default function PatientDetailPage() {
     )
     .sort()[0];
   const vaccinationSummary = currentVaccinations.length
-    ? String(currentVaccinations.length) +
-      " recorded" +
+    ? t("chart.vaccinesRecorded", { count: currentVaccinations.length }) +
+      " · " +
       (nextVaccinationDueDate
-        ? " · next due " +
-          formatClinicalDate(nextVaccinationDueDate, recordsTimeZone)
-        : " · no due date recorded")
-    : "None recorded";
+        ? t("chart.nextDue", {
+            date: formatClinicalDate(nextVaccinationDueDate, recordsTimeZone, undefined, locale),
+          })
+        : t("chart.noDueDate"))
+    : t("chart.noneRecorded");
 
   async function handleDownloadSummary() {
     try {
@@ -743,7 +754,7 @@ export default function PatientDetailPage() {
         !prescriptionsResult.data
       ) {
         throw new Error(
-          "Unable to load complete medical summary data. Please retry.",
+          t("chart.summaryIncomplete"),
         );
       }
 
@@ -751,13 +762,30 @@ export default function PatientDetailPage() {
       const vaccinations = vaccinationsResult.data;
       const soapNotes = soapNotesResult.data;
       const prescriptions = prescriptionsResult.data;
-      const { generateMedicalSummaryPdf } = await import("@/lib/pdf");
+      const { generateMedicalSummaryPdf, pdfText } = await import("@/lib/pdf");
+      const pdfLanguage = documentLanguage(patientData.clientPreferredLanguage);
+      const pdfLocale = pdfLanguage === "es" ? "es" : "en-US";
+      const tPdf = pdfText(pdfLanguage);
+      const unknown = tPdf("pdf.common.unknown");
+      const unknownDate = tPdf("pdf.common.unknownDate");
+      const unknownTime = tPdf("pdf.common.unknownTime");
+      const unknownClinician = tPdf("pdf.summary.unknownClinician");
+      const reasonUnavailable = tPdf("pdf.summary.reasonUnavailable");
+      const pdfDate = (value: Date | string | null | undefined, fallback?: string) =>
+        formatClinicalDate(value, recordsTimeZone, fallback, pdfLocale);
+      const pdfDateTime = (value: Date | string | null | undefined, fallback?: string) =>
+        formatClinicalDateTime(value, recordsTimeZone, fallback, pdfLocale);
+      const soapNoteDated = (value: Date | string | null | undefined) =>
+        tPdf("pdf.summary.soapNoteDated", {
+          date: pdfDate(value, tPdf("pdf.summary.unknownDateInline")),
+        });
 
       generateMedicalSummaryPdf({
+        language: pdfLanguage,
         practiceName: recordsPracticeName,
         practicePhone: recordsPracticePhone ?? undefined,
         patientName: patientData.name,
-        species: patientData.species ?? "Unknown",
+        species: patientData.species ?? unknown,
         breed: patientData.breed ?? undefined,
         sex: patientData.sex ?? undefined,
         dob: patientData.dob ?? undefined,
@@ -781,19 +809,27 @@ export default function PatientDetailPage() {
           .map((v) => ({
             name: v.vaccineName,
             date: v.administeredAt
-              ? formatClinicalDate(v.administeredAt, recordsTimeZone, "Unknown")
-              : "Unknown",
+              ? formatClinicalDate(
+                  v.administeredAt,
+                  recordsTimeZone,
+                  unknown,
+                  pdfLocale,
+                )
+              : unknown,
             nextDue: v.nextDueDate
-              ? formatClinicalDate(v.nextDueDate, recordsTimeZone)
+              ? formatClinicalDate(
+                  v.nextDueDate,
+                  recordsTimeZone,
+                  undefined,
+                  pdfLocale,
+                )
               : undefined,
           })),
         recentNotes: soapNotes
           .filter((note) => note.status === "finalized" && !note.correctionId)
           .slice(0, 5)
           .map((n) => ({
-            date: n.createdAt
-              ? formatClinicalDate(n.createdAt, recordsTimeZone, "Unknown")
-              : "Unknown",
+            date: n.createdAt ? pdfDate(n.createdAt, unknown) : unknown,
             subjective: n.subjective ?? undefined,
             objective: n.objective ?? undefined,
             assessment: n.assessment ?? undefined,
@@ -801,38 +837,29 @@ export default function PatientDetailPage() {
             imported: n.imported,
             authorName: n.authorName,
             finalizerName: n.finalizerName ?? undefined,
-            finalizedAt: n.finalizedAt
-              ? formatClinicalDateTime(n.finalizedAt, recordsTimeZone)
-              : undefined,
+            finalizedAt: n.finalizedAt ? pdfDateTime(n.finalizedAt) : undefined,
             replacementForLabel: n.replacesSoapNoteId
-              ? `SOAP note dated ${formatClinicalDate(
+              ? soapNoteDated(
                   soapNotes.find((source) => source.id === n.replacesSoapNoteId)
                     ?.createdAt,
-                  recordsTimeZone,
-                  "unknown date",
-                )}`
+                )
               : undefined,
             addenda: n.addenda.map((addendum) => ({
               content: soapSectionText(addendum.content),
               authorName: addendum.authorName,
-              createdAt: formatClinicalDateTime(
-                addendum.createdAt,
-                recordsTimeZone,
-              ),
+              createdAt: pdfDateTime(addendum.createdAt),
             })),
           })),
         chartNotes: chartNotesResult
           ? {
               items: chartNotesResult.items.map((note) => ({
-                date: formatClinicalDateTime(note.createdAt, recordsTimeZone),
+                date: pdfDateTime(note.createdAt),
                 type: PATIENT_NOTE_TYPES.includes(
                   note.noteType as (typeof PATIENT_NOTE_TYPES)[number],
                 )
-                  ? PATIENT_NOTE_LABELS[
-                      note.noteType as keyof typeof PATIENT_NOTE_LABELS
-                    ]
-                  : "Chart note",
-                authorName: note.authorName ?? "Unknown clinician",
+                  ? tPdf(`patients.notes.types.${note.noteType as keyof typeof PATIENT_NOTE_LABELS}`)
+                  : tPdf("pdf.summary.chartNote"),
+                authorName: note.authorName ?? unknownClinician,
                 content: note.content,
               })),
               hasMore: Boolean(chartNotesResult.nextCursor),
@@ -847,16 +874,15 @@ export default function PatientDetailPage() {
                 Boolean(allergy.correctedAt),
             )
             .map((allergy) => ({
-              recordLabel: `Allergy “${allergy.allergen}” recorded ${formatClinicalDate(
-                allergy.notedAt,
-                recordsTimeZone,
-                "Unknown date",
-              )}`,
-              reason: allergy.correctionReason ?? "Reason unavailable",
-              correctedByName: allergy.correctedByName ?? "Unknown clinician",
+              recordLabel: tPdf("pdf.summary.allergyRecorded", {
+                allergen: allergy.allergen,
+                date: pdfDate(allergy.notedAt, unknownDate),
+              }),
+              reason: allergy.correctionReason ?? reasonUnavailable,
+              correctedByName: allergy.correctedByName ?? unknownClinician,
               correctedAt: allergy.correctedAt
-                ? formatClinicalDateTime(allergy.correctedAt, recordsTimeZone)
-                : "Unknown time",
+                ? pdfDateTime(allergy.correctedAt)
+                : unknownTime,
             })),
           ...soapNotes
             .filter(
@@ -864,16 +890,14 @@ export default function PatientDetailPage() {
                 note.status === "finalized" && Boolean(note.correctionId),
             )
             .map((note) => ({
-              recordLabel: `SOAP note dated ${formatClinicalDate(
-                note.createdAt,
-                recordsTimeZone,
-                "Unknown date",
-              )}`,
-              reason: note.correctionReason ?? "Reason unavailable",
-              correctedByName: note.correctedByName ?? "Unknown clinician",
+              recordLabel: tPdf("pdf.summary.soapNoteDated", {
+                date: pdfDate(note.createdAt, unknownDate),
+              }),
+              reason: note.correctionReason ?? reasonUnavailable,
+              correctedByName: note.correctedByName ?? unknownClinician,
               correctedAt: note.correctedAt
-                ? formatClinicalDateTime(note.correctedAt, recordsTimeZone)
-                : "Unknown time",
+                ? pdfDateTime(note.correctedAt)
+                : unknownTime,
               replacementLabel: note.replacementSoapNoteId
                 ? (() => {
                     const replacement = soapNotes.find(
@@ -881,12 +905,14 @@ export default function PatientDetailPage() {
                         candidate.id === note.replacementSoapNoteId,
                     );
                     return replacement
-                      ? `SOAP note dated ${formatClinicalDate(
-                          replacement.createdAt,
-                          recordsTimeZone,
-                          "unknown date",
-                        )}, finalized by ${replacement.finalizerName ?? "Unknown clinician"}`
-                      : "Replacement SOAP retained in chart";
+                      ? tPdf("pdf.summary.replacementFinalizedBy", {
+                          date: pdfDate(
+                            replacement.createdAt,
+                            tPdf("pdf.summary.unknownDateInline"),
+                          ),
+                          name: replacement.finalizerName ?? unknownClinician,
+                        })
+                      : tPdf("pdf.summary.replacementRetained");
                   })()
                 : undefined,
             })),
@@ -897,15 +923,15 @@ export default function PatientDetailPage() {
           frequency: rx.frequency ?? "",
           status: rx.effectiveStatus ?? "active",
         })),
-        generatedDate: formatClinicalDate(new Date(), recordsTimeZone),
+        generatedDate: pdfDate(new Date(), unknown),
       }).save(`${patientData.name.replace(/\s+/g, "_")}_medical_summary.pdf`);
 
-      toast.success("Medical summary downloaded");
+      toast.success(t("chart.summaryDownloaded"));
     } catch (err) {
       toast.error(
         err instanceof Error
           ? err.message
-          : "Failed to generate medical summary",
+          : t("chart.summaryFailed"),
       );
     }
   }
@@ -926,7 +952,7 @@ export default function PatientDetailPage() {
         className="mb-4"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Patients
+        {t("form.back")}
       </Button>
 
       <RecentClinicalItems
@@ -940,19 +966,22 @@ export default function PatientDetailPage() {
             <GitMerge className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
               <p className="font-semibold">
-                Opened the canonical chart for a merged patient identity
+                {t("chart.mergedTitle")}
               </p>
               <p className="mt-1">
-                {patient.mergeMetadata.sourceSnapshot.name} was merged into this
-                chart by {patient.mergeMetadata.performedByName} on{" "}
-                {formatClinicalDateTime(
-                  patient.mergeMetadata.createdAt,
-                  recordsTimeZone,
-                )}
-                .
+                {t("chart.mergedBody", {
+                  name: patient.mergeMetadata.sourceSnapshot.name,
+                  by: patient.mergeMetadata.performedByName,
+                  date: formatClinicalDateTime(
+                    patient.mergeMetadata.createdAt,
+                    recordsTimeZone,
+                    undefined,
+                    locale,
+                  ),
+                })}
               </p>
               <p className="mt-1 text-blue-800 dark:text-blue-200">
-                Reason: {patient.mergeMetadata.reason}
+                {t("chart.mergedReason", { reason: patient.mergeMetadata.reason })}
               </p>
             </div>
           </div>
@@ -983,7 +1012,7 @@ export default function PatientDetailPage() {
                       disabled={uploadingPhoto}
                       onClick={() => fileInputRef.current?.click()}
                       className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 disabled:cursor-wait"
-                      title="Upload photo"
+                      title={t("chart.uploadPhoto")}
                     >
                       {uploadingPhoto ? (
                         <Loader2 className="h-5 w-5 animate-spin text-white" />
@@ -1008,7 +1037,7 @@ export default function PatientDetailPage() {
                   onClick={() => void uploadPatientPhoto()}
                   className="whitespace-nowrap text-xs font-medium text-destructive underline underline-offset-2 disabled:opacity-50"
                 >
-                  Try photo again
+                  {t("chart.retryPhoto")}
                 </button>
               ) : null}
             </div>
@@ -1022,23 +1051,21 @@ export default function PatientDetailPage() {
                     "inline-block h-2.5 w-2.5 rounded-full",
                     statusColor,
                   )}
-                  title={patient.status ?? "active"}
+                  title={t(`status.${patient.status ?? "active"}`)}
                 />
               </div>
               <p className="text-sm text-muted-foreground">
-                {patient.species &&
-                  patient.species.charAt(0).toUpperCase() +
-                    patient.species.slice(1)}
+                {speciesLabel(patient.species)}
                 {patient.breed ? ` \u00B7 ${patient.breed}` : ""}
                 {" \u00B7 "}
-                {calculateAge(patient.dob)}
+                {calculateAge(patient.dob, t)}
                 {" \u00B7 "}
-                {formatSex(patient.sex)}
+                {formatSex(patient.sex, t)}
               </p>
               <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                {patient.color && <span>Color: {patient.color}</span>}
+                {patient.color && <span>{t("chart.color", { value: patient.color })}</span>}
                 {patient.microchipNumber && (
-                  <span>Microchip: {patient.microchipNumber}</span>
+                  <span>{t("chart.microchip", { value: patient.microchipNumber })}</span>
                 )}
               </div>
               {patient.clientFirstName && (
@@ -1060,9 +1087,9 @@ export default function PatientDetailPage() {
                 <div className="flex flex-wrap items-center justify-end gap-2">
                   {fieldVisitLocations.length > 1 ? (
                     <label>
-                      <span className="sr-only">Field visit location</span>
+                      <span className="sr-only">{t("chart.fieldVisitLocation")}</span>
                       <select
-                        aria-label="Field visit location"
+                        aria-label={t("chart.fieldVisitLocation")}
                         value={selectedFieldVisitLocationId}
                         disabled={
                           fieldVisitLocationsUnavailable ||
@@ -1073,7 +1100,7 @@ export default function PatientDetailPage() {
                         }
                         className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                       >
-                        <option value="">Select location...</option>
+                        <option value="">{t("chart.selectLocation")}</option>
                         {fieldVisitLocations.map((location) => (
                           <option key={location.id} value={location.id}>
                             {location.name}
@@ -1103,8 +1130,8 @@ export default function PatientDetailPage() {
                       <Stethoscope className="mr-2 h-4 w-4" />
                     )}
                     {startFieldVisit.isPending
-                      ? "Starting visit..."
-                      : "Start field visit"}
+                      ? t("chart.startingVisit")
+                      : t("chart.startFieldVisit")}
                   </Button>
                 </div>
                 {fieldVisitLocationsQuery.error ||
@@ -1113,12 +1140,12 @@ export default function PatientDetailPage() {
                   fieldVisitLocations.length === 0) ? (
                   <p className="max-w-xs text-right text-xs text-destructive">
                     {fieldVisitLocationsQuery.error?.message ??
-                      "Add an active location before starting a field visit."}
+                      t("chart.needLocation")}
                   </p>
                 ) : fieldVisitLocations.length > 1 &&
                   !selectedFieldVisitLocationId ? (
                   <p className="text-xs text-muted-foreground">
-                    Choose where this field visit is managed.
+                    {t("chart.chooseLocation")}
                   </p>
                 ) : null}
               </div>
@@ -1128,20 +1155,20 @@ export default function PatientDetailPage() {
               session?.user?.role === "veterinarian") ? (
               <Button size="sm" variant="outline" asChild>
                 <a href={`/offline/index.html#patientId=${patient.id}`}>
-                  Make available offline
+                  {t("chart.offline")}
                 </a>
               </Button>
             ) : null}
             {canCorrectClinicalRecords ? (
               <Button size="sm" asChild>
-                <a href="#patient-note-content">Add chart note</a>
+                <a href="#patient-note-content">{t("chart.addNote")}</a>
               </Button>
             ) : null}
             {session?.user?.role === "admin" ||
             session?.user?.role === "front_desk" ? (
               <Button size="sm" variant="outline" asChild>
                 <Link href={`/billing/new?patientId=${patient.id}`}>
-                  New invoice
+                  {t("chart.newInvoice")}
                 </Link>
               </Button>
             ) : null}
@@ -1153,7 +1180,7 @@ export default function PatientDetailPage() {
             )}
             <Button variant="outline" size="sm" onClick={handleDownloadSummary}>
               <FileDown className="mr-2 h-4 w-4" />
-              Download Summary
+              {t("chart.downloadSummary")}
             </Button>
             {canManagePatientDetail && (
               <Button
@@ -1161,7 +1188,7 @@ export default function PatientDetailPage() {
                 size="sm"
                 onClick={() => router.push(`/patients/${patient.id}/edit`)}
               >
-                Edit
+                {t("chart.edit")}
               </Button>
             )}
           </div>
@@ -1172,13 +1199,13 @@ export default function PatientDetailPage() {
         <section className="mt-4 rounded-lg border border-primary/20 bg-primary/5 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h3 className="text-sm font-semibold">Patient snapshot</h3>
+              <h3 className="text-sm font-semibold">{t("chart.snapshot.title")}</h3>
               <p className="text-xs text-muted-foreground">
-                The field essentials before treatment begins.
+                {t("chart.snapshot.intro")}
               </p>
             </div>
             <span className="text-xs font-medium text-muted-foreground">
-              Latest weight: {latestWeight}
+              {t("latestWeight", { weight: latestWeight })}
             </span>
           </div>
           {problemsQuery.isLoading ||
@@ -1188,7 +1215,7 @@ export default function PatientDetailPage() {
           vaccinationsQuery.isLoading ? (
             <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Loading clinical snapshot...
+              {t("chart.snapshot.loading")}
             </div>
           ) : problemsQuery.error ||
             prescriptionsQuery.error ||
@@ -1201,69 +1228,68 @@ export default function PatientDetailPage() {
             !snapshotVitalsQuery.data ||
             !vaccinationsQuery.data ? (
             <p className="mt-3 text-sm text-destructive">
-              The complete clinical snapshot could not be verified. Open the
-              chart sections below before relying on history.
+              {t("chart.snapshot.unverified")}
             </p>
           ) : (
             <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-6">
               <div>
                 <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Allergies
+                  {t("chart.snapshot.allergies")}
                 </dt>
                 <dd className="mt-1">
                   {patient.allergies.length
                     ? patient.allergies
                         .map((allergy) => allergy.allergen)
                         .join(", ")
-                    : "None recorded"}
+                    : t("chart.noneRecorded")}
                 </dd>
               </div>
               <div>
                 <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Active problems
+                  {t("chart.snapshot.problems")}
                 </dt>
                 <dd className="mt-1">
                   {activeProblems.length
                     ? activeProblems
                         .map((problem) => problem.description)
                         .join(", ")
-                    : "None recorded"}
+                    : t("chart.noneRecorded")}
                 </dd>
               </div>
               <div>
                 <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Active medications
+                  {t("chart.snapshot.medications")}
                 </dt>
                 <dd className="mt-1">
                   {activePrescriptions.length
                     ? activePrescriptions
                         .map((prescription) => prescription.medicationName)
                         .join(", ")
-                    : "None recorded"}
+                    : t("chart.noneRecorded")}
                 </dd>
               </div>
               <div>
                 <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Last visit
+                  {t("chart.snapshot.lastVisit")}
                 </dt>
                 <dd className="mt-1">
                   {latestVisit
-                    ? `${formatClinicalDate(latestVisit.startTime, recordsTimeZone)} · ${latestVisit.origin === "field" ? "Field visit" : (latestVisit.typeName ?? "Appointment")}`
-                    : "No prior visits"}
+                    ? `${formatClinicalDate(latestVisit.startTime, recordsTimeZone, undefined, locale)} · ${latestVisit.origin === "field" ? t("chart.snapshot.fieldVisit") : (latestVisit.typeName ?? t("chart.snapshot.appointment"))}`
+                    : t("chart.snapshot.noVisits")}
                 </dd>
               </div>
               <div>
                 <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Latest vitals
+                  {t("chart.snapshot.vitals")}
                 </dt>
                 <dd className="mt-1">{latestVitalsSummary}</dd>
               </div>
               <div>
                 <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  BCS / vaccines
+                  {t("chart.snapshot.bcsVaccines")}
                 </dt>
                 <dd className="mt-1">
-                  BCS{" "}
+                  {t("chart.snapshot.bcs")}{" "}
                   {latestSnapshotBcs?.bodyConditionScore !== null &&
                   latestSnapshotBcs?.bodyConditionScore !== undefined ? (
                     <>
@@ -1271,7 +1297,7 @@ export default function PatientDetailPage() {
                       {latestSnapshotBcs.bodyConditionScale}
                     </>
                   ) : (
-                    "not recorded"
+                    t("chart.snapshot.bcsNotRecorded")
                   )}
                   {" · "}
                   {vaccinationSummary}
@@ -1288,7 +1314,7 @@ export default function PatientDetailPage() {
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600 dark:text-red-400" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-red-800 dark:text-red-300">
-              Allergies
+              {t("chart.snapshot.allergies")}
             </p>
             <div className="mt-2 grid gap-2 md:grid-cols-2">
               {patient.allergies.map((allergy) => (
@@ -1306,18 +1332,18 @@ export default function PatientDetailPage() {
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-semibold">{allergy.allergen}</span>
                     <span className="text-xs font-semibold uppercase tracking-wide">
-                      {allergy.severity}
+                      {t(`allergy.severity.${allergy.severity}`)}
                     </span>
                   </div>
                   <p className="mt-1 text-xs">
-                    Reaction: {allergy.reaction || "Not documented"}
+                    {t("allergy.reaction", { reaction: allergy.reaction || t("allergy.notDocumented") })}
                   </p>
                   <ClinicalCorrectionControl
                     correction={null}
                     canCorrect={canCorrectClinicalRecords}
                     isPending={correctAllergy.isPending}
-                    triggerLabel="Mark allergy entered in error"
-                    description="The original allergy and this permanent reason remain in staff chart history. The allergy will stop feeding current alerts, prescription safety, AI context, PDF summaries, and the client portal."
+                    triggerLabel={t("allergy.markError")}
+                    description={t("allergy.markErrorHelp")}
                     timeZone={recordsTimeZone}
                     onCorrect={(reason) =>
                       correctAllergy.mutateAsync({
@@ -1338,7 +1364,7 @@ export default function PatientDetailPage() {
                   className="inline-flex items-center gap-1 rounded-full border border-dashed border-red-300 px-2.5 py-0.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950"
                 >
                   <Plus className="h-3 w-3" />
-                  Add
+                  {t("allergy.add")}
                 </button>
               ) : null}
             </div>
@@ -1375,14 +1401,14 @@ export default function PatientDetailPage() {
             />
           ) : (
             <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-              <span>No known allergies recorded.</span>
+              <span>{t("allergy.none")}</span>
               <button
                 type="button"
                 onClick={() => setShowAllergyForm(true)}
                 className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
               >
                 <Plus className="h-3.5 w-3.5" />
-                Add allergy
+                {t("allergy.addAllergy")}
               </button>
             </div>
           )}
@@ -1395,7 +1421,7 @@ export default function PatientDetailPage() {
       ) ? (
         <details className="mt-3 rounded-lg border border-border bg-card px-4 py-3">
           <summary className="cursor-pointer text-sm font-medium">
-            Allergy correction history
+            {t("allergy.history")}
           </summary>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             {patient.allergyHistory
@@ -1411,11 +1437,11 @@ export default function PatientDetailPage() {
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-semibold">{allergy.allergen}</span>
                     <span className="text-xs uppercase text-muted-foreground">
-                      {allergy.severity}
+                      {t(`allergy.severity.${allergy.severity}`)}
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Reaction: {allergy.reaction || "Not documented"}
+                    {t("allergy.reaction", { reaction: allergy.reaction || t("allergy.notDocumented") })}
                   </p>
                   {allergy.correctionId &&
                   allergy.correctionReason &&
@@ -1434,9 +1460,7 @@ export default function PatientDetailPage() {
                     />
                   ) : (
                     <div className="mt-3 rounded-md border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-                      Legacy removal retained. This predates permanent allergy
-                      correction attribution, so no reason or clinician is
-                      available.
+                      {t("allergy.legacy")}
                     </div>
                   )}
                 </div>
@@ -1449,7 +1473,7 @@ export default function PatientDetailPage() {
       <div className="mt-6 overflow-x-auto border-b border-border">
         <div
           role="tablist"
-          aria-label="Patient chart sections"
+          aria-label={t("chart.sections")}
           className="flex min-w-max gap-0"
         >
           {tabs.map((tab) => (
@@ -1468,7 +1492,7 @@ export default function PatientDetailPage() {
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              {tab.label}
+              {t(`chart.tabs.${tab.id}`)}
               {activeTab === tab.id && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
               )}
@@ -1487,68 +1511,65 @@ export default function PatientDetailPage() {
         {activeTab === "overview" && (
           <div className="rounded-lg border border-border bg-card p-6">
             <h3 className="font-heading text-base font-semibold mb-4">
-              Basic Information
+              {t("chart.basic.title")}
             </h3>
             <dl className="grid gap-4 sm:grid-cols-2">
               <div>
-                <dt className="text-sm text-muted-foreground">Name</dt>
+                <dt className="text-sm text-muted-foreground">{t("chart.basic.name")}</dt>
                 <dd className="mt-0.5 text-sm font-medium">{patient.name}</dd>
               </div>
               <div>
-                <dt className="text-sm text-muted-foreground">Species</dt>
+                <dt className="text-sm text-muted-foreground">{t("chart.basic.species")}</dt>
                 <dd className="mt-0.5 text-sm font-medium">
-                  {patient.species
-                    ? patient.species.charAt(0).toUpperCase() +
-                      patient.species.slice(1)
-                    : "\u2014"}
+                  {speciesLabel(patient.species) || "\u2014"}
                 </dd>
               </div>
               <div>
-                <dt className="text-sm text-muted-foreground">Breed</dt>
+                <dt className="text-sm text-muted-foreground">{t("chart.basic.breed")}</dt>
                 <dd className="mt-0.5 text-sm font-medium">
                   {patient.breed || "\u2014"}
                 </dd>
               </div>
               <div>
-                <dt className="text-sm text-muted-foreground">Sex</dt>
+                <dt className="text-sm text-muted-foreground">{t("chart.basic.sex")}</dt>
                 <dd className="mt-0.5 text-sm font-medium">
-                  {formatSex(patient.sex)}
+                  {formatSex(patient.sex, t)}
                 </dd>
               </div>
               <div>
-                <dt className="text-sm text-muted-foreground">Date of Birth</dt>
+                <dt className="text-sm text-muted-foreground">{t("chart.basic.dob")}</dt>
                 <dd className="mt-0.5 text-sm font-medium">
-                  {formatClinicalDate(patient.dob, recordsTimeZone, "\u2014")}
+                  {formatClinicalDate(patient.dob, recordsTimeZone, "\u2014", locale)}
                 </dd>
               </div>
               <div>
-                <dt className="text-sm text-muted-foreground">Age</dt>
+                <dt className="text-sm text-muted-foreground">{t("chart.basic.age")}</dt>
                 <dd className="mt-0.5 text-sm font-medium">
-                  {calculateAge(patient.dob)}
+                  {calculateAge(patient.dob, t)}
                 </dd>
               </div>
               <div>
-                <dt className="text-sm text-muted-foreground">Color</dt>
+                <dt className="text-sm text-muted-foreground">{t("chart.basic.color")}</dt>
                 <dd className="mt-0.5 text-sm font-medium">
                   {patient.color || "\u2014"}
                 </dd>
               </div>
               <div>
                 <dt className="text-sm text-muted-foreground">
-                  Microchip Number
+                  {t("chart.basic.microchip")}
                 </dt>
                 <dd className="mt-0.5 text-sm font-medium">
                   {patient.microchipNumber || "\u2014"}
                 </dd>
               </div>
               <div>
-                <dt className="text-sm text-muted-foreground">Status</dt>
+                <dt className="text-sm text-muted-foreground">{t("chart.basic.status")}</dt>
                 <dd className="mt-0.5 text-sm font-medium capitalize">
-                  {patient.status ?? "active"}
+                  {t(`status.${patient.status ?? "active"}`)}
                 </dd>
               </div>
               <div>
-                <dt className="text-sm text-muted-foreground">Owner</dt>
+                <dt className="text-sm text-muted-foreground">{t("chart.basic.owner")}</dt>
                 <dd className="mt-0.5 text-sm font-medium">
                   {patient.clientFirstName
                     ? `${patient.clientFirstName} ${patient.clientLastName}`
@@ -1562,8 +1583,7 @@ export default function PatientDetailPage() {
         {activeTab === "weight" && (
           <div className="space-y-6">
             <p className="text-sm text-muted-foreground">
-              Includes weights recorded here and in vitals. Review a vitals
-              entry in the Vitals tab to correct its original clinical record.
+              {t("chart.weight.intro")}
             </p>
             {canManagePatientDetail && (
               <form
@@ -1573,8 +1593,9 @@ export default function PatientDetailPage() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                   <div className="w-full sm:max-w-xs">
                     <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                      Weight (
-                      {chartMeasurementSystem === "us_customary" ? "lb" : "kg"})
+                      {t("chart.weight.label", {
+                        unit: chartMeasurementSystem === "us_customary" ? "lb" : "kg",
+                      })}
                     </label>
                     <input
                       type="number"
@@ -1606,8 +1627,9 @@ export default function PatientDetailPage() {
                     />
                   </div>
                   <label className="block text-xs font-medium text-muted-foreground">
-                    Measured at (
-                    {recordsSettingsTimeZone ?? "loading clinic timezone…"})
+                    {t("chart.weight.measuredAt", {
+                      timeZone: recordsSettingsTimeZone ?? t("chart.weight.loadingTimeZone"),
+                    })}
                     <input
                       type="datetime-local"
                       value={weightMeasuredAt}
@@ -1623,8 +1645,7 @@ export default function PatientDetailPage() {
                       className="mt-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
                     />
                     <span className="mt-1 block font-normal">
-                      Leave blank to record now; set a date for historical
-                      records.
+                      {t("chart.weight.blankHelp")}
                     </span>
                   </label>
                   <Button type="submit" disabled={!canSubmitWeight}>
@@ -1633,7 +1654,7 @@ export default function PatientDetailPage() {
                     ) : (
                       <Plus className="mr-2 h-4 w-4" />
                     )}
-                    {addWeight.isPending ? "Saving..." : "Record weight"}
+                    {addWeight.isPending ? t("chart.weight.saving") : t("chart.weight.record")}
                   </Button>
                 </div>
               </form>
@@ -1649,21 +1670,19 @@ export default function PatientDetailPage() {
                     <thead>
                       <tr className="border-b border-border bg-muted/50">
                         <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                          Date
+                          {t("chart.weight.date")}
                         </th>
                         <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                          Weight (
-                          {chartMeasurementSystem === "us_customary"
-                            ? "lb"
-                            : "kg"}
-                          )
+                          {t("chart.weight.label", {
+                            unit: chartMeasurementSystem === "us_customary" ? "lb" : "kg",
+                          })}
                         </th>
                         <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                          Recorded By
+                          {t("chart.weight.recordedBy")}
                         </th>
                         {canCorrectClinicalRecords ? (
                           <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                            Correction
+                            {t("chart.weight.correction")}
                           </th>
                         ) : null}
                       </tr>
@@ -1679,6 +1698,7 @@ export default function PatientDetailPage() {
                               weight.recordedAt,
                               recordsTimeZone,
                               "\u2014",
+                              locale,
                             )}
                           </td>
                           <td className="px-4 py-3 font-medium">
@@ -1698,7 +1718,7 @@ export default function PatientDetailPage() {
                                   size="sm"
                                   onClick={() => setActiveTab("vitals")}
                                 >
-                                  Review vitals
+                                  {t("chart.weight.reviewVitals")}
                                 </Button>
                               ) : (
                                 <WeightCorrectionDialog
@@ -1720,7 +1740,7 @@ export default function PatientDetailPage() {
                 </div>
               </>
             ) : (
-              <EmptyState icon={Activity} title="No weight records yet" />
+              <EmptyState icon={Activity} title={t("chart.weight.empty")} />
             )}
           </div>
         )}
@@ -1760,14 +1780,14 @@ export default function PatientDetailPage() {
             {process.env.NEXT_PUBLIC_LAB_REPORT_INTAKE_ENABLED === "true" && session?.user.role !== "front_desk" ? (
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-medium">Lab report PDFs</h3>
+                  <h3 className="text-sm font-medium">{t("chart.labReports.title")}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Original reports and clinical review status.
+                    {t("chart.labReports.intro")}
                   </p>
                 </div>
                 <Button asChild variant="outline" size="sm">
                   <Link href={`/lab-reports?patientId=${patient.id}`}>
-                    View lab reports
+                    {t("chart.labReports.view")}
                   </Link>
                 </Button>
               </div>
@@ -1814,6 +1834,8 @@ function VitalsTab({
   canRecordVitals: boolean;
   canCorrectClinicalRecords: boolean;
 }) {
+  const t = useTranslations("patients.vitals");
+  const locale = useLocale();
   const utils = trpc.useUtils();
   const {
     data: vitals,
@@ -1826,12 +1848,13 @@ function VitalsTab({
       buildVitalTrend(
         (vitals ?? []).filter((vital) => !vital.correctionId),
         timeZone,
+        locale,
       ),
-    [vitals, timeZone],
+    [vitals, timeZone, locale],
   );
   const record = trpc.vitals.record.useMutation({
     onSuccess: () => {
-      toast.success("Vitals recorded");
+      toast.success(t("recorded"));
       void utils.patients.getById.invalidate();
       utils.vitals.listByPatient.invalidate({ patientId });
       setForm(initialVitalsForm());
@@ -1840,7 +1863,7 @@ function VitalsTab({
   });
   const correctVital = trpc.vitals.markEnteredInError.useMutation({
     onSuccess: async () => {
-      toast.success("Vital signs retained and marked entered in error");
+      toast.success(t("corrected"));
       await utils.patients.getById.invalidate();
       await utils.vitals.listByPatient.invalidate({ patientId });
     },
@@ -1917,7 +1940,7 @@ function VitalsTab({
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                Temp ({measurementSystem === "us_customary" ? "F" : "C"})
+                {t("temp", { unit: measurementSystem === "us_customary" ? "F" : "C" })}
               </label>
               <input
                 type="number"
@@ -1946,7 +1969,7 @@ function VitalsTab({
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                HR (bpm)
+                {t("hr")}
               </label>
               <input
                 type="number"
@@ -1963,7 +1986,7 @@ function VitalsTab({
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                RR (bpm)
+                {t("rr")}
               </label>
               <input
                 type="number"
@@ -1982,7 +2005,7 @@ function VitalsTab({
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                Weight ({measurementSystem === "us_customary" ? "lb" : "kg"})
+                {t("weight", { unit: measurementSystem === "us_customary" ? "lb" : "kg" })}
               </label>
               <input
                 type="number"
@@ -2010,7 +2033,7 @@ function VitalsTab({
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                BCS (1-{bodyConditionScale})
+                {t("bcs", { scale: bodyConditionScale })}
               </label>
               <input
                 type="number"
@@ -2030,7 +2053,7 @@ function VitalsTab({
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                Pain (0-10)
+                {t("pain")}
               </label>
               <input
                 type="number"
@@ -2047,7 +2070,7 @@ function VitalsTab({
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                CRT (sec)
+                {t("crt")}
               </label>
               <input
                 type="number"
@@ -2066,14 +2089,14 @@ function VitalsTab({
             </div>
             <div className="col-span-2">
               <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                Mucous Membrane
+                {t("mucous")}
               </label>
               <input
                 type="text"
                 value={form.mucousMembrane}
                 maxLength={VITALS_MUCOUS_MEMBRANE_MAX_LENGTH}
                 onChange={set("mucousMembrane")}
-                placeholder="e.g. Pink and moist"
+                placeholder={t("mucousPlaceholder")}
                 className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
@@ -2083,12 +2106,12 @@ function VitalsTab({
             value={form.notes ?? ""}
             maxLength={VITALS_NOTES_MAX_LENGTH}
             onChange={set("notes")}
-            placeholder="Notes (optional)"
+            placeholder={t("notesPlaceholder")}
             className="mt-3 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary/30"
           />
           <div className="mt-3 flex justify-end">
             <Button type="submit" disabled={!canSubmitVitals}>
-              {record.isPending ? "Saving..." : "Record vitals"}
+              {record.isPending ? t("saving") : t("record")}
             </Button>
           </div>
         </form>
@@ -2096,14 +2119,14 @@ function VitalsTab({
 
       {error ? (
         <PatientDetailErrorPanel
-          message={`Unable to load vitals. ${error.message}`}
+          message={t("loadFailedMessage", { message: error.message })}
         />
       ) : vitalsMissing ? (
-        <PatientDetailErrorPanel message="Unable to load vitals. Please retry." />
+        <PatientDetailErrorPanel message={t("loadFailed")} />
       ) : isLoading ? (
-        <PatientDetailLoadingPanel label="Loading vitals..." />
+        <PatientDetailLoadingPanel label={t("loading")} />
       ) : !vitals || vitals.length === 0 ? (
-        <EmptyState icon={Activity} title="No vitals recorded yet" />
+        <EmptyState icon={Activity} title={t("empty")} />
       ) : (
         <>
           {measurementSystem === "metric" && bodyConditionScale === 9 ? (
@@ -2113,14 +2136,14 @@ function VitalsTab({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/50 text-left text-muted-foreground">
-                  <th className="px-3 py-2 font-medium">Date</th>
-                  <th className="px-3 py-2 font-medium">Temp</th>
-                  <th className="px-3 py-2 font-medium">HR</th>
-                  <th className="px-3 py-2 font-medium">RR</th>
-                  <th className="px-3 py-2 font-medium">Weight</th>
-                  <th className="px-3 py-2 font-medium">BCS</th>
-                  <th className="px-3 py-2 font-medium">Pain</th>
-                  <th className="px-3 py-2 font-medium">Chart status</th>
+                  <th className="px-3 py-2 font-medium">{t("columns.date")}</th>
+                  <th className="px-3 py-2 font-medium">{t("columns.temp")}</th>
+                  <th className="px-3 py-2 font-medium">{t("columns.hr")}</th>
+                  <th className="px-3 py-2 font-medium">{t("columns.rr")}</th>
+                  <th className="px-3 py-2 font-medium">{t("columns.weight")}</th>
+                  <th className="px-3 py-2 font-medium">{t("columns.bcs")}</th>
+                  <th className="px-3 py-2 font-medium">{t("columns.pain")}</th>
+                  <th className="px-3 py-2 font-medium">{t("columns.status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -2133,7 +2156,7 @@ function VitalsTab({
                     )}
                   >
                     <td className="px-3 py-2">
-                      {formatClinicalDateTime(v.recordedAt, timeZone, "—")}
+                      {formatClinicalDateTime(v.recordedAt, timeZone, "—", locale)}
                     </td>
                     <td className="px-3 py-2">
                       {formatClinicalTemperature(
@@ -2220,6 +2243,9 @@ function VaccinationsTab({
   canPrepareCertificate: boolean;
   canEditCertificate: boolean;
 }) {
+  const documentLanguage = useDocumentLanguage();
+  const t = useTranslations("patients.vaccines");
+  const locale = useLocale();
   const utils = trpc.useUtils();
   const [editor, setEditor] = useState<VaccinationCertificateEditor | null>(
     null,
@@ -2240,14 +2266,14 @@ function VaccinationsTab({
       onSuccess: async () => {
         setEditor(null);
         await utils.records.listVaccinations.invalidate({ patientId });
-        toast.success("Certificate details updated with an audit entry");
+        toast.success(t("detailsUpdated"));
       },
       onError: (err) => toast.error(err.message),
     });
   const correctVaccination =
     trpc.records.markVaccinationEnteredInError.useMutation({
       onSuccess: async () => {
-        toast.success("Vaccination retained and marked entered in error");
+        toast.success(t("corrected"));
         await utils.records.listVaccinations.invalidate({ patientId });
       },
       onError: (err) => toast.error(err.message),
@@ -2266,30 +2292,36 @@ function VaccinationsTab({
       });
       if (!certificate.ready) {
         toast.error(
-          `Complete these details before issuing the certificate: ${certificate.missingFields.join(
-            ", ",
-          )}.`,
+          t("missingFields", { fields: certificate.missingFields.join(", ") }),
         );
         return;
       }
       const pdf = await import("@/lib/pdf");
+      const pdfLanguage = documentLanguage(certificate.owner.preferredLanguage);
+      // The rabies certificate keeps English dates and wording until its Spanish text is reviewed (T067).
+      const pdfLocale =
+        kind === "vaccination_history" && pdfLanguage === "es" ? "es" : "en-US";
+      const tPdf = pdf.pdfText(kind === "vaccination_history" ? pdfLanguage : "en");
       const generatedDate = formatClinicalDate(
         certificate.generatedAt,
         certificate.practice.timezone,
-        "Unknown date",
+        tPdf("pdf.common.unknownDate"),
+        pdfLocale,
       );
       const baseData = {
+        language: pdfLanguage,
         certificateId: certificate.certificateId,
         generatedDate,
         practice: certificate.practice,
         owner: certificate.owner,
         patient: {
           ...certificate.patient,
-          sex: formatSex(certificate.patient.sex),
+          sex: formatSex(certificate.patient.sex, certificateT),
           dob: formatClinicalDate(
             certificate.patient.dob,
             certificate.practice.timezone,
             undefined,
+            pdfLocale,
           ),
         },
       };
@@ -2306,12 +2338,14 @@ function VaccinationsTab({
               administeredAt: formatClinicalDate(
                 vaccination.administeredAt,
                 certificate.practice.timezone,
-                "Unknown",
+                tPdf("pdf.common.unknown"),
+                pdfLocale,
               ),
               nextDueDate: formatClinicalDate(
                 vaccination.nextDueDate,
                 certificate.practice.timezone,
                 undefined,
+                pdfLocale,
               ),
             })),
           })
@@ -2349,10 +2383,10 @@ function VaccinationsTab({
           })
           .save(`${safePatientName}_rabies_vaccination_certificate.pdf`);
       }
-      toast.success("Certificate downloaded");
+      toast.success(t("downloaded"));
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Unable to create certificate",
+        err instanceof Error ? err.message : t("createFailed"),
       );
     }
   }
@@ -2360,23 +2394,23 @@ function VaccinationsTab({
   if (error) {
     return (
       <PatientDetailErrorPanel
-        message={`Unable to load vaccination records. ${error.message}`}
+        message={t("loadFailedMessage", { message: error.message })}
       />
     );
   }
 
   if (vaccinationsMissing) {
     return (
-      <PatientDetailErrorPanel message="Unable to load vaccination records. Please retry." />
+      <PatientDetailErrorPanel message={t("loadFailed")} />
     );
   }
 
   if (isLoading) {
-    return <PatientDetailLoadingPanel label="Loading vaccinations..." />;
+    return <PatientDetailLoadingPanel label={t("loading")} />;
   }
 
   if (!vaccinations || vaccinations.length === 0) {
-    return <EmptyState icon={Shield} title="No vaccination records yet" />;
+    return <EmptyState icon={Shield} title={t("empty")} />;
   }
 
   return (
@@ -2384,10 +2418,9 @@ function VaccinationsTab({
       {canPrepareCertificate ? (
         <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-medium">Vaccination certificates</p>
+            <p className="font-medium">{t("certificates")}</p>
             <p className="text-xs text-muted-foreground">
-              Every prepared certificate receives a unique ID and an audit
-              entry. Rabies certificates must pass a required-field check.
+              {t("certificatesHelp")}
             </p>
           </div>
           <Button
@@ -2400,7 +2433,7 @@ function VaccinationsTab({
             ) : (
               <FileDown className="mr-2 h-4 w-4" />
             )}
-            Download vaccination certificate
+            {t("download")}
           </Button>
         </div>
       ) : null}
@@ -2432,10 +2465,9 @@ function VaccinationsTab({
         >
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <p className="font-medium">Edit certificate details</p>
+              <p className="font-medium">{t("editTitle")}</p>
               <p className="text-xs text-muted-foreground">
-                Clinical history is preserved. A reason is recorded with every
-                change.
+                {t("editHelp")}
               </p>
             </div>
             <Button
@@ -2443,24 +2475,24 @@ function VaccinationsTab({
               variant="ghost"
               onClick={() => setEditor(null)}
             >
-              Cancel
+              {t("cancel")}
             </Button>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {(
               [
-                ["Product name", "productName"],
-                ["Manufacturer", "manufacturer"],
-                ["Lot number", "lotNumber"],
-                ["Product expiration", "productExpirationDate"],
-                ["Rabies tag", "rabiesTagNumber"],
+                "productName",
+                "manufacturer",
+                "lotNumber",
+                "productExpirationDate",
+                "rabiesTagNumber",
               ] as const
-            ).map(([label, field]) => (
+            ).map((field) => (
               <label
                 key={field}
                 className="space-y-1 text-xs font-medium text-muted-foreground"
               >
-                {label}
+                {t(`fields.${field}`)}
                 <input
                   type={field === "productExpirationDate" ? "date" : "text"}
                   value={editor[field]}
@@ -2472,7 +2504,7 @@ function VaccinationsTab({
               </label>
             ))}
             <label className="space-y-1 text-xs font-medium text-muted-foreground">
-              Dose type
+              {t("doseType")}
               <select
                 value={editor.doseType}
                 onChange={(event) =>
@@ -2483,13 +2515,13 @@ function VaccinationsTab({
                 }
                 className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground"
               >
-                <option value="">Not recorded</option>
-                <option value="initial">Initial</option>
-                <option value="booster">Booster</option>
+                <option value="">{t("notRecorded")}</option>
+                <option value="initial">{t("initial")}</option>
+                <option value="booster">{t("booster")}</option>
               </select>
             </label>
             <label className="space-y-1 text-xs font-medium text-muted-foreground">
-              Licensed duration
+              {t("licensedDuration")}
               <select
                 value={editor.licensedDurationMonths}
                 onChange={(event) =>
@@ -2500,14 +2532,14 @@ function VaccinationsTab({
                 }
                 className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground"
               >
-                <option value="">Not recorded</option>
-                <option value="12">1 year</option>
-                <option value="36">3 years</option>
-                <option value="48">4 years</option>
+                <option value="">{t("notRecorded")}</option>
+                <option value="12">{t("years", { count: 1 })}</option>
+                <option value="36">{t("years", { count: 3 })}</option>
+                <option value="48">{t("years", { count: 4 })}</option>
               </select>
             </label>
             <label className="space-y-1 text-xs font-medium text-muted-foreground">
-              Supervising veterinarian
+              {t("supervisingVet")}
               <select
                 value={editor.supervisingVeterinarianId}
                 onChange={(event) =>
@@ -2518,19 +2550,19 @@ function VaccinationsTab({
                 }
                 className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm text-foreground"
               >
-                <option value="">Not recorded</option>
+                <option value="">{t("notRecorded")}</option>
                 {providers.data?.map((provider) => (
                   <option key={provider.id} value={provider.id}>
                     {provider.name}
                     {provider.licenseNumber
                       ? ` — ${provider.licenseNumber}`
-                      : " — license missing"}
+                      : t("licenseMissingSuffix")}
                   </option>
                 ))}
               </select>
             </label>
             <label className="space-y-1 text-xs font-medium text-muted-foreground sm:col-span-2 lg:col-span-4">
-              Reason for change (required, at least 10 characters)
+              {t("reason")}
               <textarea
                 value={editor.reason}
                 minLength={10}
@@ -2554,7 +2586,7 @@ function VaccinationsTab({
               {updateCertificateDetails.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
-              Save audited changes
+              {t("save")}
             </Button>
           </div>
         </form>
@@ -2565,25 +2597,25 @@ function VaccinationsTab({
           <thead>
             <tr className="border-b border-border bg-muted/50">
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                Vaccine Name
+                {t("columns.name")}
               </th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                Date Given
+                {t("columns.given")}
               </th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                Next Due
+                {t("columns.nextDue")}
               </th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                Product / Lot
+                {t("columns.productLot")}
               </th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                Administered By
+                {t("columns.by")}
               </th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                Certificate
+                {t("columns.certificate")}
               </th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                Status
+                {t("columns.status")}
               </th>
             </tr>
           </thead>
@@ -2598,15 +2630,15 @@ function VaccinationsTab({
               >
                 <td className="px-4 py-3 font-medium">{vax.vaccineName}</td>
                 <td className="px-4 py-3">
-                  {formatClinicalDate(vax.administeredAt, timeZone, "\u2014")}
+                  {formatClinicalDate(vax.administeredAt, timeZone, "\u2014", locale)}
                 </td>
                 <td className="px-4 py-3">
-                  {formatClinicalDate(vax.nextDueDate, timeZone, "\u2014")}
+                  {formatClinicalDate(vax.nextDueDate, timeZone, "\u2014", locale)}
                 </td>
                 <td className="px-4 py-3">
                   <span>{vax.productName ?? "—"}</span>
                   <span className="block text-xs text-muted-foreground">
-                    Lot {vax.lotNumber ?? "—"}
+                    {t("lot", { value: vax.lotNumber ?? "—" })}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">
@@ -2622,7 +2654,7 @@ function VaccinationsTab({
                       disabled={prepareCertificate.isPending}
                       onClick={() => downloadCertificate("rabies", vax.id)}
                     >
-                      Rabies PDF
+                      {t("rabiesPdf")}
                     </Button>
                   ) : (
                     <span className="text-xs text-muted-foreground">—</span>
@@ -2651,18 +2683,18 @@ function VaccinationsTab({
                         })
                       }
                     >
-                      Edit details
+                      {t("editDetails")}
                     </Button>
                   ) : null}
                 </td>
                 <td className="px-4 py-3">
                   {vax.correctionId ? (
                     <span className="inline-flex items-center rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-medium text-destructive">
-                      Entered in error
+                      {t("enteredInError")}
                     </span>
                   ) : (
                     <span className="text-xs text-muted-foreground">
-                      Recorded
+                      {t("recorded")}
                     </span>
                   )}
                   <ClinicalCorrectionControl
@@ -2712,6 +2744,9 @@ function MedicalRecordsTab({
   canCorrectClinicalRecords: boolean;
   canSearchPatientHistory: boolean;
 }) {
+  const t = useTranslations("patients.soap");
+  const tr = useTranslations("records.soap");
+  const locale = useLocale();
   const [historySearchActive, setHistorySearchActive] = useState(false);
   const utils = trpc.useUtils();
   const {
@@ -2721,7 +2756,7 @@ function MedicalRecordsTab({
   } = trpc.records.listSoapNotes.useQuery({ patientId });
   const correctSoap = trpc.records.markSoapNoteEnteredInError.useMutation({
     onSuccess: async () => {
-      toast.success("SOAP note retained and marked entered in error");
+      toast.success(t("corrected"));
       await utils.records.listSoapNotes.invalidate({ patientId });
     },
     onError: (err) => toast.error(err.message),
@@ -2740,17 +2775,17 @@ function MedicalRecordsTab({
       {!historySearchActive ? (
         error ? (
           <PatientDetailErrorPanel
-            message={`Unable to load medical records. ${error.message}`}
+            message={t("loadFailedMessage", { message: error.message })}
           />
         ) : notesMissing ? (
-          <PatientDetailErrorPanel message="Unable to load medical records. Please retry." />
+          <PatientDetailErrorPanel message={t("loadFailed")} />
         ) : isLoading ? (
-          <PatientDetailLoadingPanel label="Loading medical records..." />
+          <PatientDetailLoadingPanel label={t("loading")} />
         ) : !notes || notes.length === 0 ? (
           <EmptyState
             icon={FileText}
-            title="No SOAP notes yet"
-            description="SOAP notes written in Records will show up here."
+            title={t("emptyTitle")}
+            description={t("emptyHelp")}
           />
         ) : (
           notes.map((note) => {
@@ -2789,13 +2824,14 @@ function MedicalRecordsTab({
                         ? formatClinicalDate(
                             note.createdAt,
                             timeZone,
-                            "Unknown",
+                            t("unknown"),
+                            locale,
                           )
-                        : "Unknown"}
+                        : t("unknown")}
                     </p>
                     {note.imported ? (
                       <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                        Imported
+                        {t("imported")}
                       </span>
                     ) : null}
                     <span
@@ -2806,22 +2842,22 @@ function MedicalRecordsTab({
                           : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
                       )}
                     >
-                      {note.status === "draft" ? "Draft" : "Finalized"}
+                      {note.status === "draft" ? t("draft") : t("finalized")}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {note.imported
                       ? note.authorName
-                        ? `Imported by ${note.authorName}`
-                        : "Imported record"
-                      : (note.authorName ?? "Unknown author")}
+                        ? t("importedBy", { name: note.authorName })
+                        : t("importedRecord")
+                      : (note.authorName ?? t("unknownAuthor"))}
                   </p>
                 </div>
                 {note.status === "finalized" ? (
                   <p className="mb-3 text-xs text-muted-foreground">
-                    Finalized by {note.finalizerName ?? "Unknown clinician"}
+                    {t("finalizedBy", { name: note.finalizerName ?? t("unknownClinician") })}
                     {note.finalizedAt
-                      ? ` on ${formatClinicalDateTime(note.finalizedAt, timeZone)}`
+                      ? ` ${t("finalizedOn", { date: formatClinicalDateTime(note.finalizedAt, timeZone, undefined, locale) })}`
                       : ""}
                   </p>
                 ) : note.appointmentId && canCorrectClinicalRecords ? (
@@ -2829,29 +2865,29 @@ function MedicalRecordsTab({
                     href={`/records/new-soap/${encodeURIComponent(patientId)}?appointmentId=${encodeURIComponent(note.appointmentId)}`}
                     className="mb-3 inline-flex text-xs font-medium text-primary hover:underline"
                   >
-                    Resume draft
+                    {t("resume")}
                   </a>
                 ) : null}
                 {note.replacesSoapNoteId ? (
                   <div className="mb-3 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
                     <p className="font-medium text-primary">
-                      Current replacement SOAP
+                      {t("currentReplacement")}
                     </p>
                     <a
                       href={`#soap-note-${note.replacesSoapNoteId}`}
                       className="mt-1 inline-flex text-xs font-medium text-primary hover:underline"
                     >
-                      View retained original
+                      {t("viewOriginal")}
                     </a>
                   </div>
                 ) : null}
                 <dl className="grid gap-3 sm:grid-cols-2">
                   {(
                     [
-                      ["Subjective", note.subjective],
-                      ["Objective", note.objective],
-                      ["Assessment", note.assessment],
-                      ["Plan", note.plan],
+                      [tr("subjective"), note.subjective],
+                      [tr("objective"), note.objective],
+                      [tr("assessment"), note.assessment],
+                      [tr("plan"), note.plan],
                     ] as const
                   ).map(([label, value]) =>
                     value ? (
@@ -2869,7 +2905,7 @@ function MedicalRecordsTab({
                 {note.addenda.length > 0 ? (
                   <div className="mt-4 space-y-2 border-t border-border pt-3">
                     <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Addenda
+                      {t("addenda")}
                     </p>
                     {note.addenda.map((addendum) => (
                       <div
@@ -2878,7 +2914,7 @@ function MedicalRecordsTab({
                       >
                         <p className="text-xs font-medium">
                           {addendum.authorName} -{" "}
-                          {formatClinicalDateTime(addendum.createdAt, timeZone)}
+                          {formatClinicalDateTime(addendum.createdAt, timeZone, undefined, locale)}
                         </p>
                         <p className="mt-1 whitespace-pre-wrap text-sm">
                           {soapSectionText(addendum.content)}
@@ -2909,8 +2945,8 @@ function MedicalRecordsTab({
                             }
                           : null
                       }
-                      triggerLabel="Void without replacement"
-                      description="The original stays in permanent chart history but leaves current clinical summaries immediately. If its content needs correction, cancel and use Replace finalized SOAP. Use void alone only when no replacement belongs on this encounter; closeout will require a documented reason."
+                      triggerLabel={t("void")}
+                      description={t("voidHelp")}
                       canCorrect={canCorrectClinicalRecords}
                       isPending={
                         correctSoap.isPending &&
@@ -2930,7 +2966,7 @@ function MedicalRecordsTab({
                           href={`#soap-note-${note.replacementSoapNoteId}`}
                           className="text-sm font-medium text-primary hover:underline"
                         >
-                          View signed replacement
+                          {t("viewReplacement")}
                         </a>
                       </div>
                     ) : canCorrectClinicalRecords &&
@@ -2943,8 +2979,8 @@ function MedicalRecordsTab({
                             href={`/records/replace-soap/${encodeURIComponent(patientId)}?sourceNoteId=${encodeURIComponent(note.id)}&return=patient`}
                           >
                             {note.correctionId
-                              ? "Create missing replacement"
-                              : "Replace finalized SOAP"}
+                              ? t("createMissing")
+                              : t("replace")}
                           </Link>
                         </Button>
                       </div>
@@ -2954,13 +2990,13 @@ function MedicalRecordsTab({
                           <a
                             href={`/records/new-soap/${encodeURIComponent(patientId)}?appointmentId=${encodeURIComponent(note.appointmentId)}`}
                           >
-                            Review encounter SOAP draft
+                            {t("reviewDraft")}
                           </a>
                         </Button>
                       </div>
                     ) : note.correctionId && hasOtherCurrentAppointmentSoap ? (
                       <p className="mt-3 text-right text-xs text-muted-foreground">
-                        This encounter already has a current finalized SOAP.
+                        {t("alreadyCurrent")}
                       </p>
                     ) : null}
                   </>
@@ -2983,6 +3019,7 @@ function SoapAddendumControl({
   noteId: string;
   enabled: boolean;
 }) {
+  const t = useTranslations("patients.addendum");
   const utils = trpc.useUtils();
   const [open, setOpen] = useState(false);
   const [content, setContent] = useState("");
@@ -2992,7 +3029,7 @@ function SoapAddendumControl({
       setContent("");
       setOpen(false);
       setOperationId(crypto.randomUUID());
-      toast.success("Addendum added to the finalized record");
+      toast.success(t("added"));
       await utils.records.listSoapNotes.invalidate({ patientId });
     },
     onError: (error) => toast.error(error.message),
@@ -3011,17 +3048,17 @@ function SoapAddendumControl({
         }}
       >
         <Plus className="mr-2 h-4 w-4" />
-        Add addendum
+        {t("add")}
       </Button>
     );
   }
   return (
     <div className="mt-4 rounded-md border border-border p-3">
       <label className="text-sm font-medium" htmlFor={`addendum-${noteId}`}>
-        Add attributed addendum
+        {t("title")}
       </label>
       <p className="mt-1 text-xs text-muted-foreground">
-        Addenda cannot be edited or deleted after saving.
+        {t("help")}
       </p>
       <textarea
         id={`addendum-${noteId}`}
@@ -3045,7 +3082,7 @@ function SoapAddendumControl({
             })
           }
         >
-          {addendum.isPending ? "Saving..." : "Save addendum"}
+          {addendum.isPending ? t("saving") : t("save")}
         </Button>
         <Button
           type="button"
@@ -3058,7 +3095,7 @@ function SoapAddendumControl({
             setOperationId(crypto.randomUUID());
           }}
         >
-          Cancel
+          {t("cancel")}
         </Button>
       </div>
     </div>
@@ -3087,30 +3124,33 @@ function AppointmentsTab({
     isLoading,
     error,
   } = trpc.appointments.listByPatient.useQuery({ patientId });
+  const t = useTranslations("patients.visits");
+  const ts = useTranslations("schedule.status");
+  const locale = useLocale();
   const visitsMissing = !isLoading && !error && !visits;
   const [expandedVisitId, setExpandedVisitId] = useState<string | null>(null);
 
   if (error) {
     return (
       <PatientDetailErrorPanel
-        message={`Unable to load appointments. ${error.message}`}
+        message={t("loadFailedMessage", { message: error.message })}
       />
     );
   }
   if (visitsMissing) {
     return (
-      <PatientDetailErrorPanel message="Unable to load appointments. Please retry." />
+      <PatientDetailErrorPanel message={t("loadFailed")} />
     );
   }
   if (isLoading) {
-    return <PatientDetailLoadingPanel label="Loading appointments..." />;
+    return <PatientDetailLoadingPanel label={t("loading")} />;
   }
   if (!visits || visits.length === 0) {
     return (
       <EmptyState
         icon={CalendarDays}
-        title="No appointments yet"
-        description="Visits booked on the schedule will show up here."
+        title={t("emptyTitle")}
+        description={t("emptyHelp")}
       />
     );
   }
@@ -3121,22 +3161,22 @@ function AppointmentsTab({
         <thead>
           <tr className="border-b border-border bg-muted/50">
             <th className="w-10 px-2 py-3">
-              <span className="sr-only">Documents</span>
+              <span className="sr-only">{t("documents")}</span>
             </th>
             <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-              When
+              {t("when")}
             </th>
             <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-              Type
+              {t("type")}
             </th>
             <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-              Doctor
+              {t("doctor")}
             </th>
             <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-              Status
+              {t("status")}
             </th>
             <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-              Notes
+              {t("notes")}
             </th>
           </tr>
         </thead>
@@ -3155,8 +3195,8 @@ function AppointmentsTab({
                       aria-expanded={expanded}
                       aria-label={
                         expanded
-                          ? "Hide documents for this visit"
-                          : "Show documents for this visit"
+                          ? t("hideDocs")
+                          : t("showDocs")
                       }
                       className="rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
                     >
@@ -3172,9 +3212,10 @@ function AppointmentsTab({
                       ? formatClinicalDateTime(
                           visit.startTime,
                           timeZone,
-                          "Unknown",
+                          t("unknown"),
+                          locale,
                         )
-                      : "Unknown"}
+                      : t("unknown")}
                   </td>
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center gap-2">
@@ -3199,7 +3240,9 @@ function AppointmentsTab({
                           "bg-gray-100 text-gray-600",
                       )}
                     >
-                      {visit.status.replace(/_/g, " ")}
+                      {visit.status in appointmentStatusStyles
+                        ? ts(visit.status)
+                        : visit.status.replace(/_/g, " ")}
                     </span>
                   </td>
                   <td className="max-w-xs truncate px-4 py-3 text-muted-foreground">
@@ -3270,6 +3313,8 @@ function PatientFileRows({
   files: PatientFile[];
   timeZone?: string | null;
 }) {
+  const t = useTranslations("patients.files");
+  const locale = useLocale();
   return (
     <ul className="divide-y divide-border">
       {files.map((file) => {
@@ -3283,18 +3328,18 @@ function PatientFileRows({
               </p>
               <p className="truncate text-xs text-muted-foreground">
                 {kind === "consent"
-                  ? `Signed consent${
+                  ? `${t("signedConsent")}${
                       file.consentSignerName
-                        ? ` · Signed by ${file.consentSignerName}`
+                        ? ` · ${t("signedBy", { name: file.consentSignerName })}`
                         : ""
                     }`
                   : file.category === "lab-results"
-                    ? "Lab report"
+                    ? t("labReport")
                     : file.category === "documents"
-                      ? "External record"
-                      : "Document"}
+                      ? t("externalRecord")
+                      : t("document")}
                 {" · "}
-                {formatClinicalDateTime(file.createdAt, timeZone, "Unknown")}
+                {formatClinicalDateTime(file.createdAt, timeZone, t("unknown"), locale)}
               </p>
             </div>
             <a
@@ -3304,7 +3349,7 @@ function PatientFileRows({
               className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary hover:underline"
             >
               <ExternalLink className="h-3.5 w-3.5" />
-              View
+              {t("view")}
             </a>
             <a
               href={file.fileUrl}
@@ -3312,7 +3357,7 @@ function PatientFileRows({
               className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary hover:underline"
             >
               <Download className="h-3.5 w-3.5" />
-              Download
+              {t("download")}
             </a>
           </li>
         );
@@ -3334,19 +3379,20 @@ function VisitDocuments({
     patientId,
     appointmentId,
   });
+  const t = useTranslations("patients.files");
 
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        Loading documents...
+        {t("loading")}
       </div>
     );
   }
   if (error || !data) {
     return (
       <p className="text-xs text-destructive">
-        Unable to load documents for this visit.
+        {t("visitFailed")}
       </p>
     );
   }
@@ -3357,8 +3403,7 @@ function VisitDocuments({
   if (photos.length === 0 && documents.length === 0) {
     return (
       <p className="text-xs text-muted-foreground">
-        Nothing attached to this visit yet. Photos and consents captured during
-        the visit show up here.
+        {t("visitEmpty")}
       </p>
     );
   }
@@ -3392,15 +3437,12 @@ function VisitDocuments({
   );
 }
 
-const documentFilters: {
-  id: PatientFileKind | "all" | "lab";
-  label: string;
-}[] = [
-  { id: "all", label: "All" },
-  { id: "photo", label: "Photos" },
-  { id: "consent", label: "Consents" },
-  { id: "document", label: "Documents" },
-  { id: "lab", label: "Lab reports" },
+const documentFilters: { id: PatientFileKind | "all" | "lab" }[] = [
+  { id: "all" },
+  { id: "photo" },
+  { id: "consent" },
+  { id: "document" },
+  { id: "lab" },
 ];
 
 function DocumentsTab({
@@ -3410,6 +3452,7 @@ function DocumentsTab({
   patientId: string;
   timeZone?: string | null;
 }) {
+  const t = useTranslations("patients.files");
   const [filter, setFilter] = useState<PatientFileKind | "all" | "lab">("all");
   const { data, isLoading, error } = trpc.records.listPatientFiles.useQuery({
     patientId,
@@ -3429,17 +3472,17 @@ function DocumentsTab({
   if (error) {
     return (
       <PatientDetailErrorPanel
-        message={`Unable to load documents. ${error.message}`}
+        message={t("loadFailedMessage", { message: error.message })}
       />
     );
   }
   if (filesMissing) {
     return (
-      <PatientDetailErrorPanel message="Unable to load documents. Please retry." />
+      <PatientDetailErrorPanel message={t("loadFailed")} />
     );
   }
   if (isLoading) {
-    return <PatientDetailLoadingPanel label="Loading documents..." />;
+    return <PatientDetailLoadingPanel label={t("loading")} />;
   }
   if (!data || data.length === 0) {
     return (
@@ -3447,8 +3490,8 @@ function DocumentsTab({
         <PatientDocumentUpload key={patientId} patientId={patientId} />
         <EmptyState
           icon={Paperclip}
-          title="No documents yet"
-          description="Upload outside records and lab reports here. Captured photos and signed consents also appear in this list."
+          title={t("emptyTitle")}
+          description={t("emptyHelp")}
         />
       </div>
     );
@@ -3480,20 +3523,20 @@ function DocumentsTab({
                 : "border-border text-muted-foreground hover:text-foreground",
             )}
           >
-            {option.label} ({counts[option.id]})
+            {t(`filters.${option.id}`)} ({counts[option.id]})
           </button>
         ))}
       </div>
 
       {visible.length === 0 ? (
         <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
-          Nothing here yet for this filter.
+          {t("filterEmpty")}
         </div>
       ) : (
         <div className="space-y-4">
           {photos.length > 0 && (
             <div className="rounded-lg border border-border bg-card p-4">
-              <h3 className="mb-3 text-sm font-medium">Photos</h3>
+              <h3 className="mb-3 text-sm font-medium">{t("photos")}</h3>
               <PatientPhotoGrid photos={photos} />
             </div>
           )}
@@ -3517,6 +3560,9 @@ const invoiceStatusStyles: Record<string, string> = {
 };
 
 function InvoicesTab({ patientId }: { patientId: string }) {
+  const t = useTranslations("patients.invoices");
+  const tb = useTranslations("billing.status");
+  const locale = useLocale();
   const formatCurrency = useCurrencyFormatter();
   const { data, isLoading, error } = trpc.billing.listInvoices.useQuery({
     patientId,
@@ -3527,24 +3573,24 @@ function InvoicesTab({ patientId }: { patientId: string }) {
   if (error) {
     return (
       <PatientDetailErrorPanel
-        message={`Unable to load invoices. ${error.message}`}
+        message={t("loadFailedMessage", { message: error.message })}
       />
     );
   }
   if (invoicesMissing) {
     return (
-      <PatientDetailErrorPanel message="Unable to load invoices. Please retry." />
+      <PatientDetailErrorPanel message={t("loadFailed")} />
     );
   }
   if (isLoading) {
-    return <PatientDetailLoadingPanel label="Loading invoices..." />;
+    return <PatientDetailLoadingPanel label={t("loading")} />;
   }
   if (!data || data.items.length === 0) {
     return (
       <EmptyState
         icon={Receipt}
-        title="No invoices yet"
-        description="Invoices created in Billing for this patient will show up here."
+        title={t("emptyTitle")}
+        description={t("emptyHelp")}
       />
     );
   }
@@ -3555,16 +3601,16 @@ function InvoicesTab({ patientId }: { patientId: string }) {
         <thead>
           <tr className="border-b border-border bg-muted/50">
             <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-              Created
+              {t("created")}
             </th>
             <th className="px-4 py-3 text-right font-medium text-muted-foreground">
-              Total
+              {t("total")}
             </th>
             <th className="px-4 py-3 text-right font-medium text-muted-foreground">
-              Paid
+              {t("paid")}
             </th>
             <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-              Status
+              {t("status")}
             </th>
             <th className="px-4 py-3" />
           </tr>
@@ -3577,7 +3623,7 @@ function InvoicesTab({ patientId }: { patientId: string }) {
             >
               <td className="px-4 py-3 text-muted-foreground">
                 {invoice.createdAt
-                  ? new Date(invoice.createdAt).toLocaleDateString()
+                  ? new Date(invoice.createdAt).toLocaleDateString(locale)
                   : "—"}
               </td>
               <td className="px-4 py-3 text-right tabular-nums font-medium">
@@ -3595,7 +3641,11 @@ function InvoicesTab({ patientId }: { patientId: string }) {
                     ] ?? "bg-gray-100 text-gray-600",
                   )}
                 >
-                  {invoice.isEstimate ? "estimate" : invoice.status}
+                  {invoice.isEstimate
+                    ? tb("estimate")
+                    : invoice.status in invoiceStatusStyles
+                      ? tb(invoice.status)
+                      : invoice.status}
                 </span>
               </td>
               <td className="px-4 py-3 text-right">
@@ -3603,7 +3653,7 @@ function InvoicesTab({ patientId }: { patientId: string }) {
                   href="/billing"
                   className="text-xs font-medium text-primary hover:underline"
                 >
-                  Open in Billing
+                  {t("open")}
                 </Link>
               </td>
             </tr>
@@ -3637,6 +3687,7 @@ function AllergyForm({
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
 }) {
+  const t = useTranslations("patients.allergy");
   return (
     <form onSubmit={onSubmit} className="mt-3 flex flex-wrap items-end gap-2">
       <div className="w-full sm:w-44">
@@ -3644,7 +3695,7 @@ function AllergyForm({
           htmlFor="allergy-allergen"
           className="mb-1 block text-xs font-medium text-muted-foreground"
         >
-          Allergen
+          {t("allergen")}
         </label>
         <input
           id="allergy-allergen"
@@ -3652,7 +3703,7 @@ function AllergyForm({
           value={allergyName}
           maxLength={255}
           required
-          placeholder="Penicillin"
+          placeholder={t("allergenPlaceholder")}
           onChange={(event) => setAllergyName(event.target.value)}
           className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary/30"
         />
@@ -3662,7 +3713,7 @@ function AllergyForm({
           htmlFor="allergy-severity"
           className="mb-1 block text-xs font-medium text-muted-foreground"
         >
-          Severity
+          {t("severityLabel")}
         </label>
         <select
           id="allergy-severity"
@@ -3674,9 +3725,9 @@ function AllergyForm({
           }
           className="rounded-md border border-border bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary/30"
         >
-          <option value="mild">Mild</option>
-          <option value="moderate">Moderate</option>
-          <option value="severe">Severe</option>
+          <option value="mild">{t("severityOption.mild")}</option>
+          <option value="moderate">{t("severityOption.moderate")}</option>
+          <option value="severe">{t("severityOption.severe")}</option>
         </select>
       </div>
       <div className="w-full sm:w-56">
@@ -3684,14 +3735,14 @@ function AllergyForm({
           htmlFor="allergy-reaction"
           className="mb-1 block text-xs font-medium text-muted-foreground"
         >
-          Reaction (optional)
+          {t("reactionLabel")}
         </label>
         <input
           id="allergy-reaction"
           type="text"
           value={allergyReaction}
           maxLength={2000}
-          placeholder="Facial swelling"
+          placeholder={t("reactionPlaceholder")}
           onChange={(event) => setAllergyReaction(event.target.value)}
           className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary/30"
         />
@@ -3703,10 +3754,10 @@ function AllergyForm({
           ) : (
             <Plus className="mr-1.5 h-3.5 w-3.5" />
           )}
-          {isPending ? "Saving..." : "Save allergy"}
+          {isPending ? t("saving") : t("save")}
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
-          Cancel
+          {t("cancel")}
         </Button>
       </div>
     </form>

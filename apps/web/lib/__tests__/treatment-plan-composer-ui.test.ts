@@ -1,15 +1,9 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
-const composer = readFileSync(
-  "components/encounters/treatment-plan-composer.tsx",
-  "utf8",
-);
-const encounter = readFileSync(
-  "app/(dashboard)/encounters/[appointmentId]/page.tsx",
-  "utf8",
-);
-const providers = readFileSync("lib/providers.tsx", "utf8");
+const composer = readTranslatedSource("components/encounters/treatment-plan-composer.tsx");
+const encounter = readTranslatedSource("app/(dashboard)/encounters/[appointmentId]/page.tsx");
+const providers = readTranslatedSource("lib/providers.tsx");
 
 describe("treatment-plan composer UI", () => {
   it("stays inside the existing encounter and clinical-role boundary", () => {
@@ -32,7 +26,7 @@ describe("treatment-plan composer UI", () => {
       "maxLength={TEMPLATE_CATALOG_SEARCH_MAX_LENGTH}",
     );
     expect(composer).toContain("trpc.visitTreatmentPlans.quote.useQuery");
-    expect(composer).toContain("formatCurrency(quote.total, currency)");
+    expect(composer).toContain("formatCurrency(quote.total, currency, undefined, locale)");
     expect(providers).toContain('"visitTreatmentPlans.searchCatalog"');
     expect(providers).toContain('"visitTreatmentPlans.quote"');
     expect(providers).toContain('methodOverride: "POST"');
@@ -46,8 +40,8 @@ describe("treatment-plan composer UI", () => {
     expect(composer).toContain('role="listbox"');
     expect(composer).toContain('role="option"');
     expect(composer).toContain('role="combobox"');
-    expect(composer).toContain("Move ${line.name} up");
-    expect(composer).toContain("Remove ${line.name}");
+    expect(composer).toContain('aria-label="Move {name} up"');
+    expect(composer).toContain('aria-label="Remove {name}"');
   });
 
   it("keeps retries idempotent and refreshes stale revisions", () => {

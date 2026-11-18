@@ -1,16 +1,10 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
-const patientPage = readFileSync(
-  "app/(dashboard)/patients/[id]/page.tsx",
-  "utf8",
-);
-const recordsPage = readFileSync("app/(dashboard)/records/page.tsx", "utf8");
-const vaccinationForm = readFileSync(
-  "components/records/vaccination-form-fields.tsx",
-  "utf8",
-);
-const router = readFileSync("server/routers/records.ts", "utf8");
+const patientPage = readTranslatedSource("app/(dashboard)/patients/[id]/page.tsx");
+const recordsPage = readTranslatedSource("app/(dashboard)/records/page.tsx");
+const vaccinationForm = readTranslatedSource("components/records/vaccination-form-fields.tsx");
+const router = readTranslatedSource("server/routers/records.ts");
 
 describe("staff vaccination certificates", () => {
   it("prepares fresh server-authorized data before lazily loading PDF code", () => {

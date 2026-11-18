@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import {
   LineChart,
   Line,
@@ -29,6 +31,7 @@ export function RevenueLineChart({
   daily: RevenueDailyPoint[];
   formatCurrency: (value: number) => string;
 }) {
+  const t = useTranslations("reports.charts");
   return (
     <ResponsiveContainer width="100%" height={300}>
       <LineChart data={daily}>
@@ -44,7 +47,7 @@ export function RevenueLineChart({
           tickFormatter={(value) => `$${value}`}
         />
         <Tooltip
-          formatter={(value: number) => [formatCurrency(value), "Net collections"]}
+          formatter={(value: number) => [formatCurrency(value), t("netCollections")]}
           contentStyle={{
             backgroundColor: "hsl(var(--card))",
             border: "1px solid hsl(var(--border))",
@@ -64,6 +67,7 @@ export function RevenueLineChart({
 }
 
 export function ServicesCountChart({ items }: { items: ServiceCountPoint[] }) {
+  const t = useTranslations("reports.charts");
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={items}>
@@ -88,7 +92,7 @@ export function ServicesCountChart({ items }: { items: ServiceCountPoint[] }) {
             borderRadius: "0.5rem",
           }}
         />
-        <Bar dataKey="count" fill="#0d9488" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="count" name={t("count")} fill="#0d9488" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

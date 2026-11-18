@@ -1,5 +1,9 @@
 "use client";
 
+import { useDocumentLanguage } from "@/components/common/use-document-language";
+import { useLocale, useTranslations } from "use-intl";
+import { codeLabel } from "@/i18n/code-label";
+
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -80,7 +84,8 @@ function canManageBillingRole(role?: string | null): boolean {
 
 function formatBillingDateInput(
   value: Date | string,
-  timeZone?: string | null
+  timeZone?: string | null,
+  locale = "en-US"
 ) {
   if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const [year, month, day] = value.split("-").map(Number) as [
@@ -89,17 +94,18 @@ function formatBillingDateInput(
       number,
     ];
     return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(
-      "en-US",
+      locale,
       { timeZone: "UTC" }
     );
   }
 
-  return formatBillingInstantDate(value, timeZone);
+  return formatBillingInstantDate(value, timeZone, locale);
 }
 
 function formatBillingInstantDate(
   value: Date | string,
-  timeZone?: string | null
+  timeZone?: string | null,
+  locale = "en-US"
 ) {
   const options: Intl.DateTimeFormatOptions = {
     dateStyle: "short",
@@ -107,9 +113,9 @@ function formatBillingInstantDate(
   };
 
   try {
-    return new Date(value).toLocaleDateString("en-US", options);
+    return new Date(value).toLocaleDateString(locale, options);
   } catch {
-    return new Date(value).toLocaleDateString("en-US", {
+    return new Date(value).toLocaleDateString(locale, {
       ...options,
       timeZone: undefined,
     });
@@ -148,6 +154,7 @@ function getDisplayStatus(invoice: {
 }
 
 export default function BillingPage() {
+  const t = useTranslations("billing.page");
   const router = useRouter();
   const { data: session } = useSession();
   const formatCurrency = useCurrencyFormatter();
@@ -203,7 +210,7 @@ export default function BillingPage() {
 
   const updateStatus = trpc.billing.updateInvoiceStatus.useMutation({
     onSuccess: () => {
-      toast.success("Invoice status updated");
+      toast.success(t("invoiceStatusUpdated"));
       utils.billing.listInvoices.invalidate();
       utils.billing.getInvoice.invalidate();
     },
@@ -214,7 +221,7 @@ export default function BillingPage() {
 
   const convertEstimate = trpc.billing.convertEstimateToInvoice.useMutation({
     onSuccess: () => {
-      toast.success("Estimate converted to invoice");
+      toast.success(t("estimateConvertedToInvoice"));
       utils.billing.listInvoices.invalidate();
     },
     onError: (err) => {
@@ -224,7 +231,7 @@ export default function BillingPage() {
 
   const voidInvoice = trpc.billing.voidInvoice.useMutation({
     onSuccess: () => {
-      toast.success("Invoice voided");
+      toast.success(t("invoiceVoided"));
       utils.billing.listInvoices.invalidate();
       utils.billing.getInvoice.invalidate();
       utils.billing.listDispenseChargeQueue.invalidate();
@@ -283,16 +290,16 @@ export default function BillingPage() {
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-heading text-xl font-semibold">Billing</h2>
+          <h2 className="font-heading text-xl font-semibold">{t("billingTitle")}</h2>
           <p className="text-sm text-muted-foreground">
-            Invoices and payments
+            {t("invoicesAndPayments")}
           </p>
         </div>
         {canManageBilling && (
           <Button asChild>
             <Link href="/billing/new">
               <Plus className="mr-1 h-4 w-4" />
-              New Invoice
+              {t("newInvoice")}
             </Link>
           </Button>
         )}
@@ -314,7 +321,7 @@ export default function BillingPage() {
       {/* Accounts receivable at a glance */}
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <div className="rounded-lg border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Outstanding</p>
+          <p className="text-sm text-muted-foreground">{t("outstanding")}</p>
           <p className="mt-1 font-heading text-2xl font-semibold">
             {arSummary.isError
               ? "—"
@@ -324,7 +331,7 @@ export default function BillingPage() {
           </p>
         </div>
         <div className="rounded-lg border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Overdue</p>
+          <p className="text-sm text-muted-foreground">{t("overdue")}</p>
           <p
             className={`mt-1 font-heading text-2xl font-semibold ${
               arSummary.data && Number(arSummary.data.overdue) > 0
@@ -340,7 +347,7 @@ export default function BillingPage() {
           </p>
         </div>
         <div className="rounded-lg border border-border bg-card p-4">
-          <p className="text-sm text-muted-foreground">Collected this month</p>
+          <p className="text-sm text-muted-foreground">{t("collectedThisMonth")}</p>
           <p className="mt-1 font-heading text-2xl font-semibold">
             {arSummary.isError
               ? "—"
@@ -353,9 +360,9 @@ export default function BillingPage() {
 
       {/* Status filter tabs */}
       <div className="mt-6 flex items-center gap-1 border-b border-border">
-        {STATUS_TABS.map((t, idx) => (
+        {STATUS_TABS.map((tab, idx) => (
           <button
-            key={t.label}
+            key={tab.label}
             onClick={() => {
               setActiveTab(idx);
               setOffset(0);
@@ -366,14 +373,14 @@ export default function BillingPage() {
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            {t.label}
+            {t(`tabs.${tab.label.toLowerCase()}`)}
           </button>
         ))}
       </div>
 
       {listError || billingListMissing ? (
         <div className="mt-6 rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
-          {listError?.message ?? "Unable to load invoices. Please retry."}
+          {listError?.message ?? t("unableToLoadInvoicesPlease")}
         </div>
       ) : isListLoading ? (
         <TableSkeleton rows={8} cols={7} />
@@ -385,28 +392,28 @@ export default function BillingPage() {
                 <tr className="border-b border-border bg-muted/50">
                   <th className="w-8 px-2 py-3" />
                   <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                    Client
+                    {t("columns.client")}
                   </th>
                   <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                    Patient
+                    {t("columns.patient")}
                   </th>
                   <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                    Status
+                    {t("columns.status")}
                   </th>
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">
-                    Total
+                    {t("columns.total")}
                   </th>
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">
-                    Paid
+                    {t("columns.paid")}
                   </th>
                   <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                    Due Date
+                    {t("dueDate")}
                   </th>
                   <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                    Created
+                    {t("columns.created")}
                   </th>
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">
-                    Actions
+                    {t("columns.actions")}
                   </th>
                 </tr>
               </thead>
@@ -441,8 +448,7 @@ export default function BillingPage() {
           {/* Pagination */}
           <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
             <p>
-              Showing {offset + 1}--{Math.min(offset + limit, data.total)} of{" "}
-              {data.total}
+              {t("showingRange", { from: offset + 1, to: Math.min(offset + limit, data.total), total: data.total })}
             </p>
             <div className="flex gap-2">
               <Button
@@ -451,7 +457,7 @@ export default function BillingPage() {
                 disabled={offset === 0}
                 onClick={() => setOffset(Math.max(0, offset - limit))}
               >
-                Previous
+                {t("previous")}
               </Button>
               <Button
                 variant="outline"
@@ -459,7 +465,7 @@ export default function BillingPage() {
                 disabled={offset + limit >= data.total}
                 onClick={() => setOffset(offset + limit)}
               >
-                Next
+                {t("next")}
               </Button>
             </div>
           </div>
@@ -470,22 +476,22 @@ export default function BillingPage() {
           icon={FileText}
           title={
             tab.isEstimate
-              ? "No estimates yet"
+              ? t("noEstimatesYet")
               : statusFilter
-                ? "No invoices with this status"
-                : "No invoices yet"
+                ? t("noInvoicesWithThisStatus")
+                : t("noInvoicesYet")
           }
           description={
             tab.isEstimate
-              ? "Create an estimate when a client needs approval before services are performed."
+              ? t("createAnEstimateWhenA")
               : statusFilter
-                ? "Choose another status tab or create a new invoice."
-                : "Create invoices from services, products, or treatment templates before recording payments."
+                ? t("chooseAnotherStatusTabOr")
+                : t("createInvoicesFromServicesProducts")
           }
           action={
             canManageBilling
               ? {
-                  label: tab.isEstimate ? "Create estimate" : "Create invoice",
+                  label: tab.isEstimate ? t("createEstimate") : t("createInvoice"),
                   onClick: () => router.push("/billing/new"),
                   icon: Plus,
                 }
@@ -496,16 +502,16 @@ export default function BillingPage() {
 
       <ActionConfirmationDialog
         open={pendingInvoiceVoidId !== null}
-        title="Void invoice?"
-        description="This cannot be undone. Any dispensed medication charges on this invoice will return to the billing work queue; inventory will not move again."
-        confirmLabel="Void invoice"
+        title={t("voidInvoice")}
+        description={t("thisCannotBeUndoneAny")}
+        confirmLabel={t("voidConfirm")}
         confirmVariant="destructive"
         isPending={voidInvoice.isPending}
         reason={{
-          label: "Reason for voiding",
+          label: t("reasonForVoiding"),
           value: invoiceVoidReason,
           onChange: setInvoiceVoidReason,
-          placeholder: "Explain the correction for the audit trail",
+          placeholder: t("explainTheCorrectionForThe"),
           minLength: BILLING_ACTION_REASON_MIN_LENGTH,
           maxLength: BILLING_ACTION_REASON_MAX_LENGTH,
         }}
@@ -527,6 +533,8 @@ function DispenseChargeQueuePanel({
   billingTimeZone?: string | null;
   onInvoiceCreated: (invoiceId: string) => void;
 }) {
+  const t = useTranslations("billing.page");
+  const locale = useLocale();
   const router = useRouter();
   const formatCurrency = useCurrencyFormatter();
   const utils = trpc.useUtils();
@@ -546,7 +554,7 @@ function DispenseChargeQueuePanel({
   );
   const createInvoice = trpc.billing.createDispenseChargeInvoice.useMutation({
     onSuccess: async ({ invoiceId }) => {
-      toast.success("Medication dispense added to a draft invoice");
+      toast.success(t("medicationDispenseAddedToA"));
       onInvoiceCreated(invoiceId);
       await Promise.all([
         utils.billing.listDispenseChargeQueue.invalidate(),
@@ -558,14 +566,14 @@ function DispenseChargeQueuePanel({
   });
   const waiveCharge = trpc.billing.waiveDispenseCharge.useMutation({
     onSuccess: async () => {
-      toast.success("Medication charge waived with an audit record");
+      toast.success(t("medicationChargeWaivedWithAn"));
       await utils.billing.listDispenseChargeQueue.invalidate();
     },
     onError: (error) => toast.error(error.message),
   });
   const reopenCharge = trpc.billing.reopenDispenseCharge.useMutation({
     onSuccess: async () => {
-      toast.success("Medication charge returned to the work queue");
+      toast.success(t("medicationChargeReturnedToThe"));
       await utils.billing.listDispenseChargeQueue.invalidate();
     },
     onError: (error) => toast.error(error.message),
@@ -634,7 +642,7 @@ function DispenseChargeQueuePanel({
           <div className="flex items-center gap-2">
             <Pill className="h-4 w-4 text-primary" />
             <h3 className="font-heading font-semibold">
-              Unbilled medication dispenses
+              {t("unbilledMedicationDispenses")}
             </h3>
             {pending.data ? (
               <Badge
@@ -645,20 +653,18 @@ function DispenseChargeQueuePanel({
             ) : null}
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Every clinic-stock fill stays here until billing creates a draft
-            invoice or an admin records why it is no-charge. Inventory has
-            already been deducted and will not move again.
+            {t("everyClinicStockFillStays")}
           </p>
         </div>
       </div>
       {pending.isError ? (
         <div className="p-4 text-sm text-destructive">
-          Unable to load medication billing work. {pending.error.message}
+          {t("medicationWorkFailed", { message: pending.error.message })}
         </div>
       ) : pending.isLoading ? (
         <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading medication billing work...
+          {t("loadingMedicationBillingWork")}
         </div>
       ) : pending.data && pending.data.items.length > 0 ? (
         <div className="divide-y divide-border">
@@ -671,14 +677,17 @@ function DispenseChargeQueuePanel({
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium">{item.description}</p>
                   {item.legacyReview ? (
-                    <Badge variant="outline">Legacy review</Badge>
+                    <Badge variant="outline">{t("legacyReview")}</Badge>
                   ) : null}
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {item.patientName} · {item.clientFirstName}{" "}
-                  {item.clientLastName} · Qty {item.quantity} at{" "}
-                  {formatCurrency(item.unitPrice)} · dispensed{" "}
-                  {formatBillingInstantDate(item.createdAt, billingTimeZone)}
+                  {t("dispenseLine", {
+                    patient: item.patientName,
+                    client: [item.clientFirstName, item.clientLastName].filter(Boolean).join(" "),
+                    quantity: item.quantity,
+                    price: formatCurrency(item.unitPrice),
+                    date: formatBillingInstantDate(item.createdAt, billingTimeZone, locale),
+                  })}
                   {item.appointmentId ? (
                     <>
                       {" "}·{" "}
@@ -686,11 +695,11 @@ function DispenseChargeQueuePanel({
                         href={`/encounters/${item.appointmentId}#charge-capture`}
                         className="underline underline-offset-2"
                       >
-                        Open visit
+                        {t("openVisit")}
                       </Link>
                     </>
                   ) : (
-                    <> · Standalone refill</>
+                    <> · {t("standaloneRefill")}</>
                   )}
                 </p>
               </div>
@@ -701,7 +710,7 @@ function DispenseChargeQueuePanel({
                     disabled={isMutating}
                     onClick={() => createDraftForDispense(item)}
                   >
-                    {item.legacyReview ? "Review & create" : "Create draft"}
+                    {item.legacyReview ? t("reviewCreate") : t("createDraft")}
                   </Button>
                   {canWaive ? (
                     <Button
@@ -710,7 +719,7 @@ function DispenseChargeQueuePanel({
                       disabled={isMutating}
                       onClick={() => openWaiveDialog(item.id)}
                     >
-                      Waive
+                      {t("waive")}
                     </Button>
                   ) : null}
                 </div>
@@ -721,13 +730,13 @@ function DispenseChargeQueuePanel({
       ) : (
         <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
           <CheckCircle className="h-4 w-4 text-green-600" />
-          No clinic-stock dispenses are waiting for billing.
+          {t("noClinicStockDispensesAre")}
         </div>
       )}
       {canWaive && waived.data && waived.data.items.length > 0 ? (
         <details className="border-t border-border p-4">
           <summary className="cursor-pointer text-sm font-medium">
-            Recently waived ({waived.data.total})
+            {t("recentlyWaivedCount", { count: waived.data.total })}
           </summary>
           <div className="mt-3 space-y-3">
             {waived.data.items.map((item) => (
@@ -748,7 +757,7 @@ function DispenseChargeQueuePanel({
                   onClick={() => reopenCharge.mutate({ id: item.id })}
                 >
                   <Undo2 className="mr-1 h-3.5 w-3.5" />
-                  Reopen
+                  {t("reopen")}
                 </Button>
               </div>
             ))}
@@ -757,9 +766,9 @@ function DispenseChargeQueuePanel({
       ) : null}
       <ActionConfirmationDialog
         open={legacyReviewTargetId !== null}
-        title="Review legacy dispense"
-        description="This dispense predates the billing ledger. Verify it was not already billed before creating a draft invoice."
-        confirmLabel="Verified — create draft"
+        title={t("reviewLegacyDispense")}
+        description={t("thisDispensePredatesTheBilling")}
+        confirmLabel={t("verifiedCreate")}
         isPending={createInvoice.isPending}
         onCancel={closeLegacyReviewDialog}
         onConfirm={confirmLegacyReview}
@@ -767,16 +776,16 @@ function DispenseChargeQueuePanel({
 
       <ActionConfirmationDialog
         open={waiveTargetId !== null}
-        title="Waive medication charge?"
-        description="No invoice will be created. Inventory remains deducted, and the reason is saved to the audit trail so an admin can review or reopen this charge later."
-        confirmLabel="Waive charge"
+        title={t("waiveMedicationCharge")}
+        description={t("noInvoiceWillBeCreated")}
+        confirmLabel={t("waiveCharge")}
         confirmVariant="destructive"
         isPending={waiveCharge.isPending}
         reason={{
-          label: "Reason for no charge",
+          label: t("reasonForNoCharge"),
           value: waiveReason,
           onChange: setWaiveReason,
-          placeholder: "Explain why this dispense should not be billed",
+          placeholder: t("explainWhyThisDispenseShould"),
           minLength: BILLING_ACTION_REASON_MIN_LENGTH,
           maxLength: BILLING_ACTION_REASON_MAX_LENGTH,
         }}
@@ -797,6 +806,8 @@ function WellnessBillingPanel({
   settingsReady: boolean;
   canManageBilling: boolean;
 }) {
+  const t = useTranslations("billing.page");
+  const locale = useLocale();
   const formatCurrency = useCurrencyFormatter();
   const utils = trpc.useUtils();
   const dueQuery = trpc.wellness.listDue.useQuery(undefined, {
@@ -854,8 +865,8 @@ function WellnessBillingPanel({
           <CalendarClock className="mt-0.5 h-5 w-5 text-primary" />
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-medium">Wellness invoices due</h3>
-              <Badge variant="secondary">Invoice schedule</Badge>
+              <h3 className="font-medium">{t("wellnessInvoicesDue")}</h3>
+              <Badge variant="secondary">{t("invoiceSchedule")}</Badge>
             </div>
             <p
               className={`text-sm ${
@@ -865,19 +876,19 @@ function WellnessBillingPanel({
               }`}
             >
               {dueQuery.isLoading
-                ? "Checking due memberships..."
+                ? t("checkingDueMemberships")
                 : dueQuery.error
                 ? dueQuery.error.message
                 : dueMembershipsMissing
-                ? "Unable to load due wellness memberships. Please retry."
-                : `${dueMemberships.length} scheduled invoice${
-                    dueMemberships.length === 1 ? "" : "s"
-                  } due, ${formatCurrency(totalDue)} before tax`}
+                ? t("unableToLoadDueWellness")
+                : t("dueSummary", {
+                    count: dueMemberships.length,
+                    amount: formatCurrency(totalDue),
+                  })}
             </p>
             {!dueMembershipsUnavailable && !dueQuery.isLoading && (
               <p className="mt-1 text-xs text-muted-foreground">
-                OpenVPM generates invoices for each billing date; staff still
-                collect payment on each invoice.
+                {t("generatesInvoices")}
               </p>
             )}
           </div>
@@ -902,7 +913,7 @@ function WellnessBillingPanel({
             ) : (
               <FileText className="mr-2 h-4 w-4" />
             )}
-            Generate invoices
+            {t("generateInvoices")}
           </Button>
         )}
       </div>
@@ -912,19 +923,19 @@ function WellnessBillingPanel({
             <thead>
               <tr className="border-b border-border bg-muted/40">
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                  Client
+                  {t("columns.client")}
                 </th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                  Patient
+                  {t("columns.patient")}
                 </th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                  Plan
+                  {t("columns.plan")}
                 </th>
                 <th className="px-4 py-3 text-left font-medium text-muted-foreground">
-                  Due
+                  {t("columns.due")}
                 </th>
                 <th className="px-4 py-3 text-right font-medium text-muted-foreground">
-                  Amount
+                  {t("columns.amount")}
                 </th>
               </tr>
             </thead>
@@ -946,7 +957,7 @@ function WellnessBillingPanel({
                   <td className="px-4 py-3 text-muted-foreground">
                     {formatBillingDateInput(
                       row.nextBillingDate,
-                      billingTimeZone
+                      billingTimeZone, locale
                     )}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums">
@@ -1004,6 +1015,9 @@ function InvoiceRow({
   canManageBilling: boolean;
   isMutating: boolean;
 }) {
+  const documentLanguage = useDocumentLanguage();
+  const t = useTranslations("billing.page");
+  const locale = useLocale();
   const formatCurrency = useCurrencyFormatter();
   const detail = trpc.billing.getInvoice.useQuery(
     { id: invoice.id },
@@ -1036,7 +1050,7 @@ function InvoiceRow({
           <span
             className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${displayStatus.style}`}
           >
-            {displayStatus.label}
+            {t(`status.${displayStatus.label}`)}
           </span>
         </td>
         <td className="px-4 py-3 text-right tabular-nums">
@@ -1046,18 +1060,18 @@ function InvoiceRow({
           <span>{formatCurrency(invoice.paidAmount)}</span>
           {adjustedAmount > 0 && (
             <span className="block text-xs text-muted-foreground">
-              Adj {formatCurrency(adjustedAmount)}
+              {t("adjAmount", { amount: formatCurrency(adjustedAmount) })}
             </span>
           )}
         </td>
         <td className="px-4 py-3 text-muted-foreground">
           {invoice.dueDate
-            ? formatBillingDateInput(invoice.dueDate, billingTimeZone)
+            ? formatBillingDateInput(invoice.dueDate, billingTimeZone, locale)
             : "\u2014"}
         </td>
         <td className="px-4 py-3 text-muted-foreground">
           {invoice.createdAt
-            ? formatBillingInstantDate(invoice.createdAt, billingTimeZone)
+            ? formatBillingInstantDate(invoice.createdAt, billingTimeZone, locale)
             : "\u2014"}
         </td>
         <td className="px-4 py-3 text-right">
@@ -1068,7 +1082,7 @@ function InvoiceRow({
                 size="sm"
                 disabled={isMutating}
                 onClick={(e) => onConvertEstimate(e, invoice.id)}
-                title="Convert to Invoice"
+                title={t("convertToInvoice")}
               >
                 <ArrowRightLeft className="h-3.5 w-3.5" />
               </Button>
@@ -1081,7 +1095,7 @@ function InvoiceRow({
                 size="sm"
                 disabled={isMutating}
                 onClick={(e) => onStatusChange(e, invoice.id, "sent")}
-                title="Mark as Sent"
+                title={t("markAsSent")}
               >
                 <Send className="h-3.5 w-3.5" />
               </Button>
@@ -1096,7 +1110,7 @@ function InvoiceRow({
                       size="sm"
                       disabled={isMutating}
                       onClick={(e) => onStatusChange(e, invoice.id, "sent")}
-                      title="Mark as Sent"
+                      title={t("markAsSent")}
                     >
                       <Send className="h-3.5 w-3.5" />
                     </Button>
@@ -1111,7 +1125,7 @@ function InvoiceRow({
                   size="sm"
                   disabled={isMutating}
                   onClick={(e) => onVoidInvoice(e, invoice.id)}
-                  title="Void Invoice"
+                  title={t("voidInvoice2")}
                 >
                   <Ban className="h-3.5 w-3.5" />
                 </Button>
@@ -1125,7 +1139,7 @@ function InvoiceRow({
             {detail.isLoading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Loading invoice details...
+                {t("loadingInvoiceDetails")}
               </div>
             ) : detail.data ? (
               <div className="space-y-4">
@@ -1134,7 +1148,7 @@ function InvoiceRow({
                     <Link
                       href={`/encounters/${encodeURIComponent(detail.data.appointmentId)}#charge-capture`}
                     >
-                      Back to visit
+                      {t("backToVisit")}
                     </Link>
                   </Button>
                 ) : null}
@@ -1145,7 +1159,7 @@ function InvoiceRow({
                     <div className="flex items-center gap-2">
                       <FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                       <span className="text-sm font-medium text-purple-800 dark:text-purple-300">
-                        This is an estimate
+                        {t("thisIsAnEstimate")}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1159,7 +1173,9 @@ function InvoiceRow({
                             .filter(Boolean)
                             .join(" ");
                           const { generateInvoicePdf } = await import("@/lib/pdf");
+                          const docLanguage = documentLanguage(d.clientPreferredLanguage);
                           generateInvoicePdf({
+                            language: docLanguage,
                             practiceName,
                             clientName,
                             clientEmail: d.clientEmail ?? undefined,
@@ -1167,36 +1183,36 @@ function InvoiceRow({
                             invoiceDate: d.createdAt
                               ? formatBillingInstantDate(
                                   d.createdAt,
-                                  billingTimeZone
+                                  billingTimeZone, docLanguage
                                 )
                               : formatBillingInstantDate(
                                   new Date(),
-                                  billingTimeZone
+                                  billingTimeZone, docLanguage
                                 ),
                             dueDate: d.dueDate
                               ? formatBillingDateInput(
                                   d.dueDate,
-                                  billingTimeZone
+                                  billingTimeZone, docLanguage
                                 )
                               : undefined,
                             status: "estimate",
                             items: d.items.map((item) => ({
                               description: item.description ?? "",
                               quantity: Number(item.quantity ?? 1),
-                              unitPrice: formatCurrency(item.unitPrice),
-                              total: formatCurrency(item.total),
+                              unitPrice: formatCurrency(item.unitPrice, docLanguage),
+                              total: formatCurrency(item.total, docLanguage),
                             })),
-                            subtotal: formatCurrency(d.subtotal),
-                            tax: formatCurrency(d.tax),
-                            total: formatCurrency(d.total),
-                            paidAmount: formatCurrency(d.paidAmount),
-                            adjustedAmount: formatCurrency(d.adjustedAmount),
-                            balanceDue: formatCurrency(d.balanceDue),
+                            subtotal: formatCurrency(d.subtotal, docLanguage),
+                            tax: formatCurrency(d.tax, docLanguage),
+                            total: formatCurrency(d.total, docLanguage),
+                            paidAmount: formatCurrency(d.paidAmount, docLanguage),
+                            adjustedAmount: formatCurrency(d.adjustedAmount, docLanguage),
+                            balanceDue: formatCurrency(d.balanceDue, docLanguage),
                           }).save(`estimate-${clientName || "unknown"}.pdf`);
                         }}
                       >
                         <Download className="mr-1 h-3.5 w-3.5" />
-                        Present to Client
+                        {t("presentToClient")}
                       </Button>
                       {canManageBilling && (
                         <Button
@@ -1205,7 +1221,7 @@ function InvoiceRow({
                           onClick={(e) => onConvertEstimate(e, invoice.id)}
                         >
                           <CheckCircle className="mr-1 h-3.5 w-3.5" />
-                          Approve &amp; Convert
+                          {t("approveConvert")}
                         </Button>
                       )}
                     </div>
@@ -1214,7 +1230,7 @@ function InvoiceRow({
 
                 <div className="flex items-center gap-6 text-sm">
                   <span className="text-muted-foreground">
-                    Client:{" "}
+                    {t("clientLabel")}{" "}
                     <span className="text-foreground font-medium">
                       {detail.data.clientFirstName}{" "}
                       {detail.data.clientLastName}
@@ -1232,19 +1248,19 @@ function InvoiceRow({
                     <thead>
                       <tr className="border-b border-border">
                         <th className="py-2 text-left font-medium text-muted-foreground">
-                          Description
+                          {t("columns.description")}
                         </th>
                         <th className="py-2 text-left font-medium text-muted-foreground">
-                          Type
+                          {t("columns.type")}
                         </th>
                         <th className="py-2 text-right font-medium text-muted-foreground">
-                          Qty
+                          {t("columns.qty")}
                         </th>
                         <th className="py-2 text-right font-medium text-muted-foreground">
-                          Unit Price
+                          {t("unitPrice")}
                         </th>
                         <th className="py-2 text-right font-medium text-muted-foreground">
-                          Total
+                          {t("columns.total")}
                         </th>
                       </tr>
                     </thead>
@@ -1256,7 +1272,7 @@ function InvoiceRow({
                         >
                           <td className="py-2">{item.description}</td>
                           <td className="py-2 capitalize text-muted-foreground">
-                            {item.itemType} · {item.taxable ? "taxable" : "not taxable"}
+                            {item.itemType} · {item.taxable ? t("taxableValue") : t("notTaxableValue")}
                           </td>
                           <td className="py-2 text-right tabular-nums">
                             {item.quantity}
@@ -1273,7 +1289,7 @@ function InvoiceRow({
                     <tfoot>
                       <tr className="border-t border-border">
                         <td colSpan={4} className="py-2 text-right font-medium">
-                          Subtotal
+                          {t("subtotal")}
                         </td>
                         <td className="py-2 text-right tabular-nums">
                           {formatCurrency(detail.data.subtotal)}
@@ -1281,7 +1297,7 @@ function InvoiceRow({
                       </tr>
                       <tr>
                         <td colSpan={4} className="py-1 text-right text-muted-foreground">
-                          Tax
+                          {t("tax")}
                         </td>
                         <td className="py-1 text-right tabular-nums text-muted-foreground">
                           {formatCurrency(detail.data.tax)}
@@ -1289,7 +1305,7 @@ function InvoiceRow({
                       </tr>
                       <tr className="font-semibold">
                         <td colSpan={4} className="py-2 text-right">
-                          Total
+                          {t("columns.total")}
                         </td>
                         <td className="py-2 text-right tabular-nums">
                           {formatCurrency(detail.data.total)}
@@ -1300,7 +1316,7 @@ function InvoiceRow({
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    No line items on this invoice.
+                    {t("noLineItemsOnThis")}
                   </p>
                 )}
 
@@ -1309,27 +1325,27 @@ function InvoiceRow({
                   <div className="flex items-center justify-between rounded-lg border border-border bg-background p-3 text-sm">
                     <div className="flex items-center gap-6">
                       <span>
-                        Total:{" "}
+                        {t("totalLabel")}{" "}
                         <span className="font-semibold">
                           {formatCurrency(detail.data.total)}
                         </span>
                       </span>
                       <span>
-                        Paid:{" "}
+                        {t("paidLabel")}{" "}
                         <span className="font-semibold text-green-600">
                           {formatCurrency(detail.data.paidAmount)}
                         </span>
                       </span>
                       {Number(detail.data.adjustedAmount ?? 0) > 0 && (
                         <span>
-                          Adjusted:{" "}
+                          {t("adjustedLabel")}{" "}
                           <span className="font-semibold text-teal-600">
                             {formatCurrency(detail.data.adjustedAmount)}
                           </span>
                         </span>
                       )}
                       <span>
-                        Balance:{" "}
+                        {t("balanceLabel")}{" "}
                         <span className="font-semibold text-red-600">
                           {formatCurrency(detail.data.balanceDue)}
                         </span>
@@ -1346,7 +1362,9 @@ function InvoiceRow({
                             .filter(Boolean)
                             .join(" ");
                           const { generateInvoicePdf } = await import("@/lib/pdf");
+                          const docLanguage = documentLanguage(d.clientPreferredLanguage);
                           generateInvoicePdf({
+                            language: docLanguage,
                             practiceName,
                             clientName,
                             clientEmail: d.clientEmail ?? undefined,
@@ -1354,36 +1372,36 @@ function InvoiceRow({
                             invoiceDate: d.createdAt
                               ? formatBillingInstantDate(
                                   d.createdAt,
-                                  billingTimeZone
+                                  billingTimeZone, docLanguage
                                 )
                               : formatBillingInstantDate(
                                   new Date(),
-                                  billingTimeZone
+                                  billingTimeZone, docLanguage
                                 ),
                             dueDate: d.dueDate
                               ? formatBillingDateInput(
                                   d.dueDate,
-                                  billingTimeZone
+                                  billingTimeZone, docLanguage
                                 )
                               : undefined,
                             status: d.status,
                             items: d.items.map((item) => ({
                               description: item.description ?? "",
                               quantity: Number(item.quantity ?? 1),
-                              unitPrice: formatCurrency(item.unitPrice),
-                              total: formatCurrency(item.total),
+                              unitPrice: formatCurrency(item.unitPrice, docLanguage),
+                              total: formatCurrency(item.total, docLanguage),
                             })),
-                            subtotal: formatCurrency(d.subtotal),
-                            tax: formatCurrency(d.tax),
-                            total: formatCurrency(d.total),
-                            paidAmount: formatCurrency(d.paidAmount),
-                            adjustedAmount: formatCurrency(d.adjustedAmount),
-                            balanceDue: formatCurrency(d.balanceDue),
+                            subtotal: formatCurrency(d.subtotal, docLanguage),
+                            tax: formatCurrency(d.tax, docLanguage),
+                            total: formatCurrency(d.total, docLanguage),
+                            paidAmount: formatCurrency(d.paidAmount, docLanguage),
+                            adjustedAmount: formatCurrency(d.adjustedAmount, docLanguage),
+                            balanceDue: formatCurrency(d.balanceDue, docLanguage),
                           }).save(`invoice-${clientName || "unknown"}.pdf`);
                         }}
                       >
                         <Download className="mr-1 h-3.5 w-3.5" />
-                        Download PDF
+                        {t("downloadPdf")}
                       </Button>
                       {canManageBilling &&
                         (invoice.status === "sent" ||
@@ -1410,7 +1428,7 @@ function InvoiceRow({
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Failed to load invoice details.
+                {t("failedToLoadInvoiceDetails")}
               </p>
             )}
           </td>
@@ -1421,9 +1439,10 @@ function InvoiceRow({
 }
 
 function EmailInvoiceButton({ invoiceId }: { invoiceId: string }) {
+  const t = useTranslations("billing.page");
   const sendInvoiceEmail = trpc.notifications.sendInvoiceEmail.useMutation({
     onSuccess: () => {
-      toast.success("Invoice emailed");
+      toast.success(t("invoiceEmailed"));
     },
     onError: (err) => {
       toast.error(err.message);
@@ -1445,7 +1464,7 @@ function EmailInvoiceButton({ invoiceId }: { invoiceId: string }) {
       ) : (
         <Mail className="mr-1 h-3.5 w-3.5" />
       )}
-      Email Invoice
+      {t("emailInvoice")}
     </Button>
   );
 }
@@ -1469,6 +1488,8 @@ function PaymentSection({
   billingTimeZone?: string | null;
   canManageBilling: boolean;
 }) {
+  const t = useTranslations("billing.page");
+  const locale = useLocale();
   const formatCurrency = useCurrencyFormatter();
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [showAdjustmentForm, setShowAdjustmentForm] = useState(false);
@@ -1500,7 +1521,7 @@ function PaymentSection({
 
   const recordPayment = trpc.billing.recordPayment.useMutation({
     onSuccess: () => {
-      toast.success("Payment recorded");
+      toast.success(t("paymentRecorded"));
       utils.billing.listPayments.invalidate({ invoiceId });
       utils.billing.listInvoices.invalidate();
       utils.billing.getInvoice.invalidate({ id: invoiceId });
@@ -1517,7 +1538,7 @@ function PaymentSection({
 
   const applyAdjustment = trpc.billing.applyInvoiceAdjustment.useMutation({
     onSuccess: () => {
-      toast.success("Invoice adjustment applied");
+      toast.success(t("invoiceAdjustmentApplied"));
       utils.billing.listAdjustments.invalidate({ invoiceId });
       utils.billing.listInvoices.invalidate();
       utils.billing.getInvoice.invalidate({ id: invoiceId });
@@ -1535,7 +1556,7 @@ function PaymentSection({
   const cardCheckout = trpc.billing.createCardPaymentCheckout.useMutation({
     onSuccess: ({ url }) => {
       if (!isSafeCheckoutRedirectUrl(url)) {
-        toast.error("Card checkout is unavailable. Please try again.");
+        toast.error(t("cardCheckoutIsUnavailablePlease"));
         return;
       }
       window.location.href = url;
@@ -1547,7 +1568,7 @@ function PaymentSection({
 
   const refundPayment = trpc.billing.refundPayment.useMutation({
     onSuccess: () => {
-      toast.success("Payment refunded");
+      toast.success(t("paymentRefunded"));
       setRefundTarget(null);
       setRefundReason("");
       setRefundDueDate("");
@@ -1659,7 +1680,7 @@ function PaymentSection({
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h4 className="text-sm font-medium">Payments &amp; Adjustments</h4>
+        <h4 className="text-sm font-medium">{t("paymentsAndAdjustments")}</h4>
         {canCollect && (
           <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-3">
             <Button
@@ -1669,7 +1690,7 @@ function PaymentSection({
               onClick={handleOpenForm}
             >
               <DollarSign className="mr-1 h-3.5 w-3.5" />
-              Record Payment
+              {t("recordPayment")}
             </Button>
             <Button
               variant="outline"
@@ -1683,8 +1704,8 @@ function PaymentSection({
               onClick={() => cardCheckout.mutate({ invoiceId })}
               title={
                 cardPaymentsUnavailable
-                  ? "Card payments are not configured"
-                  : "Take card payment"
+                  ? t("cardPaymentsAreNotConfigured2")
+                  : t("takeCardPayment")
               }
             >
               {cardCheckout.isPending ? (
@@ -1692,7 +1713,7 @@ function PaymentSection({
               ) : (
                 <CreditCard className="mr-1 h-3.5 w-3.5" />
               )}
-              Take Card
+              {t("takeCard")}
             </Button>
             <Button
               variant="outline"
@@ -1701,7 +1722,7 @@ function PaymentSection({
               onClick={handleOpenAdjustmentForm}
             >
               <DollarSign className="mr-1 h-3.5 w-3.5" />
-              Credit / Write Off
+              {t("creditWriteOff")}
             </Button>
           </div>
         )}
@@ -1709,14 +1730,14 @@ function PaymentSection({
 
       {canCollect && cardPaymentsUnavailable && (
         <p className="text-xs text-muted-foreground">
-          Card payments are not configured.
+          {t("cardPaymentsAreNotConfigured")}
         </p>
       )}
 
       <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-        <span>Paid {formatCurrency(invoicePaidAmount)}</span>
-        <span>Adjusted {formatCurrency(invoiceAdjustedAmount)}</span>
-        <span>Balance {formatCurrency(invoiceBalanceDue)}</span>
+        <span>{t("paidAmount", { amount: formatCurrency(invoicePaidAmount) })}</span>
+        <span>{t("adjustedAmount", { amount: formatCurrency(invoiceAdjustedAmount) })}</span>
+        <span>{t("balanceAmount", { amount: formatCurrency(invoiceBalanceDue) })}</span>
       </div>
 
       {/* Payment form */}
@@ -1725,7 +1746,7 @@ function PaymentSection({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">
-                Amount
+                {t("columns.amount")}
               </label>
               <Input
                 type="number"
@@ -1739,7 +1760,7 @@ function PaymentSection({
             </div>
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">
-                Method
+                {t("method")}
               </label>
               <select
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -1748,20 +1769,20 @@ function PaymentSection({
               >
                 {PAYMENT_METHODS.map((m) => (
                   <option key={m.value} value={m.value}>
-                    {m.label}
+                    {t(`methods.${m.value}`)}
                   </option>
                 ))}
               </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">
-                Notes (optional)
+                {t("notesOptional")}
               </label>
               <Input
                 value={paymentNotes}
                 maxLength={BILLING_NOTES_MAX_LENGTH}
                 onChange={(e) => setPaymentNotes(e.target.value)}
-                placeholder="Reference, check #, etc."
+                placeholder={t("referenceCheckEtc")}
               />
             </div>
           </div>
@@ -1772,7 +1793,7 @@ function PaymentSection({
               onClick={handleRecordPayment}
               disabled={!canRecordPayment}
             >
-              {recordPayment.isPending ? "Recording..." : "Record Payment"}
+              {recordPayment.isPending ? t("recording") : t("recordPayment")}
             </Button>
             <Button
               variant="ghost"
@@ -1783,7 +1804,7 @@ function PaymentSection({
                 setShowPaymentForm(false);
               }}
             >
-              Cancel
+              {t("cancel")}
             </Button>
           </div>
           {recordPayment.isError && (
@@ -1799,7 +1820,7 @@ function PaymentSection({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">
-                Type
+                {t("columns.type")}
               </label>
               <select
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -1808,13 +1829,13 @@ function PaymentSection({
                   setAdjustmentType(e.target.value as "credit" | "write_off")
                 }
               >
-                <option value="credit">Credit</option>
-                <option value="write_off">Write-off</option>
+                <option value="credit">{t("credit")}</option>
+                <option value="write_off">{t("writeOff")}</option>
               </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">
-                Amount
+                {t("columns.amount")}
               </label>
               <Input
                 type="number"
@@ -1828,13 +1849,13 @@ function PaymentSection({
             </div>
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">
-                Reason
+                {t("reason")}
               </label>
               <Input
                 value={adjustmentReason}
                 maxLength={BILLING_ADJUSTMENT_REASON_MAX_LENGTH}
                 onChange={(e) => setAdjustmentReason(e.target.value)}
-                placeholder="Discount, courtesy, bad debt"
+                placeholder={t("discountCourtesyBadDebt")}
               />
             </div>
           </div>
@@ -1845,7 +1866,7 @@ function PaymentSection({
               onClick={handleApplyAdjustment}
               disabled={!canApplyAdjustment}
             >
-              {applyAdjustment.isPending ? "Applying..." : "Apply Adjustment"}
+              {applyAdjustment.isPending ? t("applying") : t("applyAdjustment")}
             </Button>
             <Button
               variant="ghost"
@@ -1856,7 +1877,7 @@ function PaymentSection({
                 setShowAdjustmentForm(false);
               }}
             >
-              Cancel
+              {t("cancel")}
             </Button>
           </div>
           {applyAdjustment.isError && (
@@ -1869,26 +1890,26 @@ function PaymentSection({
 
       {/* Payment list */}
       {paymentsQuery.isLoading ? (
-        <p className="text-xs text-muted-foreground">Loading payments...</p>
+        <p className="text-xs text-muted-foreground">{t("loadingPayments")}</p>
       ) : paymentsQuery.data && paymentsQuery.data.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border">
               <th className="py-2 text-left font-medium text-muted-foreground">
-                Date
+                {t("columns.date")}
               </th>
               <th className="py-2 text-right font-medium text-muted-foreground">
-                Amount
+                {t("columns.amount")}
               </th>
               <th className="py-2 text-left font-medium text-muted-foreground">
-                Method
+                {t("method")}
               </th>
               <th className="py-2 text-left font-medium text-muted-foreground">
-                Received By
+                {t("receivedBy")}
               </th>
               <th className="py-2 text-left font-medium text-muted-foreground">
-                Notes
+                {t("notes")}
               </th>
               {canRefund && <th className="py-2" />}
             </tr>
@@ -1903,7 +1924,7 @@ function PaymentSection({
                   {payment.receivedAt
                     ? formatBillingInstantDate(
                         payment.receivedAt,
-                        billingTimeZone
+                        billingTimeZone, locale
                       )
                     : "\u2014"}
                 </td>
@@ -1917,7 +1938,7 @@ function PaymentSection({
                   {formatCurrency(payment.amount)}
                 </td>
                 <td className="py-2 capitalize text-muted-foreground">
-                  {payment.method?.replace(/_/g, " ") ?? "\u2014"}
+                  {payment.method ? codeLabel(t, "methods", payment.method) : "\u2014"}
                 </td>
                 <td className="py-2 text-muted-foreground">
                   {payment.receivedByName ?? "\u2014"}
@@ -1942,7 +1963,7 @@ function PaymentSection({
                           });
                         }}
                       >
-                        Refund
+                        {t("refund")}
                       </Button>
                     )}
                   </td>
@@ -1953,30 +1974,30 @@ function PaymentSection({
           </table>
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground">No payments recorded.</p>
+        <p className="text-xs text-muted-foreground">{t("noPaymentsRecorded")}</p>
       )}
 
       {adjustmentsQuery.isLoading ? (
-        <p className="text-xs text-muted-foreground">Loading adjustments...</p>
+        <p className="text-xs text-muted-foreground">{t("loadingAdjustments")}</p>
       ) : adjustmentsQuery.data && adjustmentsQuery.data.length > 0 ? (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border">
               <th className="py-2 text-left font-medium text-muted-foreground">
-                Date
+                {t("columns.date")}
               </th>
               <th className="py-2 text-left font-medium text-muted-foreground">
-                Type
+                {t("columns.type")}
               </th>
               <th className="py-2 text-right font-medium text-muted-foreground">
-                Amount
+                {t("columns.amount")}
               </th>
               <th className="py-2 text-left font-medium text-muted-foreground">
-                Created By
+                {t("createdBy")}
               </th>
               <th className="py-2 text-left font-medium text-muted-foreground">
-                Reason
+                {t("reason")}
               </th>
             </tr>
           </thead>
@@ -1990,12 +2011,12 @@ function PaymentSection({
                   {adjustment.createdAt
                     ? formatBillingInstantDate(
                         adjustment.createdAt,
-                        billingTimeZone
+                        billingTimeZone, locale
                       )
                     : "\u2014"}
                 </td>
                 <td className="py-2 capitalize text-muted-foreground">
-                  {adjustment.type.replace(/_/g, " ")}
+                  {codeLabel(t, "adjustmentTypes", adjustment.type)}
                 </td>
                 <td className="py-2 text-right tabular-nums font-medium text-teal-600">
                   {formatCurrency(adjustment.amount)}
@@ -2013,21 +2034,21 @@ function PaymentSection({
         </div>
       ) : (
         <p className="text-xs text-muted-foreground">
-          No credits or write-offs recorded.
+          {t("noCreditsOrWriteOffs")}
         </p>
       )}
       <ActionConfirmationDialog
         open={refundTarget !== null}
-        title="Refund payment?"
-        description={`Refund ${formatCurrency(refundTarget?.amount ?? "0")}? Card payments are refunded through Stripe.`}
-        confirmLabel="Refund payment"
+        title={t("refundPayment")}
+        description={t("refundConfirm", { amount: formatCurrency(refundTarget?.amount ?? "0") })}
+        confirmLabel={t("refundPaymentConfirm")}
         confirmVariant="destructive"
         isPending={refundPayment.isPending}
         reason={{
-          label: "Reason for refund",
+          label: t("reasonForRefund"),
           value: refundReason,
           onChange: setRefundReason,
-          placeholder: "Explain the refund for the audit trail",
+          placeholder: t("explainTheRefundForThe"),
           minLength: BILLING_ACTION_REASON_MIN_LENGTH,
           maxLength: BILLING_ACTION_REASON_MAX_LENGTH,
         }}
@@ -2038,7 +2059,7 @@ function PaymentSection({
           htmlFor={`refund-due-date-${invoiceId}`}
           className="text-sm font-medium"
         >
-          Due date if this refund reopens the visit balance
+          {t("dueDateIfThisRefund")}
         </label>
         <Input
           id={`refund-due-date-${invoiceId}`}
@@ -2049,7 +2070,7 @@ function PaymentSection({
           onChange={(event) => setRefundDueDate(event.target.value)}
         />
         <p className="mt-1 text-xs text-muted-foreground">
-          Required when a completed, paid visit becomes accounts receivable.
+          {t("requiredWhenACompletedPaid")}
         </p>
       </ActionConfirmationDialog>
     </div>

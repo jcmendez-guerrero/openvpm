@@ -1,5 +1,7 @@
 import jsPDF from "jspdf";
 import { soapSectionText } from "@/lib/records/soap-content";
+import type { Language } from "@/i18n/config";
+import { getTranslatorFor } from "@/i18n/messages";
 
 // ---------------------------------------------------------------------------
 // Shared constants
@@ -52,8 +54,28 @@ function ensureSpace(doc: jsPDF, y: number, needed: number): number {
   return y;
 }
 
-function formatGeneratedDateUtc(): string {
-  return new Date().toLocaleDateString("en-US", { timeZone: "UTC" });
+function formatGeneratedDateUtc(language?: Language): string {
+  return new Date().toLocaleDateString(language === "es" ? "es" : "en-US", {
+    timeZone: "UTC",
+  });
+}
+
+type PdfText = ReturnType<typeof getTranslatorFor>;
+
+/** Value x-offset after a label: the fixed gap, widened for longer labels. */
+function labelGap(doc: jsPDF, label: string, min: number): number {
+  return Math.max(min, doc.getTextWidth(label) + 3);
+}
+
+/** Printed labels in the document's language (English when omitted). */
+export function pdfText(language?: Language): PdfText {
+  return getTranslatorFor(language ?? "en");
+}
+
+/** A stored code (status, severity) in the document's language; unknown codes print as stored. */
+function codeLabel(t: PdfText, prefix: string, code: string): string {
+  const key = `${prefix}.${code}`;
+  return t.has(key as Parameters<PdfText>[0]) ? t(key as Parameters<PdfText>[0]) : code;
 }
 
 /**
@@ -82,6 +104,8 @@ function drawPawMark(doc: jsPDF, x: number, y: number, size: number) {
 // ---------------------------------------------------------------------------
 
 export interface InvoiceData {
+  /** Language of the printed labels; English when omitted. */
+  language?: Language;
   practiceName: string;
   practiceAddress?: string;
   practicePhone?: string;
@@ -110,6 +134,7 @@ export interface InvoiceData {
 }
 
 export function generateInvoicePdf(data: InvoiceData): jsPDF {
+  const t = pdfText(data.language);
   const doc = new jsPDF();
   let y = PAGE_MARGIN;
 
@@ -140,13 +165,16 @@ export function generateInvoicePdf(data: InvoiceData): jsPDF {
   doc.setFont(FONT, "bold");
   doc.setFontSize(28);
   setColor(doc, COLOR_DARK);
-  doc.text("INVOICE", PAGE_WIDTH - PAGE_MARGIN, PAGE_MARGIN, {
+  doc.text(t("pdf.invoice.title"), PAGE_WIDTH - PAGE_MARGIN, PAGE_MARGIN, {
     align: "right",
   });
 
   // Status badge
   doc.setFontSize(10);
-  const statusLabel = data.status.toUpperCase();
+  const statusKey = `billing.status.${data.status}`;
+  const statusLabel = (
+    t.has(statusKey as never) ? t(statusKey as never) : data.status
+  ).toUpperCase();
   const statusWidth = doc.getTextWidth(statusLabel) + 8;
   const statusX = PAGE_WIDTH - PAGE_MARGIN - statusWidth;
   const statusY = PAGE_MARGIN + 6;
@@ -163,12 +191,12 @@ export function generateInvoicePdf(data: InvoiceData): jsPDF {
   doc.setFont(FONT, "normal");
   doc.setFontSize(9);
   let dateY = statusY + 12;
-  doc.text(`Date: ${data.invoiceDate}`, PAGE_WIDTH - PAGE_MARGIN, dateY, {
+  doc.text(t("pdf.invoice.date", { date: data.invoiceDate }), PAGE_WIDTH - PAGE_MARGIN, dateY, {
     align: "right",
   });
   if (data.dueDate) {
     dateY += 4;
-    doc.text(`Due: ${data.dueDate}`, PAGE_WIDTH - PAGE_MARGIN, dateY, {
+    doc.text(t("pdf.invoice.due", { date: data.dueDate }), PAGE_WIDTH - PAGE_MARGIN, dateY, {
       align: "right",
     });
   }
@@ -181,7 +209,7 @@ export function generateInvoicePdf(data: InvoiceData): jsPDF {
   doc.setFont(FONT, "bold");
   doc.setFontSize(10);
   setColor(doc, COLOR_DARK);
-  doc.text("BILL TO", PAGE_MARGIN, y);
+  doc.text(t("pdf.invoice.billTo"), PAGE_MARGIN, y);
   y += 5;
 
   doc.setFont(FONT, "normal");
@@ -201,7 +229,7 @@ export function generateInvoicePdf(data: InvoiceData): jsPDF {
     y += 2;
     doc.setFont(FONT, "italic");
     setColor(doc, COLOR_DARK);
-    doc.text(`Patient: ${data.patientName}`, PAGE_MARGIN, y);
+    doc.text(t("pdf.invoice.patient", { name: data.patientName }), PAGE_MARGIN, y);
     y += 5;
   }
 
@@ -222,10 +250,10 @@ export function generateInvoicePdf(data: InvoiceData): jsPDF {
   doc.setFont(FONT, "bold");
   doc.setFontSize(9);
   setColor(doc, COLOR_DARK);
-  doc.text("Description", colX.desc + 2, y);
-  doc.text("Qty", colX.qty, y, { align: "center" });
-  doc.text("Unit Price", colX.unit, y, { align: "center" });
-  doc.text("Total", colX.total - 2, y, { align: "right" });
+  doc.text(t("pdf.invoice.description"), colX.desc + 2, y);
+  doc.text(t("pdf.invoice.qty"), colX.qty, y, { align: "center" });
+  doc.text(t("pdf.invoice.unitPrice"), colX.unit, y, { align: "center" });
+  doc.text(t("pdf.invoice.total"), colX.total - 2, y, { align: "right" });
   y += 8;
 
   // Table rows
@@ -255,11 +283,11 @@ export function generateInvoicePdf(data: InvoiceData): jsPDF {
   doc.setFontSize(10);
   setColor(doc, COLOR_GRAY);
 
-  doc.text("Subtotal:", totalsX, y);
+  doc.text(t("pdf.invoice.subtotalLabel"), totalsX, y);
   doc.text(data.subtotal, totalsValX, y, { align: "right" });
   y += 6;
 
-  doc.text("Tax:", totalsX, y);
+  doc.text(t("pdf.invoice.taxLabel"), totalsX, y);
   doc.text(data.tax, totalsValX, y, { align: "right" });
   y += 6;
 
@@ -269,25 +297,25 @@ export function generateInvoicePdf(data: InvoiceData): jsPDF {
   doc.setFont(FONT, "bold");
   doc.setFontSize(12);
   setColor(doc, COLOR_DARK);
-  doc.text("Total:", totalsX, y);
+  doc.text(t("pdf.invoice.totalLabel"), totalsX, y);
   doc.text(data.total, totalsValX, y, { align: "right" });
   y += 7;
 
   doc.setFont(FONT, "normal");
   doc.setFontSize(10);
   setColor(doc, COLOR_GRAY);
-  doc.text("Paid:", totalsX, y);
+  doc.text(t("pdf.invoice.paidLabel"), totalsX, y);
   doc.text(data.paidAmount, totalsValX, y, { align: "right" });
   y += 6;
 
-  doc.text("Credits / write-offs:", totalsX, y);
+  doc.text(t("pdf.invoice.adjustedLabel"), totalsX, y);
   doc.text(data.adjustedAmount, totalsValX, y, { align: "right" });
   y += 6;
 
   // Use the server's ledger balance; never parse localized currency strings.
   doc.setFont(FONT, "bold");
   setColor(doc, COLOR_TEAL);
-  doc.text("Balance Due:", totalsX, y);
+  doc.text(t("pdf.invoice.balanceLabel"), totalsX, y);
   doc.text(data.balanceDue, totalsValX, y, { align: "right" });
 
   // --- Footer ----------------------------------------------------------------
@@ -296,7 +324,7 @@ export function generateInvoicePdf(data: InvoiceData): jsPDF {
   doc.setFontSize(9);
   setColor(doc, COLOR_GRAY);
   doc.text(
-    "Thank you for trusting us with your pet's care",
+    t("pdf.invoice.thanks"),
     PAGE_WIDTH / 2,
     pageHeight - 15,
     { align: "center" },
@@ -310,6 +338,8 @@ export function generateInvoicePdf(data: InvoiceData): jsPDF {
 // ---------------------------------------------------------------------------
 
 export interface PrescriptionLabelData {
+  /** Language of the printed labels; English when omitted. */
+  language?: Language;
   practiceName: string;
   practicePhone?: string;
   patientName: string;
@@ -328,6 +358,7 @@ export interface PrescriptionLabelData {
 export function generatePrescriptionLabelPdf(
   data: PrescriptionLabelData,
 ): jsPDF {
+  const t = pdfText(data.language);
   // 4" x 2" landscape at 72 DPI  ➜  288 x 144 points
   const doc = new jsPDF({ format: [144, 288], orientation: "landscape" });
 
@@ -363,8 +394,11 @@ export function generatePrescriptionLabelPdf(
   doc.setFont(FONT, "normal");
   doc.setFontSize(7);
   setColor(doc, COLOR_DARK);
-  doc.text(`Patient: ${data.patientName} (${data.species})`, M, y);
-  doc.text(`Owner: ${data.clientName}`, W - M, y, { align: "right" });
+  doc.text(t("pdf.prescription.patient", {
+      name: data.patientName,
+      species: data.species,
+    }), M, y);
+  doc.text(t("pdf.prescription.owner", { name: data.clientName }), W - M, y, { align: "right" });
   y += 4;
 
   // Medication (bold, larger)
@@ -395,15 +429,15 @@ export function generatePrescriptionLabelPdf(
   doc.setFont(FONT, "normal");
   doc.setFontSize(6.5);
   setColor(doc, COLOR_GRAY);
-  doc.text(`Prescribed by: ${data.prescribedBy}`, M, y);
-  doc.text(`Date: ${data.startDate}`, W - M, y, { align: "right" });
+  doc.text(t("pdf.prescription.prescribedBy", { name: data.prescribedBy }), M, y);
+  doc.text(t("pdf.prescription.date", { date: data.startDate }), W - M, y, { align: "right" });
   y += 3;
 
   // Quantity & refills
   const extras: string[] = [];
-  if (data.quantity) extras.push(`Qty: ${data.quantity}`);
+  if (data.quantity) extras.push(t("pdf.prescription.qty", { qty: data.quantity }));
   if (data.refillsRemaining !== undefined)
-    extras.push(`Refills: ${data.refillsRemaining}`);
+    extras.push(t("pdf.prescription.refills", { count: data.refillsRemaining }));
   if (extras.length > 0) {
     doc.text(extras.join("   |   "), M, y);
   }
@@ -416,6 +450,8 @@ export function generatePrescriptionLabelPdf(
 // ---------------------------------------------------------------------------
 
 export interface MedicalSummaryData {
+  /** Language of the printed labels; English when omitted. */
+  language?: Language;
   practiceName: string;
   practiceAddress?: string;
   practicePhone?: string;
@@ -475,6 +511,7 @@ export interface MedicalSummaryData {
 }
 
 export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
+  const t = pdfText(data.language);
   const doc = new jsPDF();
   let y = PAGE_MARGIN;
 
@@ -538,27 +575,27 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
   doc.setFont(FONT, "bold");
   doc.setFontSize(16);
   setColor(doc, COLOR_DARK);
-  doc.text("MEDICAL RECORD SUMMARY", PAGE_MARGIN, y);
+  doc.text(t("pdf.summary.title"), PAGE_MARGIN, y);
 
   y += 3;
   drawLine(doc, y);
   y += 8;
 
   // ---- Patient Info ---------------------------------------------------------
-  sectionHeading("Patient Information");
+  sectionHeading(t("pdf.summary.patientInformation"));
 
   doc.setFont(FONT, "normal");
   doc.setFontSize(10);
   setColor(doc, COLOR_DARK);
 
   const patientFields: [string, string | undefined][] = [
-    ["Name", data.patientName],
-    ["Species", data.species],
-    ["Breed", data.breed],
-    ["Sex", data.sex],
-    ["Date of Birth", data.dob],
-    ["Color", data.color],
-    ["Microchip", data.microchip],
+    [t("pdf.summary.name"), data.patientName],
+    [t("pdf.summary.species"), data.species],
+    [t("pdf.summary.breed"), data.breed],
+    [t("pdf.summary.sex"), data.sex],
+    [t("pdf.summary.dob"), data.dob],
+    [t("pdf.summary.color"), data.color],
+    [t("pdf.summary.microchip"), data.microchip],
   ];
 
   const colMid = PAGE_MARGIN + CONTENT_WIDTH / 2;
@@ -580,36 +617,36 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
   if (col !== 0) y += 6;
 
   // ---- Owner Info -----------------------------------------------------------
-  sectionHeading("Owner Information");
+  sectionHeading(t("pdf.summary.ownerInformation"));
 
   doc.setFont(FONT, "normal");
   doc.setFontSize(10);
   setColor(doc, COLOR_DARK);
 
   doc.setFont(FONT, "bold");
-  doc.text("Name: ", PAGE_MARGIN, y);
+  doc.text(t("pdf.summary.nameLabel"), PAGE_MARGIN, y);
   doc.setFont(FONT, "normal");
-  doc.text(data.clientName, PAGE_MARGIN + doc.getTextWidth("Name: "), y);
+  doc.text(data.clientName, PAGE_MARGIN + doc.getTextWidth(t("pdf.summary.nameLabel")), y);
   y += 6;
 
   if (data.clientPhone) {
     doc.setFont(FONT, "bold");
-    doc.text("Phone: ", PAGE_MARGIN, y);
+    doc.text(t("pdf.summary.phoneLabel"), PAGE_MARGIN, y);
     doc.setFont(FONT, "normal");
-    doc.text(data.clientPhone, PAGE_MARGIN + doc.getTextWidth("Phone: "), y);
+    doc.text(data.clientPhone, PAGE_MARGIN + doc.getTextWidth(t("pdf.summary.phoneLabel")), y);
     y += 6;
   }
   if (data.clientEmail) {
     doc.setFont(FONT, "bold");
-    doc.text("Email: ", PAGE_MARGIN, y);
+    doc.text(t("pdf.summary.emailLabel"), PAGE_MARGIN, y);
     doc.setFont(FONT, "normal");
-    doc.text(data.clientEmail, PAGE_MARGIN + doc.getTextWidth("Email: "), y);
+    doc.text(data.clientEmail, PAGE_MARGIN + doc.getTextWidth(t("pdf.summary.emailLabel")), y);
     y += 6;
   }
 
   // ---- Allergies ------------------------------------------------------------
   if (data.allergies.length > 0) {
-    sectionHeading("Allergies");
+    sectionHeading(t("pdf.summary.allergies"));
 
     doc.setFontSize(10);
     for (const allergy of data.allergies) {
@@ -625,7 +662,7 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
       doc.setFont(FONT, "normal");
       setColor(doc, COLOR_GRAY);
       doc.text(
-        `(${allergy.severity})`,
+        `(${codeLabel(t, "patients.allergy.severity", allergy.severity)})`,
         PAGE_MARGIN + 2 + doc.getTextWidth(allergy.allergen + " "),
         y,
       );
@@ -633,7 +670,7 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
       if (allergy.reaction) {
         doc.setFontSize(8);
         writeWrappedText(
-          `Reaction: ${allergy.reaction}`,
+          t("pdf.summary.reaction", { reaction: allergy.reaction }),
           PAGE_MARGIN + 2,
           CONTENT_WIDTH - 4,
           3.5,
@@ -646,7 +683,7 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
 
   // ---- Active Problems ------------------------------------------------------
   if (data.problems.length > 0) {
-    sectionHeading("Active Problems");
+    sectionHeading(t("pdf.summary.activeProblems"));
 
     doc.setFontSize(10);
     for (const problem of data.problems) {
@@ -654,11 +691,11 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
       doc.setFont(FONT, "normal");
       setColor(doc, COLOR_DARK);
       let text = `• ${problem.description}`;
-      if (problem.onsetDate) text += ` (onset: ${problem.onsetDate})`;
+      if (problem.onsetDate) text += t("pdf.summary.onset", { date: problem.onsetDate });
       doc.text(text, PAGE_MARGIN + 2, y);
       doc.setFont(FONT, "italic");
       setColor(doc, COLOR_GRAY);
-      doc.text(`[${problem.status}]`, PAGE_WIDTH - PAGE_MARGIN, y, {
+      doc.text(`[${codeLabel(t, "records.page.problems.statusLower", problem.status)}]`, PAGE_WIDTH - PAGE_MARGIN, y, {
         align: "right",
       });
       y += 6;
@@ -667,7 +704,7 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
 
   // ---- Vaccination History --------------------------------------------------
   if (data.vaccinations.length > 0) {
-    sectionHeading("Vaccination History");
+    sectionHeading(t("pdf.summary.vaccinationHistory"));
 
     // Table header
     const vColName = PAGE_MARGIN;
@@ -680,9 +717,9 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
     doc.setFont(FONT, "bold");
     doc.setFontSize(9);
     setColor(doc, COLOR_DARK);
-    doc.text("Vaccine", vColName + 2, y);
-    doc.text("Date Given", vColDate, y);
-    doc.text("Next Due", vColNext - 2, y, { align: "right" });
+    doc.text(t("pdf.common.vaccine"), vColName + 2, y);
+    doc.text(t("pdf.summary.dateGiven"), vColDate, y);
+    doc.text(t("pdf.summary.nextDue"), vColNext - 2, y, { align: "right" });
     y += 8;
 
     doc.setFont(FONT, "normal");
@@ -699,7 +736,7 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
 
   // ---- Recent SOAP Notes ----------------------------------------------------
   if (data.recentNotes.length > 0) {
-    sectionHeading("Recent SOAP Notes");
+    sectionHeading(t("pdf.summary.recentSoapNotes"));
 
     const notesToShow = data.recentNotes.slice(0, 5);
     for (const note of notesToShow) {
@@ -710,8 +747,8 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
       setColor(doc, COLOR_DARK);
       doc.text(
         note.imported
-          ? `${note.date}  (Finalized imported record)`
-          : `${note.date}  (Finalized)`,
+          ? t("pdf.summary.finalizedImported", { date: note.date })
+          : t("pdf.summary.finalized", { date: note.date }),
         PAGE_MARGIN,
         y,
       );
@@ -721,15 +758,28 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
       doc.setFontSize(8);
       setColor(doc, COLOR_GRAY);
       const attribution = note.imported
-        ? `Imported by ${note.authorName ?? "Unknown clinician"}`
-        : `Authored by ${note.authorName ?? "Unknown clinician"}; finalized by ${note.finalizerName ?? "Unknown clinician"}${note.finalizedAt ? ` on ${note.finalizedAt}` : ""}`;
+        ? t("pdf.summary.importedBy", {
+            name: note.authorName ?? t("pdf.summary.unknownClinician"),
+          })
+        : note.finalizedAt
+          ? t("pdf.summary.authoredFinalizedOn", {
+              author: note.authorName ?? t("pdf.summary.unknownClinician"),
+              finalizer: note.finalizerName ?? t("pdf.summary.unknownClinician"),
+              date: note.finalizedAt,
+            })
+          : t("pdf.summary.authoredFinalized", {
+              author: note.authorName ?? t("pdf.summary.unknownClinician"),
+              finalizer: note.finalizerName ?? t("pdf.summary.unknownClinician"),
+            });
       writeWrappedText(attribution, PAGE_MARGIN, CONTENT_WIDTH);
       y += 2;
       if (note.replacementForLabel) {
         doc.setFont(FONT, "bold");
         setColor(doc, COLOR_TEAL);
         writeWrappedText(
-          `Signed replacement for retained ${note.replacementForLabel}`,
+          t("pdf.summary.signedReplacementFor", {
+            label: note.replacementForLabel,
+          }),
           PAGE_MARGIN,
           CONTENT_WIDTH,
         );
@@ -761,7 +811,10 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
         doc.setFont(FONT, "bold");
         setColor(doc, COLOR_TEAL);
         writeWrappedText(
-          `Addendum - ${addendum.authorName}, ${addendum.createdAt}`,
+          t("pdf.summary.addendum", {
+            author: addendum.authorName,
+            date: addendum.createdAt,
+          }),
           PAGE_MARGIN + 4,
           CONTENT_WIDTH - 8,
           5,
@@ -783,27 +836,27 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
   }
 
   if (data.chartNotes !== undefined) {
-    sectionHeading("Recent Chart Notes");
+    sectionHeading(t("pdf.summary.recentChartNotes"));
     doc.setFont(FONT, "normal");
     doc.setFontSize(9);
     setColor(doc, COLOR_GRAY);
     if (data.chartNotes === null) {
       writeWrappedText(
-        "Chart notes are not included for this access level.",
+        t("pdf.summary.chartNotesHidden"),
         PAGE_MARGIN,
         CONTENT_WIDTH,
       );
     } else {
       if (data.chartNotes.hasMore) {
         writeWrappedText(
-          "Showing the latest 25 chart notes. Earlier notes remain available in the patient chart.",
+          t("pdf.summary.chartNotesLimited"),
           PAGE_MARGIN,
           CONTENT_WIDTH,
         );
         y += 3;
       } else if (data.chartNotes.items.length === 0) {
         writeWrappedText(
-          "No chart notes recorded.",
+          t("pdf.summary.noChartNotes"),
           PAGE_MARGIN,
           CONTENT_WIDTH,
         );
@@ -821,7 +874,7 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
         doc.setFont(FONT, "normal");
         setColor(doc, COLOR_GRAY);
         writeWrappedText(
-          `Authored by ${note.authorName}`,
+          t("pdf.summary.authoredBy", { name: note.authorName }),
           PAGE_MARGIN,
           CONTENT_WIDTH,
         );
@@ -837,7 +890,7 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
   // Invalidated clinical content stays excluded, while its durable correction
   // evidence remains visible to a downstream clinician reviewing the summary.
   if ((data.recordCorrections?.length ?? 0) > 0) {
-    sectionHeading("Record Corrections");
+    sectionHeading(t("pdf.summary.recordCorrections"));
     for (const correction of data.recordCorrections ?? []) {
       y = ensureSpace(doc, y, 18);
       doc.setFont(FONT, "bold");
@@ -851,13 +904,18 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
       doc.setFont(FONT, "normal");
       setColor(doc, COLOR_GRAY);
       writeWrappedText(
-        `Entered in error by ${correction.correctedByName} on ${correction.correctedAt}`,
+        t("pdf.summary.enteredInError", {
+          name: correction.correctedByName,
+          date: correction.correctedAt,
+        }),
         PAGE_MARGIN + 4,
         CONTENT_WIDTH - 8,
       );
       setColor(doc, COLOR_DARK);
       writeWrappedText(
-        `Reason: ${soapSectionText(correction.reason)}`,
+        t("pdf.summary.reason", {
+          reason: soapSectionText(correction.reason),
+        }),
         PAGE_MARGIN + 4,
         CONTENT_WIDTH - 8,
       );
@@ -865,7 +923,9 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
         doc.setFont(FONT, "bold");
         setColor(doc, COLOR_TEAL);
         writeWrappedText(
-          `Signed replacement: ${correction.replacementLabel}`,
+          t("pdf.summary.signedReplacement", {
+            label: correction.replacementLabel,
+          }),
           PAGE_MARGIN + 4,
           CONTENT_WIDTH - 8,
         );
@@ -876,7 +936,7 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
 
   // ---- Current Prescriptions ------------------------------------------------
   if (data.prescriptions.length > 0) {
-    sectionHeading("Current Prescriptions");
+    sectionHeading(t("pdf.summary.currentPrescriptions"));
 
     // Table header
     const pColMed = PAGE_MARGIN;
@@ -890,10 +950,10 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
     doc.setFont(FONT, "bold");
     doc.setFontSize(9);
     setColor(doc, COLOR_DARK);
-    doc.text("Medication", pColMed + 2, y);
-    doc.text("Dosage", pColDose, y);
-    doc.text("Frequency", pColFreq, y);
-    doc.text("Status", pColStat - 2, y, { align: "right" });
+    doc.text(t("pdf.summary.medication"), pColMed + 2, y);
+    doc.text(t("pdf.summary.dosage"), pColDose, y);
+    doc.text(t("pdf.summary.frequency"), pColFreq, y);
+    doc.text(t("pdf.summary.status"), pColStat - 2, y, { align: "right" });
     y += 8;
 
     doc.setFont(FONT, "normal");
@@ -904,14 +964,15 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
       doc.text(rx.dosage, pColDose, y);
       doc.text(rx.frequency, pColFreq, y);
       setColor(doc, COLOR_GRAY);
-      doc.text(rx.status, pColStat - 2, y, { align: "right" });
+      doc.text(codeLabel(t, "records.page.rx.status", rx.status), pColStat - 2, y, { align: "right" });
       y += 6;
     }
   }
 
   // ---- Footer ---------------------------------------------------------------
   const pageCount = doc.getNumberOfPages();
-  const generatedDate = data.generatedDate ?? formatGeneratedDateUtc();
+  const generatedDate =
+    data.generatedDate ?? formatGeneratedDateUtc(data.language);
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -919,13 +980,13 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
     doc.setFontSize(8);
     setColor(doc, COLOR_GRAY);
     doc.text(
-      `Generated on ${generatedDate} — This document is for reference only`,
+      t("pdf.summary.footer", { date: generatedDate }),
       PAGE_WIDTH / 2,
       pageHeight - 10,
       { align: "center" },
     );
     doc.text(
-      `Page ${i} of ${pageCount}`,
+      t("pdf.common.page", { page: i, count: pageCount }),
       PAGE_WIDTH - PAGE_MARGIN,
       pageHeight - 10,
       {
@@ -942,6 +1003,8 @@ export function generateMedicalSummaryPdf(data: MedicalSummaryData): jsPDF {
 // ---------------------------------------------------------------------------
 
 export interface VaccinationCertificateData {
+  /** Language of the printed labels; English when omitted. */
+  language?: Language;
   practiceName: string;
   practiceAddress?: string;
   practicePhone?: string;
@@ -964,13 +1027,14 @@ export interface VaccinationCertificateData {
 export function generateVaccinationCertificatePdf(
   data: VaccinationCertificateData,
 ): jsPDF {
+  const t = pdfText(data.language);
   const doc = new jsPDF();
   let y = PAGE_MARGIN;
 
   doc.setFont(FONT, "bold");
   doc.setFontSize(20);
   setColor(doc, COLOR_TEAL);
-  doc.text(data.practiceName || "Veterinary Practice", PAGE_MARGIN, y);
+  doc.text(data.practiceName || t("pdf.common.veterinaryPractice"), PAGE_MARGIN, y);
   y += 7;
 
   doc.setFont(FONT, "normal");
@@ -992,7 +1056,7 @@ export function generateVaccinationCertificatePdf(
   doc.setFont(FONT, "bold");
   doc.setFontSize(16);
   setColor(doc, COLOR_DARK);
-  doc.text("VACCINATION CERTIFICATE", PAGE_WIDTH - PAGE_MARGIN, PAGE_MARGIN, {
+  doc.text(t("pdf.certificate.title"), PAGE_WIDTH - PAGE_MARGIN, PAGE_MARGIN, {
     align: "right",
   });
 
@@ -1003,8 +1067,8 @@ export function generateVaccinationCertificatePdf(
   doc.setFont(FONT, "bold");
   doc.setFontSize(12);
   setColor(doc, COLOR_TEAL);
-  doc.text("Patient", PAGE_MARGIN, y);
-  doc.text("Owner", PAGE_MARGIN + CONTENT_WIDTH / 2, y);
+  doc.text(t("pdf.common.patient"), PAGE_MARGIN, y);
+  doc.text(t("pdf.common.owner"), PAGE_MARGIN + CONTENT_WIDTH / 2, y);
   y += 6;
 
   doc.setFont(FONT, "normal");
@@ -1014,8 +1078,8 @@ export function generateVaccinationCertificatePdf(
     data.patientName,
     [data.breed, data.species].filter(Boolean).join(" / "),
     data.sex,
-    data.dob ? `DOB: ${data.dob}` : undefined,
-    data.color ? `Color: ${data.color}` : undefined,
+    data.dob ? t("pdf.common.dobValue", { value: data.dob }) : undefined,
+    data.color ? t("pdf.certificate.colorValue", { value: data.color }) : undefined,
   ].filter(Boolean) as string[];
   doc.text(patientLines, PAGE_MARGIN, y);
   doc.text(data.clientName, PAGE_MARGIN + CONTENT_WIDTH / 2, y);
@@ -1024,15 +1088,15 @@ export function generateVaccinationCertificatePdf(
   doc.setFont(FONT, "bold");
   doc.setFontSize(12);
   setColor(doc, COLOR_TEAL);
-  doc.text("Vaccination Record", PAGE_MARGIN, y);
+  doc.text(t("pdf.certificate.vaccinationRecord"), PAGE_MARGIN, y);
   y += 6;
 
   const rows: [string, string | undefined][] = [
-    ["Vaccine", data.vaccineName],
-    ["Administered", data.administeredAt],
-    ["Next due", data.nextDueDate],
-    ["Manufacturer", data.manufacturer],
-    ["Lot number", data.lotNumber],
+    [t("pdf.common.vaccine"), data.vaccineName],
+    [t("pdf.certificate.administered"), data.administeredAt],
+    [t("pdf.common.nextDueLower"), data.nextDueDate],
+    [t("pdf.common.manufacturer"), data.manufacturer],
+    [t("pdf.common.lotNumber"), data.lotNumber],
   ];
 
   doc.setFontSize(10);
@@ -1055,15 +1119,16 @@ export function generateVaccinationCertificatePdf(
   doc.setFontSize(9);
   setColor(doc, COLOR_GRAY);
   const note =
-    "This certificate reflects the vaccination record currently available in the client portal.";
+    t("pdf.certificate.portalNote");
   doc.text(doc.splitTextToSize(note, CONTENT_WIDTH), PAGE_MARGIN, y);
 
-  const generatedDate = data.generatedDate ?? formatGeneratedDateUtc();
+  const generatedDate =
+    data.generatedDate ?? formatGeneratedDateUtc(data.language);
   const pageHeight = doc.internal.pageSize.getHeight();
   doc.setFont(FONT, "italic");
   doc.setFontSize(8);
   setColor(doc, COLOR_GRAY);
-  doc.text(`Generated on ${generatedDate}`, PAGE_WIDTH / 2, pageHeight - 10, {
+  doc.text(t("pdf.common.generatedOn", { date: generatedDate }), PAGE_WIDTH / 2, pageHeight - 10, {
     align: "center",
   });
 
@@ -1071,6 +1136,8 @@ export function generateVaccinationCertificatePdf(
 }
 
 export interface StaffVaccinationCertificateData {
+  /** Language of the printed labels; English when omitted. */
+  language?: Language;
   certificateId: string;
   generatedDate: string;
   practice: {
@@ -1130,6 +1197,7 @@ function drawCertificateHeader(
   doc: jsPDF,
   data: Pick<StaffVaccinationCertificateData, "practice" | "certificateId">,
   title: string,
+  t: PdfText = pdfText(),
 ): number {
   let y = PAGE_MARGIN;
   drawPawMark(doc, PAGE_MARGIN, y - 5, 13);
@@ -1137,7 +1205,7 @@ function drawCertificateHeader(
   doc.setFontSize(18);
   setColor(doc, COLOR_TEAL);
   const practiceNameLines = doc.splitTextToSize(
-    data.practice.name || "Veterinary Practice",
+    data.practice.name || t("pdf.common.veterinaryPractice"),
     CONTENT_WIDTH - 18,
   );
   doc.text(practiceNameLines, PAGE_MARGIN + 18, y);
@@ -1162,7 +1230,7 @@ function drawCertificateHeader(
   doc.setFontSize(8);
   setColor(doc, COLOR_GRAY);
   doc.text(
-    `Certificate ID: ${data.certificateId}`,
+    t("pdf.common.certificateId", { id: data.certificateId }),
     PAGE_WIDTH - PAGE_MARGIN,
     y,
     { align: "right" },
@@ -1176,30 +1244,33 @@ function drawCertificateIdentity(
   doc: jsPDF,
   data: Pick<StaffVaccinationCertificateData, "owner" | "patient">,
   y: number,
+  t: PdfText = pdfText(),
 ): number {
   const rightX = PAGE_MARGIN + CONTENT_WIDTH / 2 + 4;
   doc.setFont(FONT, "bold");
   doc.setFontSize(11);
   setColor(doc, COLOR_TEAL);
-  doc.text("Patient", PAGE_MARGIN, y);
-  doc.text("Owner", rightX, y);
+  doc.text(t("pdf.common.patient"), PAGE_MARGIN, y);
+  doc.text(t("pdf.common.owner"), rightX, y);
   y += 5;
 
   const patientLines = [
     data.patient.name,
     [data.patient.species, data.patient.breed].filter(Boolean).join(" / "),
-    data.patient.sex ? `Sex: ${data.patient.sex}` : undefined,
-    data.patient.dob ? `DOB: ${data.patient.dob}` : undefined,
-    data.patient.color ? `Color/markings: ${data.patient.color}` : undefined,
+    data.patient.sex ? t("pdf.certificate.sexValue", { value: data.patient.sex }) : undefined,
+    data.patient.dob ? t("pdf.common.dobValue", { value: data.patient.dob }) : undefined,
+    data.patient.color ? t("pdf.certificate.colorMarkings", { value: data.patient.color }) : undefined,
     data.patient.microchipNumber
-      ? `Microchip: ${data.patient.microchipNumber}`
+      ? t("pdf.certificate.microchipValue", {
+          value: data.patient.microchipNumber,
+        })
       : undefined,
-    data.patient.weightKg ? `Weight: ${data.patient.weightKg} kg` : undefined,
+    data.patient.weightKg ? t("pdf.certificate.weightValue", { value: data.patient.weightKg }) : undefined,
   ].filter(Boolean) as string[];
   const ownerLines = [
     data.owner.name,
     ...(data.owner.address?.split("\n") ?? []),
-    data.owner.phone ? `Phone: ${data.owner.phone}` : undefined,
+    data.owner.phone ? t("pdf.certificate.phoneValue", { value: data.owner.phone }) : undefined,
   ].filter(Boolean) as string[];
   doc.setFont(FONT, "normal");
   doc.setFontSize(9);
@@ -1213,6 +1284,7 @@ function drawCertificateFooter(
   doc: jsPDF,
   certificateId: string,
   generatedDate: string,
+  t: PdfText = pdfText(),
 ): void {
   const pageCount = doc.getNumberOfPages();
   for (let page = 1; page <= pageCount; page += 1) {
@@ -1222,12 +1294,12 @@ function drawCertificateFooter(
     doc.setFontSize(7.5);
     setColor(doc, COLOR_GRAY);
     doc.text(
-      `Generated ${generatedDate} • Certificate ${certificateId}`,
+      t("pdf.certificate.footer", { date: generatedDate, id: certificateId }),
       PAGE_MARGIN,
       pageHeight - 9,
     );
     doc.text(
-      `Page ${page} of ${pageCount}`,
+      t("pdf.common.page", { page, count: pageCount }),
       PAGE_WIDTH - PAGE_MARGIN,
       pageHeight - 9,
       {
@@ -1240,25 +1312,31 @@ function drawCertificateFooter(
 export function generateVaccinationHistoryCertificatePdf(
   data: StaffVaccinationCertificateData,
 ): jsPDF {
+  const t = pdfText(data.language);
   const doc = new jsPDF();
-  let y = drawCertificateHeader(doc, data, "VACCINATION CERTIFICATE");
-  y = drawCertificateIdentity(doc, data, y);
+  let y = drawCertificateHeader(
+    doc,
+    data,
+    t("pdf.certificate.title"),
+    t,
+  );
+  y = drawCertificateIdentity(doc, data, y, t);
 
   doc.setFont(FONT, "bold");
   doc.setFontSize(11);
   setColor(doc, COLOR_TEAL);
-  doc.text("Vaccination history", PAGE_MARGIN, y);
+  doc.text(t("pdf.history.section"), PAGE_MARGIN, y);
   y += 6;
 
   const columns = [PAGE_MARGIN, 64, 94, 121, 148];
   const widths = [42, 28, 25, 25, 42];
   const drawTableHeader = (headerY: number) => {
     const headings = [
-      "Vaccine / product",
-      "Given",
-      "Next due",
-      "Lot",
-      "Administered by",
+      t("pdf.history.vaccineProduct"),
+      t("pdf.history.given"),
+      t("pdf.common.nextDueLower"),
+      t("pdf.history.lot"),
+      t("pdf.common.administeredBy"),
     ];
     doc.setFillColor(...hexToRgb(COLOR_LIGHT_GRAY));
     doc.rect(PAGE_MARGIN, headerY - 4, CONTENT_WIDTH, 7, "F");
@@ -1294,12 +1372,12 @@ export function generateVaccinationHistoryCertificatePdf(
       doc.setFont(FONT, "bold");
       doc.setFontSize(11);
       setColor(doc, COLOR_TEAL);
-      doc.text("Vaccination history (continued)", PAGE_MARGIN, y);
+      doc.text(t("pdf.history.sectionContinued"), PAGE_MARGIN, y);
       doc.setFont(FONT, "normal");
       doc.setFontSize(8);
       setColor(doc, COLOR_GRAY);
       doc.text(
-        `Certificate ID: ${data.certificateId}`,
+        t("pdf.common.certificateId", { id: data.certificateId }),
         PAGE_WIDTH - PAGE_MARGIN,
         y,
         { align: "right" },
@@ -1321,49 +1399,66 @@ export function generateVaccinationHistoryCertificatePdf(
   setColor(doc, COLOR_GRAY);
   doc.text(
     doc.splitTextToSize(
-      "This document is a record of vaccinations entered in the patient's chart as of the generated date.",
+      t("pdf.history.note"),
       CONTENT_WIDTH,
     ),
     PAGE_MARGIN,
     y,
   );
-  drawCertificateFooter(doc, data.certificateId, data.generatedDate);
+  drawCertificateFooter(doc, data.certificateId, data.generatedDate, t);
   return doc;
 }
 
 export function generateRabiesVaccinationCertificatePdf(
   data: RabiesVaccinationCertificateData,
 ): jsPDF {
+  const t = pdfText(data.language);
   const doc = new jsPDF();
-  let y = drawCertificateHeader(doc, data, "RABIES VACCINATION CERTIFICATE");
-  y = drawCertificateIdentity(doc, data, y);
+  let y = drawCertificateHeader(
+    doc,
+    data,
+    "RABIES VACCINATION CERTIFICATE",
+    t,
+  );
+  y = drawCertificateIdentity(doc, data, y, t);
 
   doc.setFont(FONT, "bold");
   doc.setFontSize(11);
   setColor(doc, COLOR_TEAL);
-  doc.text("Rabies vaccination", PAGE_MARGIN, y);
+  doc.text(t("pdf.rabies.section"), PAGE_MARGIN, y);
   y += 6;
 
   const durationLabel =
     data.vaccination.licensedDurationMonths % 12 === 0
-      ? `${data.vaccination.licensedDurationMonths / 12} year`
-      : `${data.vaccination.licensedDurationMonths} months`;
+      ? t("pdf.rabies.years", {
+          count: data.vaccination.licensedDurationMonths / 12,
+        })
+      : t("pdf.rabies.months", {
+          count: data.vaccination.licensedDurationMonths,
+        });
   const details: Array<[string, string]> = [
-    ["Vaccine", data.vaccination.vaccineName],
-    ["Product", data.vaccination.productName],
-    ["Manufacturer", data.vaccination.manufacturer],
-    ["Lot number", data.vaccination.lotNumber],
-    ["Product expiration", data.vaccination.productExpirationDate],
-    ["Dose", data.vaccination.doseType === "initial" ? "Initial" : "Booster"],
-    ["Licensed duration", durationLabel],
-    ["Date administered", data.vaccination.administeredAt],
-    ["Next due", data.vaccination.nextDueDate],
+    [t("pdf.common.vaccine"), data.vaccination.vaccineName],
+    [t("pdf.rabies.product"), data.vaccination.productName],
+    [t("pdf.common.manufacturer"), data.vaccination.manufacturer],
+    [t("pdf.common.lotNumber"), data.vaccination.lotNumber],
+    [t("pdf.rabies.productExpiration"), data.vaccination.productExpirationDate],
     [
-      "Rabies tag",
-      data.vaccination.rabiesTagNumber ||
-        "Not assigned (microchip listed above)",
+      t("pdf.rabies.dose"),
+      data.vaccination.doseType === "initial"
+        ? t("pdf.rabies.initial")
+        : t("pdf.rabies.booster"),
     ],
-    ["Administered by", data.vaccination.administeredByName || "Not recorded"],
+    [t("pdf.rabies.licensedDuration"), durationLabel],
+    [t("pdf.rabies.dateAdministered"), data.vaccination.administeredAt],
+    [t("pdf.common.nextDueLower"), data.vaccination.nextDueDate],
+    [
+      t("pdf.rabies.tag"),
+      data.vaccination.rabiesTagNumber || t("pdf.rabies.tagNotAssigned"),
+    ],
+    [
+      t("pdf.common.administeredBy"),
+      data.vaccination.administeredByName || t("pdf.rabies.notRecorded"),
+    ],
   ];
   const half = Math.ceil(details.length / 2);
   const rightX = PAGE_MARGIN + CONTENT_WIDTH / 2 + 4;
@@ -1432,7 +1527,7 @@ export function generateRabiesVaccinationCertificatePdf(
     PAGE_MARGIN,
     y + 4,
   );
-  drawCertificateFooter(doc, data.certificateId, data.generatedDate);
+  drawCertificateFooter(doc, data.certificateId, data.generatedDate, t);
   return doc;
 }
 
@@ -1443,6 +1538,8 @@ export function generateRabiesVaccinationCertificatePdf(
 export type ReportPdfCell = string | number | null | undefined;
 
 export interface ReportPdfData {
+  /** Language of the printed labels; English when omitted. */
+  language?: Language;
   title: string;
   subtitle?: string;
   columns: string[];
@@ -1452,6 +1549,7 @@ export interface ReportPdfData {
 }
 
 export function generateReportPdf(data: ReportPdfData): jsPDF {
+  const t = pdfText(data.language);
   const doc = new jsPDF({
     orientation: data.columns.length > 4 ? "landscape" : "portrait",
   });
@@ -1506,7 +1604,7 @@ export function generateReportPdf(data: ReportPdfData): jsPDF {
     doc.setFont(FONT, "italic");
     doc.setFontSize(10);
     setColor(doc, COLOR_GRAY);
-    doc.text(data.emptyMessage ?? "No report data available.", margin, y);
+    doc.text(data.emptyMessage ?? t("pdf.report.noData"), margin, y);
   } else {
     drawTableHeader();
     doc.setFont(FONT, "normal");
@@ -1527,17 +1625,18 @@ export function generateReportPdf(data: ReportPdfData): jsPDF {
     }
   }
 
-  const generatedDate = data.generatedDate ?? formatGeneratedDateUtc();
+  const generatedDate =
+    data.generatedDate ?? formatGeneratedDateUtc(data.language);
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
     doc.setFont(FONT, "italic");
     doc.setFontSize(8);
     setColor(doc, COLOR_GRAY);
-    doc.text(`Generated on ${generatedDate}`, pageWidth / 2, pageHeight - 8, {
+    doc.text(t("pdf.common.generatedOn", { date: generatedDate }), pageWidth / 2, pageHeight - 8, {
       align: "center",
     });
-    doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin, pageHeight - 8, {
+    doc.text(t("pdf.common.page", { page: i, count: pageCount }), pageWidth - margin, pageHeight - 8, {
       align: "right",
     });
   }
@@ -1550,6 +1649,8 @@ export function generateReportPdf(data: ReportPdfData): jsPDF {
 // ---------------------------------------------------------------------------
 
 export interface DischargeInstructionsData {
+  /** Language of the printed labels; English when omitted. */
+  language?: Language;
   practiceName: string;
   practicePhone?: string;
   patientName: string;
@@ -1574,6 +1675,7 @@ export interface DischargeInstructionsData {
 export function generateDischargeInstructions(
   data: DischargeInstructionsData,
 ): jsPDF {
+  const t = pdfText(data.language);
   const doc = new jsPDF();
   let y = PAGE_MARGIN;
 
@@ -1581,7 +1683,7 @@ export function generateDischargeInstructions(
   doc.setFont(FONT, "bold");
   doc.setFontSize(16);
   setColor(doc, COLOR_TEAL);
-  doc.text(data.practiceName || "Veterinary Practice", PAGE_MARGIN, y);
+  doc.text(data.practiceName || t("pdf.common.veterinaryPractice"), PAGE_MARGIN, y);
   y += 6;
 
   if (data.practicePhone) {
@@ -1597,7 +1699,7 @@ export function generateDischargeInstructions(
   doc.setFont(FONT, "bold");
   doc.setFontSize(18);
   setColor(doc, COLOR_DARK);
-  doc.text("DISCHARGE INSTRUCTIONS", PAGE_MARGIN, y);
+  doc.text(t("pdf.discharge.title"), PAGE_MARGIN, y);
   y += 10;
   drawLine(doc, y);
   y += 8;
@@ -1606,26 +1708,30 @@ export function generateDischargeInstructions(
   doc.setFontSize(10);
   doc.setFont(FONT, "bold");
   setColor(doc, COLOR_DARK);
-  doc.text("Patient:", PAGE_MARGIN, y);
+  doc.text(t("pdf.discharge.patient"), PAGE_MARGIN, y);
+  const patientGap = labelGap(doc, t("pdf.discharge.patient"), 22);
   doc.setFont(FONT, "normal");
-  doc.text(`${data.patientName} (${data.species})`, PAGE_MARGIN + 22, y);
+  doc.text(`${data.patientName} (${data.species})`, PAGE_MARGIN + patientGap, y);
 
   doc.setFont(FONT, "bold");
-  doc.text("Owner:", PAGE_WIDTH / 2, y);
+  doc.text(t("pdf.discharge.owner"), PAGE_WIDTH / 2, y);
+  const ownerGap = labelGap(doc, t("pdf.discharge.owner"), 20);
   doc.setFont(FONT, "normal");
-  doc.text(data.clientName, PAGE_WIDTH / 2 + 20, y);
+  doc.text(data.clientName, PAGE_WIDTH / 2 + ownerGap, y);
   y += 6;
 
   doc.setFont(FONT, "bold");
-  doc.text("Visit Date:", PAGE_MARGIN, y);
+  doc.text(t("pdf.discharge.visitDate"), PAGE_MARGIN, y);
+  const visitGap = labelGap(doc, t("pdf.discharge.visitDate"), 28);
   doc.setFont(FONT, "normal");
-  doc.text(data.visitDate, PAGE_MARGIN + 28, y);
+  doc.text(data.visitDate, PAGE_MARGIN + visitGap, y);
 
   if (data.doctorName) {
     doc.setFont(FONT, "bold");
-    doc.text("Doctor:", PAGE_WIDTH / 2, y);
+    doc.text(t("pdf.discharge.doctor"), PAGE_WIDTH / 2, y);
+    const doctorGap = labelGap(doc, t("pdf.discharge.doctor"), 20);
     doc.setFont(FONT, "normal");
-    doc.text(data.doctorName, PAGE_WIDTH / 2 + 20, y);
+    doc.text(data.doctorName, PAGE_WIDTH / 2 + doctorGap, y);
   }
   y += 10;
 
@@ -1636,7 +1742,7 @@ export function generateDischargeInstructions(
     doc.setFont(FONT, "bold");
     doc.setFontSize(12);
     setColor(doc, COLOR_DARK);
-    doc.text("Diagnosis", PAGE_MARGIN, y);
+    doc.text(t("pdf.discharge.diagnosis"), PAGE_MARGIN, y);
     y += 6;
     doc.setFont(FONT, "normal");
     doc.setFontSize(10);
@@ -1653,7 +1759,7 @@ export function generateDischargeInstructions(
     doc.setFont(FONT, "bold");
     doc.setFontSize(12);
     setColor(doc, COLOR_DARK);
-    doc.text("Medications", PAGE_MARGIN, y);
+    doc.text(t("pdf.discharge.medications"), PAGE_MARGIN, y);
     y += 8;
 
     for (const med of data.medications) {
@@ -1664,7 +1770,7 @@ export function generateDischargeInstructions(
       y += 5;
       doc.setFont(FONT, "normal");
       setColor(doc, COLOR_GRAY);
-      doc.text(`Frequency: ${med.frequency}`, PAGE_MARGIN + 4, y);
+      doc.text(t("pdf.discharge.frequency", { value: med.frequency }), PAGE_MARGIN + 4, y);
       y += 5;
       if (med.instructions) {
         const instrLines = doc.splitTextToSize(
@@ -1687,7 +1793,7 @@ export function generateDischargeInstructions(
     doc.setFont(FONT, "bold");
     doc.setFontSize(12);
     setColor(doc, COLOR_DARK);
-    doc.text("Care Instructions", PAGE_MARGIN, y);
+    doc.text(t("pdf.discharge.careInstructions"), PAGE_MARGIN, y);
     y += 8;
 
     doc.setFont(FONT, "normal");
@@ -1709,7 +1815,7 @@ export function generateDischargeInstructions(
     doc.setFont(FONT, "bold");
     doc.setFontSize(12);
     setColor(doc, COLOR_DARK);
-    doc.text("Restrictions", PAGE_MARGIN, y);
+    doc.text(t("pdf.discharge.restrictions"), PAGE_MARGIN, y);
     y += 8;
 
     doc.setFont(FONT, "normal");
@@ -1731,15 +1837,16 @@ export function generateDischargeInstructions(
     doc.setFont(FONT, "bold");
     doc.setFontSize(12);
     setColor(doc, COLOR_DARK);
-    doc.text("Follow-Up", PAGE_MARGIN, y);
+    doc.text(t("pdf.discharge.followUp"), PAGE_MARGIN, y);
     y += 7;
 
     doc.setFontSize(10);
     if (data.followUpDate) {
       doc.setFont(FONT, "bold");
-      doc.text("Scheduled:", PAGE_MARGIN + 4, y);
+      doc.text(t("pdf.discharge.scheduled"), PAGE_MARGIN + 4, y);
+      const scheduledGap = labelGap(doc, t("pdf.discharge.scheduled"), 26);
       doc.setFont(FONT, "normal");
-      doc.text(data.followUpDate, PAGE_MARGIN + 30, y);
+      doc.text(data.followUpDate, PAGE_MARGIN + 4 + scheduledGap, y);
       y += 6;
     }
     if (data.followUpNotes) {
@@ -1760,7 +1867,7 @@ export function generateDischargeInstructions(
     doc.setTextColor(r, g, b);
     doc.setFont(FONT, "bold");
     doc.setFontSize(11);
-    doc.text("WHEN TO SEEK EMERGENCY CARE", PAGE_MARGIN, y);
+    doc.text(t("pdf.discharge.emergency"), PAGE_MARGIN, y);
     y += 7;
     doc.setFont(FONT, "normal");
     doc.setFontSize(10);
@@ -1775,7 +1882,7 @@ export function generateDischargeInstructions(
   doc.setFontSize(8);
   setColor(doc, COLOR_GRAY);
   doc.text(
-    "If you have any questions or concerns, please contact our office.",
+    t("pdf.discharge.questions"),
     PAGE_WIDTH / 2,
     pageHeight - 15,
     { align: "center" },

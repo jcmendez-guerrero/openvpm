@@ -14,6 +14,9 @@ import {
 import type { Database } from "@openpims/db/client";
 import { alertOps } from "@/lib/alerts";
 import { sendEmail } from "@/lib/email";
+import type { Language } from "@/i18n/config";
+import { messageLanguage } from "@/i18n/message-language";
+import { getTranslatorFor } from "@/i18n/messages";
 import { normalizeE164 } from "@/lib/messaging";
 import { hasNonBlankMessagingSender } from "@/lib/messaging/sender-query";
 import { isQuietHours } from "@/lib/messaging/reminders";
@@ -54,22 +57,26 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function renderComposedEmail(opts: {
+export function renderComposedEmail(opts: {
   practiceName: string;
   content: string;
   replyToEmail?: string | null;
+  language?: Language;
 }): string {
+  const language = opts.language ?? "en";
+  const t = getTranslatorFor(language);
   const safePracticeName = escapeHtml(opts.practiceName);
   const safeReplyToEmail = opts.replyToEmail
     ? escapeHtml(opts.replyToEmail)
     : null;
   const body = escapeHtml(opts.content).replace(/\n/g, "<br />");
+  // Values are escaped above; catalog text is trusted.
   const replyNotice = safeReplyToEmail
-    ? `Replies go to ${safeReplyToEmail}. Email replies are not imported into OpenVPM yet.`
-    : `Email replies are not imported into OpenVPM yet. Please contact ${safePracticeName} directly if you need to respond.`;
+    ? t("email.composed.repliesTo", { email: safeReplyToEmail })
+    : t("email.composed.contactDirectly", { practiceName: safePracticeName });
 
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="${language}">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -92,7 +99,7 @@ function renderComposedEmail(opts: {
           </tr>
           <tr>
             <td style="padding:20px 28px;background:#f9fafb;border-top:1px solid #e5e7eb;">
-              <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.5;">This email was sent by ${safePracticeName}.</p>
+              <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.5;">${t("email.composed.sentBy", { practiceName: safePracticeName })}</p>
               <p style="margin:8px 0 0;color:#6b7280;font-size:13px;line-height:1.5;">${replyNotice}</p>
             </td>
           </tr>
@@ -789,6 +796,7 @@ export const communicationsRouter = createRouter({
           email: clients.email,
           phone: clients.phone,
           smsConsent: clients.smsConsent,
+          preferredLanguage: clients.preferredLanguage,
           emailSuppressionReason: emailSuppressions.reason,
         })
         .from(clients)
@@ -821,6 +829,7 @@ export const communicationsRouter = createRouter({
           timezone: practices.timezone,
           email: practices.email,
           createdAt: practices.createdAt,
+          defaultLanguage: practices.defaultLanguage,
         })
         .from(practices)
         .where(activePracticeWhere(ctx.practiceId))
@@ -1088,6 +1097,10 @@ export const communicationsRouter = createRouter({
               practiceName,
               content,
               replyToEmail,
+              language: messageLanguage("message", {
+                clientLanguage: client.preferredLanguage,
+                clinicDefault: practice.defaultLanguage,
+              }),
             }),
             ...(replyToEmail ? { replyTo: replyToEmail } : {}),
             idempotencyKey: outboundDedupeKey!,

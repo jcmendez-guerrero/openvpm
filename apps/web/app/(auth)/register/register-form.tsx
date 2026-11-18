@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "use-intl";
+
 import { Suspense, useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -57,7 +59,6 @@ import {
   DEFAULT_CLINIC_MODEL,
   DEFAULT_FIRST_GOAL,
   FIRST_GOALS,
-  clinicModelOption,
   type ClinicModel,
   type FirstGoal,
 } from "@/lib/onboarding/clinic-profile";
@@ -106,6 +107,7 @@ export default function RegisterForm(props: RegisterFormProps) {
 
 /** Resolve browser-only attribution before mounting any registration UI or events. */
 function RegistrationEntry(props: RegisterFormProps) {
+  const t = useTranslations("auth.register");
   const router = useRouter();
   const searchParams = useSearchParams();
   const [ready, setReady] = useState(false);
@@ -130,7 +132,7 @@ function RegistrationEntry(props: RegisterFormProps) {
     return (
       <div
         role="status"
-        aria-label="Opening clinic setup"
+        aria-label={t("openingClinicSetup")}
         className="flex min-h-screen items-center justify-center bg-white"
       >
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -147,6 +149,9 @@ function RegisterPageInner({
   monthlyPriceUsd,
   previewPercent = 0,
 }: RegisterFormProps) {
+  const t = useTranslations("auth.register");
+  const pt = useTranslations("onboarding.profile");
+  const regionNames = new Intl.DisplayNames([useLocale()], { type: "region" });
   const router = useRouter();
   const searchParams = useSearchParams();
   const cloudIntent = searchParams.get("intent") === "cloud";
@@ -272,7 +277,7 @@ function RegisterPageInner({
       }
       if (data.checkoutUrl) {
         if (!isSafeCheckoutRedirectUrl(data.checkoutUrl)) {
-          toast.error("Hosted checkout is unavailable. Please try again.");
+          toast.error(t("hostedCheckoutIsUnavailablePlease"));
           setLoading(false);
           return;
         }
@@ -295,7 +300,7 @@ function RegisterPageInner({
         // accounts to the login page right after signup.
         window.location.assign(nextPath);
       } else {
-        toast.success("Account created. Please sign in.");
+        toast.success(t("accountCreatedPleaseSignIn"));
         router.push(`/login?next=${encodeURIComponent(nextPath)}`);
       }
     },
@@ -308,19 +313,19 @@ function RegisterPageInner({
 
   function validate(): string | null {
     if (practiceName.trim().length < 2)
-      return "Add your practice name to continue.";
+      return t("addYourPracticeNameTo");
     if (practiceName.trim().length > AUTH_PRACTICE_NAME_MAX_LENGTH)
-      return `Practice name must be at most ${AUTH_PRACTICE_NAME_MAX_LENGTH} characters.`;
+      return t("errors.practiceNameLong", { max: AUTH_PRACTICE_NAME_MAX_LENGTH });
     if (!isAuthEmailLengthValid(email))
-      return `Email must be at most ${AUTH_EMAIL_MAX_LENGTH} characters.`;
-    if (!isValidEmail(email)) return "Add a valid work email.";
-    if (!country) return "Choose your clinic country.";
+      return t("errors.emailLong", { max: AUTH_EMAIL_MAX_LENGTH });
+    if (!isValidEmail(email)) return t("addAValidWorkEmail");
+    if (!country) return t("errors.country");
     if (country === "OTHER")
-      return "Hosted workspaces are not available in your country yet.";
+      return t("errors.countryUnavailable");
     if (password.length < AUTH_PASSWORD_MIN_LENGTH)
-      return `Use at least ${AUTH_PASSWORD_MIN_LENGTH} characters for the password.`;
+      return t("errors.passwordShort", { min: AUTH_PASSWORD_MIN_LENGTH });
     if (password.length > AUTH_PASSWORD_MAX_LENGTH)
-      return `Use at most ${AUTH_PASSWORD_MAX_LENGTH} characters for the password.`;
+      return t("errors.passwordLong", { max: AUTH_PASSWORD_MAX_LENGTH });
     return null;
   }
 
@@ -402,8 +407,8 @@ function RegisterPageInner({
     if (!canContinueFromWorkflow) {
       setError(
         practiceName.trim().length < 2
-          ? "Add your practice name to continue."
-          : "Add a valid work email.",
+          ? t("addYourPracticeNameTo")
+          : t("addAValidWorkEmail"),
       );
       return;
     }
@@ -441,7 +446,7 @@ function RegisterPageInner({
               OpenVPM
             </Link>
             <div className="flex items-center gap-2 text-xs font-medium text-slate-500 sm:gap-3 sm:text-sm">
-              <span className="whitespace-nowrap">Step 1 of 4</span>
+              <span className="whitespace-nowrap">{t("step1Of4")}</span>
               <span className="flex gap-1" aria-hidden="true">
                 <span className="h-1.5 w-6 rounded-full bg-primary sm:w-10" />
                 <span className="h-1.5 w-6 rounded-full bg-slate-200 sm:w-10" />
@@ -454,11 +459,10 @@ function RegisterPageInner({
           <section className="flex-1 px-5 py-7 sm:px-9 sm:py-10 lg:px-12">
             <div className="mb-8 max-w-3xl">
               <h1 className="font-heading text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
-                A platform truly built for your clinic.
+                {t("aPlatformTrulyBuiltFor")}
               </h1>
               <p className="mt-3 text-sm leading-6 text-slate-600 sm:text-base">
-                Tell us what your team needs first. We’ll shape a useful first
-                day before asking you to create the workspace.
+                {t("tellUsWhatYourTeam")}
               </p>
             </div>
 
@@ -478,7 +482,7 @@ function RegisterPageInner({
               onClick={continueToWorkflow}
               className="h-11 rounded-xl px-6 text-sm font-semibold shadow-[0_12px_28px_-16px_rgba(5,150,105,0.8)]"
             >
-              Show my workflows
+              {t("showMyWorkflows")}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </footer>
@@ -502,7 +506,7 @@ function RegisterPageInner({
               OpenVPM
             </Link>
             <div className="flex items-center gap-2 text-xs font-medium text-slate-500 sm:gap-3 sm:text-sm">
-              <span className="whitespace-nowrap">Step 2 of 4</span>
+              <span className="whitespace-nowrap">{t("step2Of4")}</span>
               <span className="flex gap-1" aria-hidden="true">
                 <span className="h-1.5 w-6 rounded-full bg-primary sm:w-10" />
                 <span className="h-1.5 w-6 rounded-full bg-primary sm:w-10" />
@@ -520,22 +524,21 @@ function RegisterPageInner({
               onFirstGoalChange={selectFirstGoal}
               intro={null}
               showClinicModel={false}
-              goalLegend="Choose your first useful workflow"
+              goalLegend={t("goalLegend")}
               beforeChoices={
                 <div className="max-w-3xl">
                   <h1 className="font-heading text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
-                    What would you like to see?
+                    {t("whatWouldYouLikeTo")}
                   </h1>
                   <p className="mt-2 text-sm leading-6 text-slate-600 sm:text-base">
-                    Pick one useful workflow and we’ll shape your first day
-                    around it.
+                    {t("pickOneUsefulWorkflowAnd")}
                   </p>
                 </div>
               }
               afterChoices={
                 <div className="mt-5 border-t border-slate-100 pt-5">
                   <p className="text-sm font-semibold text-slate-950 sm:text-base">
-                    Start your workspace
+                    {t("startYourWorkspace")}
                   </p>
 
                   {error ? (
@@ -545,7 +548,7 @@ function RegisterPageInner({
                   ) : null}
 
                   <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    <FormField label="Practice name" htmlFor="practiceName">
+                    <FormField label={t("practiceName")} htmlFor="practiceName">
                       <Input
                         id="practiceName"
                         name="practiceName"
@@ -554,14 +557,14 @@ function RegisterPageInner({
                           setPracticeName(event.target.value);
                           setError("");
                         }}
-                        placeholder="Neighborhood Veterinary"
+                        placeholder={t("neighborhoodVeterinary")}
                         autoComplete="organization"
                         autoFocus
                         maxLength={AUTH_PRACTICE_NAME_MAX_LENGTH}
                         required
                       />
                     </FormField>
-                    <FormField label="Work email" htmlFor="email">
+                    <FormField label={t("workEmail")} htmlFor="email">
                       <Input
                         id="email"
                         name="email"
@@ -593,14 +596,14 @@ function RegisterPageInner({
               className="inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-primary"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back
+              {t("back")}
             </button>
             <Button
               type="button"
               onClick={continueToPreview}
               className="h-11 rounded-xl px-6 text-sm font-semibold shadow-[0_12px_28px_-16px_rgba(5,150,105,0.8)]"
             >
-              See my first day
+              {t("seeMyFirstDay")}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </footer>
@@ -624,7 +627,7 @@ function RegisterPageInner({
               OpenVPM
             </Link>
             <div className="flex items-center gap-2 text-xs font-medium text-slate-500 sm:gap-3 sm:text-sm">
-              <span className="whitespace-nowrap">Step 3 of 4</span>
+              <span className="whitespace-nowrap">{t("step3Of4")}</span>
               <span className="flex gap-1" aria-hidden="true">
                 <span className="h-1.5 w-6 rounded-full bg-primary sm:w-10" />
                 <span className="h-1.5 w-6 rounded-full bg-primary sm:w-10" />
@@ -637,11 +640,10 @@ function RegisterPageInner({
           <section className="flex-1 px-5 py-6 sm:px-9 sm:py-7 lg:px-10">
             <div className="mb-6 max-w-3xl">
               <h1 className="font-heading text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
-                Your first day is ready.
+                {t("yourFirstDayIsReady")}
               </h1>
               <p className="mt-3 text-sm leading-6 text-slate-600 sm:text-base">
-                Here’s a useful starting point for {practiceName.trim()}. You
-                can change any of it once you’re inside.
+                {t("readyIntro", { practice: practiceName.trim() })}
               </p>
             </div>
 
@@ -655,18 +657,18 @@ function RegisterPageInner({
               className="inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-primary"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back
+              {t("back")}
             </button>
             <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-4">
               <p className="text-center text-xs text-slate-500">
-                {previewFirst ? "No card needed to look around." : cardFirst ? "Card required. No charge today." : hostedBilling ? "No card required." : "Free to self-host."}
+                {previewFirst ? t("noCardNeededToLook") : cardFirst ? t("cardRequiredNoChargeToday") : hostedBilling ? t("noCardRequired") : t("freeToSelfHost")}
               </p>
               <Button
                 type="button"
                 onClick={continueToAccount}
                 className="h-11 rounded-xl px-6 text-sm font-semibold shadow-[0_12px_28px_-16px_rgba(5,150,105,0.8)]"
               >
-                Secure my workspace
+                {t("secureMyWorkspace")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -692,22 +694,22 @@ function RegisterPageInner({
               OpenVPM {cloudIntent ? "Cloud" : ""}
             </Link>
             <span className="text-xs font-medium text-slate-500">
-              Step 4 of 4
+              {t("step4Of4")}
             </span>
           </div>
 
           <h1 className="mt-8 font-heading text-3xl font-bold tracking-tight text-slate-950">
-            Secure your workspace.
+            {t("secureYourWorkspace")}
           </h1>
           <p className="mt-2 text-sm leading-6 text-slate-600">
-            Choose your clinic country and create a password.
+            {t("chooseYourClinicCountryAnd")}
             {previewFirst
-              ? " Next, explore your workspace with sample data. Add a card when you're ready to start your free trial."
+              ? t("nextExploreSample")
               : cardFirst
-              ? " Next, add your card securely through Stripe to start your free trial."
+              ? t("nextAddCard")
               : hostedBilling
-                ? " Your free trial starts immediately."
-                : " Your self-hosted workspace is free."}
+                ? t("trialStartsNow")
+                : t("selfHostedFree")}
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 grid min-w-0 gap-4">
@@ -719,7 +721,7 @@ function RegisterPageInner({
 
             <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700">
-                Your workspace
+                {t("yourWorkspace")}
               </p>
               <p className="mt-1 truncate text-sm font-semibold text-slate-950">
                 {practiceName.trim()}
@@ -741,10 +743,10 @@ function RegisterPageInner({
             />
 
             <FormField
-              label="Clinic country"
+              label={t("clinicCountry")}
               htmlFor="country"
               className="min-w-0"
-              description="This sets your currency, tax defaults, time zone, and rollout eligibility."
+              description={t("thisSetsYourCurrencyTax")}
             >
               <select
                 id="country"
@@ -758,13 +760,13 @@ function RegisterPageInner({
                 }}
                 required
               >
-                <option value="">Choose your clinic country</option>
+                <option value="">{t("chooseYourClinicCountry")}</option>
                 {CLINIC_REGION_OPTIONS.map((option) => (
                   <option key={option.code} value={option.code}>
-                    {option.label}
+                    {regionNames.of(option.code) ?? option.label}
                   </option>
                 ))}
-                <option value="OTHER">Another country</option>
+                <option value="OTHER">{t("anotherCountry")}</option>
               </select>
             </FormField>
 
@@ -772,40 +774,33 @@ function RegisterPageInner({
               <div className="flex gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-950">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <p>
-                  OpenVPM can format this workspace for your region, but the
-                  supported design-partner rollout is currently limited to US
-                  clinics. Explore with sample data only; do not move live
-                  clinic work yet.
+                  {t("regionNotice")}
                 </p>
               </div>
             ) : null}
 
             {country === "OTHER" ? (
               <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs leading-5 text-slate-700">
-                Hosted workspaces are not available in your country yet. You can
-                still{" "}
-                <a
-                  href="https://demo.openvpm.com"
-                  className="font-medium text-primary underline underline-offset-2"
-                >
-                  explore the immediate demo
-                </a>{" "}
-                or review the{" "}
-                <a
-                  href="https://github.com/evangauer/openvpm"
-                  className="font-medium text-primary underline underline-offset-2"
-                >
-                  self-hosted project
-                </a>
-                .
+                {t.rich("countryUnavailable", {
+                  demo: (chunks) => (
+                    <a href="https://demo.openvpm.com" className="font-medium text-primary underline underline-offset-2">
+                      {chunks}
+                    </a>
+                  ),
+                  repo: (chunks) => (
+                    <a href="https://github.com/evangauer/openvpm" className="font-medium text-primary underline underline-offset-2">
+                      {chunks}
+                    </a>
+                  ),
+                })}
               </div>
             ) : null}
 
             <FormField
-              label="Password"
+              label={t("password")}
               htmlFor="password"
               className="min-w-0"
-              description={`At least ${AUTH_PASSWORD_MIN_LENGTH} characters.`}
+              description={t("passwordHint", { min: AUTH_PASSWORD_MIN_LENGTH })}
             >
               <Input
                 id="password"
@@ -813,7 +808,7 @@ function RegisterPageInner({
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Create a password"
+                placeholder={t("createAPassword")}
                 autoComplete="new-password"
                 minLength={AUTH_PASSWORD_MIN_LENGTH}
                 maxLength={AUTH_PASSWORD_MAX_LENGTH}
@@ -829,11 +824,11 @@ function RegisterPageInner({
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating your workspace
+                  {t("creatingYourWorkspace")}
                 </>
               ) : (
                 <>
-                  {previewFirst ? "Build my workspace" : cardFirst ? "Continue to secure checkout" : hostedBilling ? "Start my free trial" : "Create my workspace"}
+                  {previewFirst ? t("buildMyWorkspace") : cardFirst ? t("continueToSecureCheckout") : hostedBilling ? t("startMyFreeTrial") : t("createMyWorkspace")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </>
               )}
@@ -841,16 +836,13 @@ function RegisterPageInner({
 
             <p className="flex items-center justify-center gap-1.5 text-xs text-slate-500">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-              {hostedBilling ? `Free for ${trialDays} days.` : "Free, open-source software."}
-              {previewFirst ? " No card needed to look around." : cardFirst ? " Card required. No charge today." : hostedBilling ? " No credit card required." : ""}
+              {hostedBilling ? t("freeForDays", { days: trialDays }) : t("freeOpenSourceSoftware")}
+              {previewFirst ? ` ${t("noCardNeededToLook")}` : cardFirst ? ` ${t("cardRequiredNoChargeToday")}` : hostedBilling ? ` ${t("noCreditCard")}` : ""}
             </p>
 
             {cardFirst && (
               <p className="text-center text-xs leading-5 text-slate-500">
-                After your {trialDays}-day trial, ${monthlyPriceUsd} USD/month per
-                active location, plus applicable taxes and usage overages.
-                Billing starts automatically. Cancel in Settings → Plan &amp;
-                Billing before the trial ends to avoid a subscription charge.
+                {t("trialTerms", { days: trialDays, price: monthlyPriceUsd })}
               </p>
             )}
 
@@ -860,35 +852,32 @@ function RegisterPageInner({
               className="mx-auto inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 transition hover:text-primary"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
-              Back to my first day
+              {t("backToMyFirstDay")}
             </button>
 
             <p className="text-center text-xs text-slate-400">
-              By creating a workspace you agree to the{" "}
-              <Link
-                href="/legal/terms"
-                className="underline underline-offset-2 hover:text-slate-600"
-              >
-                Terms of Service
-              </Link>{" "}
-              and{" "}
-              <Link
-                href="/legal/privacy"
-                className="underline underline-offset-2 hover:text-slate-600"
-              >
-                Privacy Policy
-              </Link>
-              .
+              {t.rich("agreement", {
+                terms: (chunks) => (
+                  <Link href="/legal/terms" className="underline underline-offset-2 hover:text-slate-600">
+                    {chunks}
+                  </Link>
+                ),
+                privacy: (chunks) => (
+                  <Link href="/legal/privacy" className="underline underline-offset-2 hover:text-slate-600">
+                    {chunks}
+                  </Link>
+                ),
+              })}
             </p>
           </form>
 
           <p className="mt-8 text-center text-sm text-slate-500">
-            Already have an account?{" "}
+            {t("haveAccount")}{" "}
             <Link
               href={`/login?next=${encodeURIComponent(nextPath)}`}
               className="font-medium text-primary hover:underline"
             >
-              Sign in
+              {t("signIn")}
             </Link>
           </p>
         </div>
@@ -898,13 +887,12 @@ function RegisterPageInner({
       <div className="relative hidden overflow-hidden bg-[linear-gradient(135deg,#fff7ed_0%,#fdf2f8_45%,#ecfdf5_100%)] lg:block">
         <div className="relative z-10 px-12 pt-16">
           <h2 className="max-w-md font-heading text-3xl font-bold tracking-tight text-slate-950">
-            Your first day, already taking shape.
+            {t("yourFirstDayAlreadyTaking")}
           </h2>
           <p className="mt-3 max-w-md text-sm leading-6 text-slate-600">
-            Built around{" "}
-            {clinicModelOption(clinicModel).shortLabel.toLowerCase()} care and
-            the first outcome you chose. You can change any of it once you’re
-            inside.
+            {t("builtAround", {
+              care: pt(`models.${clinicModel}.shortLabel`).toLowerCase(),
+            })}
           </p>
         </div>
 
@@ -916,28 +904,29 @@ function RegisterPageInner({
   );
 }
 
+// Labels are auth.register catalog keys.
 const NAV = [
-  { label: "Dashboard", icon: LayoutDashboard },
-  { label: "Patients", icon: PawPrint },
-  { label: "Schedule", icon: Calendar },
-  { label: "Records", icon: FileText },
-  { label: "Billing", icon: Receipt },
-  { label: "Inventory", icon: Package },
-];
+  { label: "dashboard", icon: LayoutDashboard },
+  { label: "patients", icon: PawPrint },
+  { label: "schedule", icon: Calendar },
+  { label: "records", icon: FileText },
+  { label: "billing", icon: Receipt },
+  { label: "inventory", icon: Package },
+] as const;
 
 const KPIS = [
-  { label: "Today's visits", value: "8", icon: Calendar },
-  { label: "New patients", value: "3", icon: PawPrint },
-  { label: "Revenue", value: "$1,240", icon: Receipt },
-];
+  { label: "todaySVisits", value: "8", icon: Calendar },
+  { label: "newPatients", value: "3", icon: PawPrint },
+  { label: "revenue", value: "$1,240", icon: Receipt },
+] as const;
 
 // Appointment colors mirror the real schedule.
 const APPTS = [
-  { time: "9:00", title: "Wellness exam", pet: "Biscuit", color: "#0d9488" },
-  { time: "10:30", title: "Vaccination", pet: "Luna", color: "#2563eb" },
-  { time: "1:15", title: "Dental cleaning", pet: "Mango", color: "#0891b2" },
-  { time: "3:00", title: "Sick visit", pet: "Olive", color: "#dc2626" },
-];
+  { time: "9:00", title: "wellnessExam", pet: "Biscuit", color: "#0d9488" },
+  { time: "10:30", title: "vaccination", pet: "Luna", color: "#2563eb" },
+  { time: "1:15", title: "dentalCleaning", pet: "Mango", color: "#0891b2" },
+  { time: "3:00", title: "sickVisit", pet: "Olive", color: "#dc2626" },
+] as const;
 
 /**
  * A clean, value-first snapshot of the real app: the icon side nav, the
@@ -945,7 +934,8 @@ const APPTS = [
  * Ask AI card. Rendered flush to the bottom-right edge of the pane.
  */
 function PlatformPreview({ practiceName }: { practiceName: string }) {
-  const clinic = practiceName.trim() || "Neighborhood Veterinary";
+  const t = useTranslations("auth.register");
+  const clinic = practiceName.trim() || t("neighborhoodVeterinary");
   return (
     <div className="h-full w-full overflow-hidden rounded-tl-2xl border-l border-t border-white/80 bg-white shadow-2xl shadow-rose-200/40">
       <div className="flex h-full">
@@ -969,7 +959,7 @@ function PlatformPreview({ practiceName }: { practiceName: string }) {
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
-                {label}
+                {t(label)}
               </div>
             ))}
           </nav>
@@ -985,10 +975,10 @@ function PlatformPreview({ practiceName }: { practiceName: string }) {
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
             <p className="font-heading text-sm font-semibold text-slate-900">
-              Dashboard
+              {t("dashboard")}
             </p>
             <span className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground">
-              New
+              {t("new")}
             </span>
           </div>
 
@@ -1004,7 +994,7 @@ function PlatformPreview({ practiceName }: { practiceName: string }) {
                     <Icon className="h-3.5 w-3.5" />
                   </span>
                   <p className="mt-2 text-[10px] font-medium uppercase tracking-wide text-slate-500">
-                    {label}
+                    {t(label)}
                   </p>
                   <p className="text-base font-semibold text-slate-950">
                     {value}
@@ -1016,7 +1006,7 @@ function PlatformPreview({ practiceName }: { practiceName: string }) {
             {/* Today's schedule with appointment colors */}
             <div className="rounded-lg border border-slate-100 p-3">
               <p className="text-xs font-semibold text-slate-900">
-                Today's schedule
+                {t("todaySSchedule")}
               </p>
               <div className="mt-2 space-y-1.5">
                 {APPTS.map((a) => (
@@ -1033,7 +1023,7 @@ function PlatformPreview({ practiceName }: { practiceName: string }) {
                       style={{ backgroundColor: a.color }}
                     />
                     <span className="text-xs font-medium text-slate-900">
-                      {a.title}
+                      {t(a.title)}
                     </span>
                     <span className="ml-auto text-[11px] text-slate-500">
                       {a.pet}
@@ -1049,14 +1039,14 @@ function PlatformPreview({ practiceName }: { practiceName: string }) {
                 <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary">
                   <Bot className="h-3.5 w-3.5" />
                 </span>
-                <p className="text-xs font-semibold text-slate-900">Ask AI</p>
+                <p className="text-xs font-semibold text-slate-900">{t("askAi")}</p>
               </div>
               <div className="mt-2 flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2">
                 <span className="truncate text-[11px] text-slate-500">
-                  Which pets are due for vaccines?
+                  {t("whichPetsAreDueFor")}
                 </span>
                 <span className="ml-auto rounded bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground">
-                  Ask
+                  {t("ask")}
                 </span>
               </div>
             </div>

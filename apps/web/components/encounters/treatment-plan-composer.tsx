@@ -1,5 +1,7 @@
 "use client";
 
+import { useLocale, useTranslations } from "use-intl";
+
 import {
   useDeferredValue,
   useEffect,
@@ -73,6 +75,8 @@ function TreatmentPlanCatalogPicker({
   currency: string;
   onSelect: (item: CatalogItem) => void;
 }) {
+  const t = useTranslations("encounters.plan");
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [highlight, setHighlight] = useState(0);
@@ -158,7 +162,7 @@ function TreatmentPlanCatalogPicker({
         }}
       >
         <span className="inline-flex items-center gap-2">
-          <Search className="h-4 w-4" /> Add a service or product
+          <Search className="h-4 w-4" /> {t("add")}
         </span>
         <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
       </Button>
@@ -170,7 +174,7 @@ function TreatmentPlanCatalogPicker({
             <input
               ref={inputRef}
               role="combobox"
-              aria-label="Search treatment plan catalog"
+              aria-label={t("searchLabel")}
               aria-autocomplete="list"
               aria-expanded="true"
               aria-controls={listboxId}
@@ -181,7 +185,7 @@ function TreatmentPlanCatalogPicker({
               }
               maxLength={TEMPLATE_CATALOG_SEARCH_MAX_LENGTH}
               value={search}
-              placeholder="Search name, code, or category"
+              placeholder={t("searchPlaceholder")}
               className="min-w-0 flex-1 bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground"
               onChange={(event) => setSearch(event.target.value)}
               onKeyDown={handleKeyDown}
@@ -189,7 +193,7 @@ function TreatmentPlanCatalogPicker({
             {search ? (
               <button
                 type="button"
-                aria-label="Clear search"
+                aria-label={t("clear")}
                 className="rounded p-2 text-muted-foreground hover:bg-accent"
                 onClick={() => {
                   setSearch("");
@@ -204,21 +208,21 @@ function TreatmentPlanCatalogPicker({
             ref={listRef}
             id={listboxId}
             role="listbox"
-            aria-label="Available services and products"
+            aria-label={t("results")}
             aria-busy={queryIsStale || catalogQuery.isFetching}
             className="max-h-72 overflow-y-auto p-1"
           >
             {queryIsStale || catalogQuery.isFetching ? (
               <div className="flex items-center justify-center gap-2 px-3 py-6 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Searching...
+                <Loader2 className="h-4 w-4 animate-spin" /> {t("searching")}
               </div>
             ) : catalogQuery.error ? (
               <div role="alert" className="px-3 py-6 text-sm text-destructive">
-                Catalog search failed. Edit the search to retry.
+                {t("searchFailed")}
               </div>
             ) : results.length === 0 ? (
               <p className="px-3 py-6 text-center text-sm text-muted-foreground">
-                No active catalog items match.
+                {t("noMatches")}
               </p>
             ) : (
               results.map((item, index) => (
@@ -241,14 +245,14 @@ function TreatmentPlanCatalogPicker({
                       {item.name}
                     </span>
                     <span className="block truncate text-xs text-muted-foreground">
-                      {item.itemType === "service" ? "Service" : "Product"}
+                      {item.itemType === "service" ? t("itemType.service") : t("itemType.product")}
                       {[item.code, item.category].filter(Boolean).length
                         ? ` · ${[item.code, item.category].filter(Boolean).join(" · ")}`
                         : ""}
                     </span>
                   </span>
                   <span className="shrink-0 tabular-nums text-muted-foreground">
-                    {formatCurrency(item.unitPrice, currency)}
+                    {formatCurrency(item.unitPrice, currency, undefined, locale)}
                   </span>
                 </button>
               ))
@@ -271,6 +275,8 @@ export function TreatmentPlanComposer({
   patientId: string;
   patientName: string;
 }) {
+  const t = useTranslations("encounters.plan");
+  const locale = useLocale();
   const utils = trpc.useUtils();
   const [lines, setLines] = useState<DraftLine[]>([]);
   const hydratedRevision = useRef<string | null>(null);
@@ -378,17 +384,18 @@ export function TreatmentPlanComposer({
         await createPlan.mutateAsync({
           operationId: operationIdFor(payloadFingerprint),
           ...context,
-          title: `${patientName} treatment plan`,
+          title: t("defaultTitle", { name: patientName }),
           items,
         });
       }
       operation.current = null;
       await utils.visitTreatmentPlans.getForAppointment.invalidate(context);
-      toast.success(plan ? "Treatment plan updated" : "Treatment plan saved");
+      toast.success(plan ? t("updated") : t("saved"));
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Save failed";
+      const message = error instanceof Error ? error.message : t("saveFailed");
       toast.error(message);
-      if (/changed in another session/i.test(message)) {
+      // Match the code, not the text: server messages follow the staff language.
+      if ((error as { data?: { code?: string } } | null)?.data?.code === "CONFLICT") {
         await planQuery.refetch();
       }
     }
@@ -407,10 +414,10 @@ export function TreatmentPlanComposer({
       });
       await navigator.clipboard.writeText(result.url).catch(() => undefined);
       await utils.visitTreatmentPlans.getForAppointment.invalidate(context);
-      toast.success("Client link created and copied");
+      toast.success(t("linkCreated"));
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Could not create client link",
+        error instanceof Error ? error.message : t("linkFailed"),
       );
     }
   };
@@ -422,10 +429,9 @@ export function TreatmentPlanComposer({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Treatment plan</CardTitle>
+          <CardTitle>{t("title")}</CardTitle>
           <CardDescription>
-            Treatment plans are temporarily unavailable. Refresh before adding
-            one.
+            {t("unavailable")}
           </CardDescription>
         </CardHeader>
       </Card>
@@ -438,15 +444,15 @@ export function TreatmentPlanComposer({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 text-primary" /> Treatment plan
+              <ClipboardList className="h-5 w-5 text-primary" /> {t("title")}
             </CardTitle>
             <CardDescription className="mt-1.5">
-              Build the plan you’ll review with the client.
+              {t("intro")}
             </CardDescription>
           </div>
           {plan ? (
             <Badge variant="secondary">
-              Revision {plan.revision.revisionNumber}
+              {t("revision", { number: plan.revision.revisionNumber })}
             </Badge>
           ) : null}
         </div>
@@ -463,9 +469,9 @@ export function TreatmentPlanComposer({
 
         {lines.length === 0 ? (
           <div className="rounded-md border border-dashed border-border px-4 py-8 text-center">
-            <p className="text-sm font-medium">No items yet</p>
+            <p className="text-sm font-medium">{t("emptyTitle")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Search your existing catalog to start this treatment plan.
+              {t("emptyHelp")}
             </p>
           </div>
         ) : (
@@ -480,7 +486,7 @@ export function TreatmentPlanComposer({
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{line.name}</p>
                     <p className="text-xs capitalize text-muted-foreground">
-                      {line.itemType}
+                      {line.itemType === "service" ? t("itemType.service") : t("itemType.product")}
                     </p>
                   </div>
                   <div>
@@ -488,11 +494,11 @@ export function TreatmentPlanComposer({
                       htmlFor={`treatment-plan-quantity-${line.itemType}-${line.id}`}
                       className="mb-1 block text-xs text-muted-foreground sm:sr-only"
                     >
-                      Quantity
+                      {t("quantity")}
                     </label>
                     <Input
                       id={`treatment-plan-quantity-${line.itemType}-${line.id}`}
-                      aria-label={`Quantity for ${line.name}`}
+                      aria-label={t("quantityFor", { name: line.name })}
                       inputMode="decimal"
                       value={line.quantity}
                       aria-invalid={!validQuantity(line.quantity)}
@@ -510,7 +516,7 @@ export function TreatmentPlanComposer({
                   </div>
                   <p className="text-right text-sm font-medium tabular-nums sm:text-left">
                     {quotedLine
-                      ? formatCurrency(quotedLine.lineTotal, currency)
+                      ? formatCurrency(quotedLine.lineTotal, currency, undefined, locale)
                       : quoteQuery.isFetching
                         ? "…"
                         : "—"}
@@ -523,7 +529,7 @@ export function TreatmentPlanComposer({
                           variant="ghost"
                           size="icon"
                           className="h-9 w-9"
-                          aria-label={`Move ${line.name} up`}
+                          aria-label={t("moveUp", { name: line.name })}
                           disabled={completed || index === 0}
                           onClick={() =>
                             setLines((current) => {
@@ -544,7 +550,7 @@ export function TreatmentPlanComposer({
                           variant="ghost"
                           size="icon"
                           className="h-9 w-9"
-                          aria-label={`Move ${line.name} down`}
+                          aria-label={t("moveDown", { name: line.name })}
                           disabled={completed || index === lines.length - 1}
                           onClick={() =>
                             setLines((current) => {
@@ -568,7 +574,7 @@ export function TreatmentPlanComposer({
                       size="icon"
                       className="h-9 w-9 text-muted-foreground hover:text-destructive"
                       disabled={completed}
-                      aria-label={`Remove ${line.name}`}
+                      aria-label={t("remove", { name: line.name })}
                       onClick={() =>
                         setLines((current) =>
                           current.filter((_, row) => row !== index),
@@ -586,8 +592,7 @@ export function TreatmentPlanComposer({
 
         {lines.some((line) => !validQuantity(line.quantity)) ? (
           <p role="alert" className="text-sm text-destructive">
-            Quantities must be greater than zero with up to three decimal
-            places.
+            {t("invalidQuantity")}
           </p>
         ) : null}
 
@@ -599,17 +604,17 @@ export function TreatmentPlanComposer({
 
         <div className="flex flex-col gap-4 border-t border-border pt-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="grid grid-cols-3 gap-x-5 gap-y-1 text-sm">
-            <span className="text-muted-foreground">Subtotal</span>
-            <span className="text-muted-foreground">Tax</span>
-            <span className="font-medium">Total</span>
+            <span className="text-muted-foreground">{t("subtotal")}</span>
+            <span className="text-muted-foreground">{t("tax")}</span>
+            <span className="font-medium">{t("total")}</span>
             <span className="tabular-nums">
-              {quote ? formatCurrency(quote.subtotal, currency) : "—"}
+              {quote ? formatCurrency(quote.subtotal, currency, undefined, locale) : "—"}
             </span>
             <span className="tabular-nums">
-              {quote ? formatCurrency(quote.tax, currency) : "—"}
+              {quote ? formatCurrency(quote.tax, currency, undefined, locale) : "—"}
             </span>
             <span className="font-semibold tabular-nums">
-              {quote ? formatCurrency(quote.total, currency) : "—"}
+              {quote ? formatCurrency(quote.total, currency, undefined, locale) : "—"}
             </span>
           </div>
           <Button
@@ -630,12 +635,11 @@ export function TreatmentPlanComposer({
             ) : (
               <Check className="mr-2 h-4 w-4" />
             )}
-            {plan ? "Save new revision" : "Save treatment plan"}
+            {plan ? t("saveRevision") : t("save")}
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Saving this plan does not charge the client, adjust inventory, or
-          schedule care.
+          {t("noCharge")}
         </p>
 
         {plan?.clientDecisionsEnabled && !plan.response ? (
@@ -643,11 +647,10 @@ export function TreatmentPlanComposer({
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium">
-                  Client review and signature
+                  {t("reviewTitle")}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  The link expires in one hour and is locked to revision{" "}
-                  {plan.revision.revisionNumber}.
+                  {t("reviewHelp", { number: plan.revision.revisionNumber })}
                 </p>
               </div>
               <Button
@@ -667,10 +670,10 @@ export function TreatmentPlanComposer({
                   <Link2 className="mr-2 h-4 w-4" />
                 )}
                 {plan.activePresentation?.status === "pending"
-                  ? "Replace client link"
+                  ? t("replaceLink")
                   : plan.activePresentation?.status === "awaiting_signature"
-                    ? "Awaiting signature"
-                    : "Create client link"}
+                    ? t("awaiting")
+                    : t("createLink")}
               </Button>
             </div>
             {presentationLink ? (
@@ -678,16 +681,16 @@ export function TreatmentPlanComposer({
                 <Input
                   readOnly
                   value={presentationLink.url}
-                  aria-label="Client treatment plan link"
+                  aria-label={t("linkLabel")}
                 />
                 <Button
                   type="button"
                   variant="outline"
                   size="icon"
-                  aria-label="Copy client treatment plan link"
+                  aria-label={t("copyLink")}
                   onClick={() => {
                     void navigator.clipboard.writeText(presentationLink.url);
-                    toast.success("Link copied");
+                    toast.success(t("copied"));
                   }}
                 >
                   <Copy className="h-4 w-4" />
@@ -702,11 +705,11 @@ export function TreatmentPlanComposer({
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="flex items-center gap-2 text-sm font-semibold text-teal-950">
-                  <FileCheck2 className="h-4 w-4" /> Client response signed
+                  <FileCheck2 className="h-4 w-4" /> {t("signed")}
                 </p>
                 <p className="mt-1 text-xs text-teal-900/70">
                   {plan.response.signerName} ·{" "}
-                  {new Date(plan.response.decidedAt).toLocaleString()}
+                  {new Date(plan.response.decidedAt).toLocaleString(locale)}
                 </p>
               </div>
               <Button asChild type="button" variant="outline" size="sm">
@@ -715,7 +718,7 @@ export function TreatmentPlanComposer({
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Signed document
+                  {t("signedDocument")}
                 </a>
               </Button>
             </div>
@@ -731,7 +734,7 @@ export function TreatmentPlanComposer({
                   >
                     <span className="min-w-0 truncate">{line.description}</span>
                     <span className="shrink-0 font-medium capitalize">
-                      {decision?.decision}
+                      {decision ? t(`decision.${decision.decision}`) : null}
                       {decision?.decision === "accepted"
                         ? ` · ${decision.acceptedQuantity}`
                         : ""}

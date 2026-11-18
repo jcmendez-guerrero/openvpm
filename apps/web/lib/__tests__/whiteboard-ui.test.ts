@@ -1,9 +1,9 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("whiteboard appointment workflow UI", () => {
   it("does not offer status transitions that the appointment lifecycle rejects", () => {
-    const source = readFileSync("app/(dashboard)/whiteboard/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/whiteboard/page.tsx");
 
     expect(source).toContain("Review closeout");
     expect(source).toContain("`/encounters/${appointment.id}#visit-closeout`");
@@ -24,7 +24,7 @@ describe("whiteboard appointment workflow UI", () => {
   });
 
   it("keeps status updates hidden for read-only viewer access", () => {
-    const source = readFileSync("app/(dashboard)/whiteboard/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/whiteboard/page.tsx");
 
     expect(source).toContain('import { useSession } from "next-auth/react"');
     expect(source).toContain("function canUpdateWhiteboardStatusRole");
@@ -43,11 +43,11 @@ describe("whiteboard appointment workflow UI", () => {
   });
 
   it("renders whiteboard times in the practice timezone", () => {
-    const source = readFileSync("app/(dashboard)/whiteboard/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/whiteboard/page.tsx");
 
-    expect(source).toContain("function formatCurrentTime(date: Date, timeZone?: string | null)");
-    expect(source).toContain("function formatCurrentDate(date: Date, timeZone?: string | null)");
-    expect(source).toContain("function formatAppointmentTime(date: Date, timeZone?: string | null)");
+    expect(source).toContain("function formatCurrentTime(date: Date, timeZone?: string | null, locale = \"en-US\")");
+    expect(source).toContain("function formatCurrentDate(date: Date, timeZone?: string | null, locale = \"en-US\")");
+    expect(source).toContain("function formatAppointmentTime(date: Date, timeZone?: string | null, locale = \"en-US\")");
     expect(source).toContain("trpc.whiteboard.settings.useQuery");
     expect(source).toContain("const settingsQuery = trpc.whiteboard.settings.useQuery()");
     expect(source).toContain("const practiceSettings = settingsQuery.data");
@@ -75,13 +75,13 @@ describe("whiteboard appointment workflow UI", () => {
     );
     expect(source).toContain(") : isPageLoading ? (");
     expect(source).toContain("practiceClockReady && currentTime && verifiedPracticeSettings");
-    expect(source).toContain("formatCurrentTime(currentTime, verifiedPracticeSettings.timezone)");
-    expect(source).toContain("formatCurrentDate(currentTime, verifiedPracticeSettings.timezone)");
+    expect(source).toContain("formatCurrentTime(currentTime, verifiedPracticeSettings.timezone, locale)");
+    expect(source).toContain("formatCurrentDate(currentTime, verifiedPracticeSettings.timezone, locale)");
     expect(source).toContain("appointment={selectedAppointmentFromList}");
     expect(source).toContain("timeZone={verifiedPracticeSettings.timezone}");
     expect(source).toContain("pageReady &&");
     expect(source).toContain("selectedAppointmentStillActive &&");
-    expect(source).toContain("formatAppointmentTime(start, timeZone)");
+    expect(source).toContain("formatAppointmentTime(start, timeZone, locale)");
     expect(source).not.toContain("settingsQuery.data?.timezone");
     expect(source).not.toContain("settingsQuery.data?.name");
     expect(source).not.toContain("settingsQuery.data?.phone");

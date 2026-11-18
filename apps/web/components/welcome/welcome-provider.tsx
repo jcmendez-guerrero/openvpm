@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import {
   createContext,
   useCallback,
@@ -36,7 +38,6 @@ import {
 } from "@/components/tour/guide-signals";
 import { WelcomeSurface } from "./welcome-surface";
 import type { WelcomeVariant } from "./polaroid-card";
-import { WELCOME_COPY } from "./welcome-copy";
 import { stripDemoRoleSwitchMarker } from "@/lib/demo-role-switcher";
 
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE?.trim() === "true";
@@ -67,6 +68,7 @@ export function useWelcome() {
  * - Afterwards: reachable from Guides in the sidebar, or ?guides=1.
  */
 export function WelcomeProvider({ children }: { children: React.ReactNode }) {
+  const t = useTranslations("welcome.copy");
   const router = useRouter();
   const pathname = usePathname();
   const { data: session, status } = useSession();
@@ -234,12 +236,12 @@ export function WelcomeProvider({ children }: { children: React.ReactNode }) {
   };
 
   const headline = isAdmin
-    ? WELCOME_COPY.headlineAdmin(
-        welcomeContext.data?.practiceName ?? "your clinic",
-      )
+    ? t("headlineAdmin", {
+        practice: welcomeContext.data?.practiceName ?? t("yourClinic"),
+      })
     : session?.user?.name
-      ? WELCOME_COPY.headlineStaff(session.user.name.split(" ")[0]!)
-      : WELCOME_COPY.headlineFallback;
+      ? t("headlineStaff", { name: session.user.name.split(" ")[0]! })
+      : t("headlineFallback");
 
   const completed = new Set(Object.keys(readWelcomeState(userId).guides ?? {}));
 
@@ -296,28 +298,29 @@ function SetupOffer({
   onAccept: () => void;
   onLater: () => void;
 }) {
+  const t = useTranslations("welcome.copy");
   return (
     <div className="fixed inset-0 z-[85] flex items-center justify-center bg-slate-900/50 p-4">
       <div
         role="dialog"
-        aria-label={WELCOME_COPY.allDone.title}
+        aria-label={t("allDone.title")}
         className="w-full max-w-sm rounded-xl border border-border bg-card p-6 text-center shadow-xl"
       >
         <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
           <PartyPopper className="h-5 w-5" aria-hidden="true" />
         </span>
         <h2 className="mt-3 font-heading text-lg font-semibold">
-          {WELCOME_COPY.allDone.title}
+          {t("allDone.title")}
         </h2>
         <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
-          {WELCOME_COPY.allDone.body}
+          {t("allDone.body")}
         </p>
         <div className="mt-5 flex items-center justify-center gap-2">
           <Button variant="ghost" size="sm" onClick={onLater}>
-            {WELCOME_COPY.allDone.later}
+            {t("allDone.later")}
           </Button>
           <Button size="sm" onClick={onAccept}>
-            {WELCOME_COPY.allDone.accept}
+            {t("allDone.accept")}
           </Button>
         </div>
       </div>

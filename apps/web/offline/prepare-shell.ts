@@ -1,24 +1,35 @@
-export async function prepareOfflineShell(): Promise<void> {
+type ShellKey =
+  | "shell.unsupported"
+  | "shell.notReady"
+  | "shell.timeout"
+  | "shell.failed"
+  | "shell.notReadyShort"
+  | "shell.verifyFailed"
+  | "shell.missing";
+
+export async function prepareOfflineShell(
+  t: (key: ShellKey) => string,
+): Promise<void> {
   if (!window.isSecureContext || !("serviceWorker" in navigator))
     throw new Error(
-      "This browser cannot prepare an offline workspace. Use a supported browser over HTTPS.",
+      t("shell.unsupported"),
     );
   const registration = await navigator.serviceWorker.register(
     "/offline/sw.js",
     { scope: "/offline/", updateViaCache: "none" },
   );
-  if (registration.active) return checkInstalled(registration.active);
+  if (registration.active) return checkInstalled(registration.active, t);
   const worker = registration.installing ?? registration.waiting;
   if (!worker)
     throw new Error(
-      "Offline files are not ready. Reconnect and try preparing the chart again.",
+      t("shell.notReady"),
     );
   await new Promise<void>((resolve, reject) => {
     const timeout = setTimeout(() => {
       cleanup();
       reject(
         new Error(
-          "Offline files could not be prepared. Reconnect and try again.",
+          t("shell.timeout"),
         ),
       );
     }, 20_000);
@@ -35,7 +46,7 @@ export async function prepareOfflineShell(): Promise<void> {
         cleanup();
         reject(
           new Error(
-            "Offline file installation failed. Your existing saved charts have been kept.",
+            t("shell.failed"),
           ),
         );
       }
@@ -43,18 +54,21 @@ export async function prepareOfflineShell(): Promise<void> {
     worker.addEventListener("statechange", check);
     check();
   });
-  if (!registration.active) throw new Error("Offline files are not ready.");
-  await checkInstalled(registration.active);
+  if (!registration.active) throw new Error(t("shell.notReadyShort"));
+  await checkInstalled(registration.active, t);
 }
 
-async function checkInstalled(worker: ServiceWorker) {
+async function checkInstalled(
+  worker: ServiceWorker,
+  t: (key: ShellKey) => string,
+) {
   await new Promise<void>((resolve, reject) => {
     const channel = new MessageChannel();
     const timeout = setTimeout(() => {
       channel.port1.close();
       reject(
         new Error(
-          "Could not verify the offline files. Reconnect and try again.",
+          t("shell.verifyFailed"),
         ),
       );
     }, 10_000);
@@ -65,7 +79,7 @@ async function checkInstalled(worker: ServiceWorker) {
       else
         reject(
           new Error(
-            "Some offline files are missing. Close other workspace tabs, reconnect, and try again.",
+            t("shell.missing"),
           ),
         );
     };

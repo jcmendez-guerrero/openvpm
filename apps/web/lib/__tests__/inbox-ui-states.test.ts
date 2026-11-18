@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 import {
   COMMUNICATION_CONTENT_MAX_LENGTH,
@@ -14,12 +14,9 @@ import {
 } from "../clients/policy";
 
 describe("inbox UI states", () => {
-  const source = readFileSync("app/(dashboard)/inbox/page.tsx", "utf8");
-  const routerSource = readFileSync("server/routers/communications.ts", "utf8");
-  const outboundEmailSecuritySource = readFileSync(
-    "lib/outbound-email-security.ts",
-    "utf8",
-  );
+  const source = readTranslatedSource("app/(dashboard)/inbox/page.tsx");
+  const routerSource = readTranslatedSource("server/routers/communications.ts");
+  const outboundEmailSecuritySource = readTranslatedSource("lib/outbound-email-security.ts");
 
   it("keeps viewer access read-only for inbox writes", () => {
     expect(source).toContain('import { useSession } from "next-auth/react"');
@@ -73,7 +70,7 @@ describe("inbox UI states", () => {
       'import { formatDateInputForTimeZone } from "@/lib/date-input"',
     );
     expect(source).toContain(
-      "function relativeTime(\n  date: Date | string | null,\n  timeZone?: string | null",
+      "function relativeTime(\n  date: Date | string | null,\n  timeZone: string | null | undefined",
     );
     expect(source).toContain(
       "const {\n    data: inboxSettings,\n    isLoading: inboxSettingsLoading,\n    error: inboxSettingsError,\n  } = trpc.communications.settings.useQuery",
@@ -96,7 +93,7 @@ describe("inbox UI states", () => {
     expect(source).toContain(
       "relativeTime(\n                          selectedUnmatched.createdAt,\n                          inboxTimeZone",
     );
-    expect(source).toContain("relativeTime(msg.createdAt, inboxTimeZone)");
+    expect(source).toContain("relativeTime(msg.createdAt, inboxTimeZone, t, locale)");
     expect(source).not.toContain("inboxSettings?.timezone");
     expect(source).not.toContain("return d.toLocaleDateString();");
   });
@@ -266,7 +263,7 @@ describe("inbox UI states", () => {
     );
     expect(source).toContain("content: trimmedContent");
     expect(source).toContain(
-      "const statusLabel = communicationStatusLabel(msg)",
+      "const statusLabel = communicationStatusLabel(msg, statusT)",
     );
     expect(source).toContain("{statusLabel ? (");
     expect(source).not.toContain("{msg.status && (");

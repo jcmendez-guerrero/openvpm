@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "use-intl";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, ArrowLeft, MessageSquare, Send } from "lucide-react";
@@ -10,6 +12,7 @@ import { formatPortalDateTime } from "@/lib/portal/date";
 import { COMMUNICATION_CONTENT_MAX_LENGTH } from "@/lib/communications/policy";
 
 export default function PortalMessagesPage() {
+  const t = useTranslations("portal.messages");
   const [content, setContent] = useState("");
   const utils = trpc.useUtils();
 
@@ -20,7 +23,7 @@ export default function PortalMessagesPage() {
   const sendMessage = trpc.portal.createMessage.useMutation({
     onSuccess: () => {
       setContent("");
-      toast.success("Message sent");
+      toast.success(t("messageSent"));
       utils.portal.getMessages.invalidate({});
     },
     onError: (err) => {
@@ -88,8 +91,8 @@ export default function PortalMessagesPage() {
         <EmptyState
           className="py-12"
           icon={AlertCircle}
-          title="Unable to load messages"
-          description="Please refresh this page or contact your clinic if the portal link has expired."
+          title={t("unableToLoadMessages")}
+          description={t("pleaseRefreshThisPageOr")}
         />
       </div>
     );
@@ -102,13 +105,13 @@ export default function PortalMessagesPage() {
         className="mb-6 inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80"
       >
         <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-        Back to portal
+        {t("backToPortal")}
       </Link>
 
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t("messages")}</h1>
         <p className="mt-1 text-gray-500">
-          Send questions and follow-ups directly to your clinic.
+          {t("sendQuestionsAndFollowUps")}
         </p>
       </div>
 
@@ -118,8 +121,8 @@ export default function PortalMessagesPage() {
             <EmptyState
               className="border-0 py-10"
               icon={MessageSquare}
-              title="No portal messages yet"
-              description="Messages from your clinic and your replies will appear here."
+              title={t("noPortalMessagesYet")}
+              description={t("messagesFromYourClinicAnd")}
             />
           ) : (
             messages.map((message) => {
@@ -151,7 +154,7 @@ export default function PortalMessagesPage() {
                           : "text-gray-500"
                       }`}
                     >
-                      {isClientMessage ? "You" : "Clinic"} -{" "}
+                      {isClientMessage ? t("you") : t("clinic")} -{" "}
                       {formatPortalDateTime(
                         message.createdAt,
                         undefined,
@@ -167,7 +170,7 @@ export default function PortalMessagesPage() {
 
         <div className="border-t border-gray-200 p-4">
           <label className="sr-only" htmlFor="portal-message-content">
-            Message
+            {t("message")}
           </label>
           <textarea
             id="portal-message-content"
@@ -175,7 +178,7 @@ export default function PortalMessagesPage() {
             onChange={(event) => setContent(event.target.value)}
             maxLength={COMMUNICATION_CONTENT_MAX_LENGTH}
             rows={3}
-            placeholder="Type your message..."
+            placeholder={t("typeYourMessage")}
             className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition-colors placeholder:text-gray-400 focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
           <div className="mt-3 flex items-center justify-between gap-3">
@@ -189,7 +192,7 @@ export default function PortalMessagesPage() {
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Send className="h-4 w-4" aria-hidden="true" />
-              {sendMessage.isPending ? "Sending..." : "Send"}
+              {sendMessage.isPending ? t("sending") : t("send")}
             </button>
           </div>
         </div>

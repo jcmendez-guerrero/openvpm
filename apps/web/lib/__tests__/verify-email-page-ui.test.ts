@@ -1,8 +1,8 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("verify email recovery UI", () => {
-  const source = readFileSync("app/(auth)/verify-email/page.tsx", "utf8");
+  const source = readTranslatedSource("app/(auth)/verify-email/page.tsx");
 
   it("keeps verification optional and routes recovery through the signed-in app", () => {
     expect(source).toContain("Sign in to OpenVPM and use the verification banner");

@@ -1,6 +1,6 @@
 "use client";
 
-import { AppErrorView } from "@/components/common/app-error-view";
+import { AppErrorBody } from "@/components/common/app-error-view";
 import "@/styles/globals.css";
 
 export default function GlobalError({
@@ -13,7 +13,7 @@ export default function GlobalError({
   return (
     <html lang="en">
       <body>
-        <AppErrorView error={error} reset={reset} source="global-error" />
+        <AppErrorBody error={error} reset={reset} source="global-error" />
       </body>
     </html>
   );

@@ -15,7 +15,9 @@ import {
   LineChart,
   Line,
 } from "recharts";
+import { useLocale, useTranslations } from "use-intl";
 import { formatCurrency, localeForCountry } from "@/lib/locale/format";
+import { useSpeciesLabel } from "@/lib/patients/use-species-label";
 
 const SPECIES_COLORS: Record<string, string> = {
   Canine: "#3b82f6",
@@ -29,6 +31,7 @@ const SPECIES_COLORS: Record<string, string> = {
 
 type AppointmentChartPoint = {
   date: string;
+  dateInput?: string;
   completed: number;
   scheduled: number;
   cancelled: number;
@@ -36,11 +39,13 @@ type AppointmentChartPoint = {
 
 type SpeciesChartPoint = {
   name: string;
+  species?: string;
   value: number;
 };
 
 type RevenueChartPoint = {
   date: string;
+  dateInput?: string;
   revenue: number;
 };
 
@@ -100,24 +105,45 @@ export function DashboardCharts({
   currency: string;
   country: string;
 }) {
-  const fmtMoney = (value: number) => formatCurrency(value, currency, country);
+  const t = useTranslations("dashboard.charts");
+  const locale = useLocale();
+  const speciesLabel = useSpeciesLabel();
+  const fmtMoney = (value: number) => formatCurrency(value, currency, country, locale);
   const fmtAxisMoney = (value: number) =>
-    new Intl.NumberFormat(localeForCountry(country), {
+    new Intl.NumberFormat(localeForCountry(country, locale), {
       style: "currency",
       currency: currency.toUpperCase(),
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
 
+  // The server labels days in English; other languages relabel from the raw date.
+  const dayLabel = (input: string | undefined, fallback: string, options: Intl.DateTimeFormatOptions) =>
+    input && !locale.startsWith("en")
+      ? new Date(`${input}T00:00:00.000Z`).toLocaleDateString(locale, { ...options, timeZone: "UTC" })
+      : fallback;
+  const appointmentsData = appointmentsByDay.map((d) => ({
+    ...d,
+    date: dayLabel(d.dateInput, d.date, { weekday: "short" }),
+  }));
+  const revenueData = revenueByDay.map((d) => ({
+    ...d,
+    date: dayLabel(d.dateInput, d.date, { month: "short", day: "2-digit" }),
+  }));
+  const speciesData = speciesDistribution.map((d) => ({
+    ...d,
+    label: d.species ? speciesLabel(d.species) : d.name,
+  }));
+
   return (
     <>
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-lg border border-border bg-card p-6">
           <h2 className="mb-4 font-heading text-lg font-semibold">
-            Appointments This Week
+            {t("appointmentsWeek")}
           </h2>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={appointmentsByDay}>
+            <BarChart data={appointmentsData}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis
                 dataKey="date"
@@ -140,21 +166,21 @@ export function DashboardCharts({
               <Legend wrapperStyle={{ fontSize: "0.75rem" }} />
               <Bar
                 dataKey="completed"
-                name="Completed"
+                name={t("completed")}
                 stackId="a"
                 fill="#22c55e"
                 radius={[0, 0, 0, 0]}
               />
               <Bar
                 dataKey="scheduled"
-                name="Scheduled"
+                name={t("scheduled")}
                 stackId="a"
                 fill="#3b82f6"
                 radius={[0, 0, 0, 0]}
               />
               <Bar
                 dataKey="cancelled"
-                name="Cancelled"
+                name={t("cancelled")}
                 stackId="a"
                 fill="#ef4444"
                 radius={[4, 4, 0, 0]}
@@ -165,19 +191,20 @@ export function DashboardCharts({
 
         <div className="rounded-lg border border-border bg-card p-6">
           <h2 className="mb-4 font-heading text-lg font-semibold">
-            Species Distribution
+            {t("species")}
           </h2>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={speciesDistribution}
+                data={speciesData}
+                nameKey="label"
                 cx="50%"
                 cy="50%"
                 outerRadius={100}
                 dataKey="value"
                 label={PieLabel}
               >
-                {speciesDistribution.map((entry) => (
+                {speciesData.map((entry) => (
                   <Cell
                     key={entry.name}
                     fill={SPECIES_COLORS[entry.name] ?? "#6b7280"}
@@ -200,10 +227,10 @@ export function DashboardCharts({
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-lg border border-border bg-card p-6">
           <h2 className="mb-4 font-heading text-lg font-semibold">
-            Net collections (Last 30 Days)
+            {t("collections30")}
           </h2>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={revenueByDay}>
+            <LineChart data={revenueData}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis
                 dataKey="date"
@@ -222,12 +249,12 @@ export function DashboardCharts({
                   borderRadius: "0.5rem",
                   fontSize: "0.875rem",
                 }}
-                formatter={(value: number) => [fmtMoney(value), "Net collections"]}
+                formatter={(value: number) => [fmtMoney(value), t("collections")]}
               />
               <Line
                 type="monotone"
                 dataKey="revenue"
-                name="Net collections"
+                name={t("collections")}
                 stroke="#0d9488"
                 strokeWidth={2}
                 dot={false}
@@ -239,7 +266,7 @@ export function DashboardCharts({
 
         <div className="rounded-lg border border-border bg-card p-6">
           <h2 className="mb-4 font-heading text-lg font-semibold">
-            Net collections by doctor (MTD)
+            {t("byDoctor")}
           </h2>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart
@@ -268,11 +295,11 @@ export function DashboardCharts({
                   borderRadius: "0.5rem",
                   fontSize: "0.875rem",
                 }}
-                formatter={(value: number) => [fmtMoney(value), "Net collections"]}
+                formatter={(value: number) => [fmtMoney(value), t("collections")]}
               />
               <Bar
                 dataKey="production"
-                name="Net collections"
+                name={t("collections")}
                 fill="#14b8a6"
                 radius={[0, 4, 4, 0]}
               />

@@ -50,6 +50,8 @@ export const practices = pgTable(
     // behavior. Defaults keep existing US practices working unchanged.
     country: varchar("country", { length: 2 }).notNull().default("US"), // ISO 3166-1 alpha-2
     currency: varchar("currency", { length: 3 }).notNull().default("usd"), // ISO 4217, Stripe-style lowercase
+    // Language used when no user or client choice applies. Separate from country.
+    defaultLanguage: varchar("default_language", { length: 8 }).notNull().default("en"),
     taxRatePercent: numeric("tax_rate_percent", { precision: 5, scale: 2 })
       .notNull()
       .default("8.00"),

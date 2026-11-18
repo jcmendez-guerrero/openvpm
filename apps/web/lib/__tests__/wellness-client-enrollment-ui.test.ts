@@ -1,10 +1,10 @@
-import { readFileSync } from "node:fs";
+import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
 describe("wellness client enrollment UI", () => {
   it("keeps client detail write controls aligned to client and wellness roles", () => {
-    const source = readFileSync("app/(dashboard)/clients/[id]/page.tsx", "utf8");
-    const wellnessRouter = readFileSync("server/routers/wellness.ts", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/clients/[id]/page.tsx");
+    const wellnessRouter = readTranslatedSource("server/routers/wellness.ts");
 
     expect(source).toContain('import { useSession } from "next-auth/react"');
     expect(source).toContain(
@@ -44,7 +44,7 @@ describe("wellness client enrollment UI", () => {
   });
 
   it("keeps client detail enrollment wired to wellness APIs", () => {
-    const source = readFileSync("app/(dashboard)/clients/[id]/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/clients/[id]/page.tsx");
 
     expect(source).toContain("WellnessEnrollmentPanel");
     expect(source).toContain("trpc.wellness.listPlans.useQuery");
@@ -69,7 +69,7 @@ describe("wellness client enrollment UI", () => {
   });
 
   it("renders enrollment billing dates through the clinical date formatter", () => {
-    const source = readFileSync("app/(dashboard)/clients/[id]/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/clients/[id]/page.tsx");
 
     expect(source).toContain(
       'import {\n  formatClinicalDate,\n  formatClinicalDateTime,\n} from "@/lib/records/clinical-dates"'
@@ -84,7 +84,7 @@ describe("wellness client enrollment UI", () => {
   });
 
   it("keeps client detail empty and enrollment error states explicit", () => {
-    const source = readFileSync("app/(dashboard)/clients/[id]/page.tsx", "utf8");
+    const source = readTranslatedSource("app/(dashboard)/clients/[id]/page.tsx");
 
     expect(source).toContain('import { EmptyState } from "@/components/common/empty-state"');
     expect(source).toContain('title="No patients for this client yet"');
