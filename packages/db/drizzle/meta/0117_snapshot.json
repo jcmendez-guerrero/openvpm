@@ -1,5 +1,5 @@
 {
-  "id": "33a8c9af-ae64-4202-bea0-8117e8e21f09",
+  "id": "b23312c5-bd55-4bfd-aa3c-40eb145a0d1c",
   "prevId": "8b034f4e-c740-4d69-b988-e734d7e05bd1",
   "version": "7",
   "dialect": "postgresql",
@@ -292,6 +292,13 @@
           "notNull": true,
           "default": "'usd'"
         },
+        "default_language": {
+          "name": "default_language",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'en'"
+        },
         "tax_rate_percent": {
           "name": "tax_rate_percent",
           "type": "numeric(5, 2)",
@@ -516,6 +523,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'front_desk'"
+        },
+        "language": {
+          "name": "language",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": false
         },
         "is_veterinarian": {
           "name": "is_veterinarian",
@@ -893,6 +906,12 @@
           "primaryKey": false,
           "notNull": false,
           "default": "'phone'"
+        },
+        "preferred_language": {
+          "name": "preferred_language",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": false
         },
         "sms_consent": {
           "name": "sms_consent",
@@ -13776,6 +13795,12 @@
         "content": {
           "name": "content",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "language": {
+          "name": "language",
+          "type": "varchar(8)",
           "primaryKey": false,
           "notNull": false
         },
@@ -32552,201 +32577,6 @@
         "lab_report_receipts_previous_check": {
           "name": "lab_report_receipts_previous_check",
           "value": "\"lab_report_receipts\".\"supersedes_id\" is null or \"lab_report_receipts\".\"supersedes_id\" <> \"lab_report_receipts\".\"id\""
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.offline_field_batches": {
-      "name": "offline_field_batches",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "practice_id": {
-          "name": "practice_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "patient_id": {
-          "name": "patient_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "preparation_hash": {
-          "name": "preparation_hash",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "expires_at": {
-          "name": "expires_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "request_hash": {
-          "name": "request_hash",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "receipt": {
-          "name": "receipt",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "result": {
-          "name": "result",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "offline_field_batches_owner_idx": {
-          "name": "offline_field_batches_owner_idx",
-          "columns": [
-            {
-              "expression": "practice_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "offline_field_batches_practice_id_practices_id_fk": {
-          "name": "offline_field_batches_practice_id_practices_id_fk",
-          "tableFrom": "offline_field_batches",
-          "tableTo": "practices",
-          "columnsFrom": [
-            "practice_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "offline_field_batches_user_id_users_id_fk": {
-          "name": "offline_field_batches_user_id_users_id_fk",
-          "tableFrom": "offline_field_batches",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "offline_field_batches_patient_id_patients_id_fk": {
-          "name": "offline_field_batches_patient_id_patients_id_fk",
-          "tableFrom": "offline_field_batches",
-          "tableTo": "patients",
-          "columnsFrom": [
-            "patient_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "offline_field_batches_practice_user_fk": {
-          "name": "offline_field_batches_practice_user_fk",
-          "tableFrom": "offline_field_batches",
-          "tableTo": "users",
-          "columnsFrom": [
-            "practice_id",
-            "user_id"
-          ],
-          "columnsTo": [
-            "practice_id",
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "offline_field_batches_practice_patient_fk": {
-          "name": "offline_field_batches_practice_patient_fk",
-          "tableFrom": "offline_field_batches",
-          "tableTo": "patients",
-          "columnsFrom": [
-            "practice_id",
-            "patient_id"
-          ],
-          "columnsTo": [
-            "practice_id",
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "offline_field_batches_state_check": {
-          "name": "offline_field_batches_state_check",
-          "value": "(\"offline_field_batches\".\"request_hash\" is null and \"offline_field_batches\".\"result\" is null and \"offline_field_batches\".\"receipt\" is null) or (\"offline_field_batches\".\"request_hash\" is not null and \"offline_field_batches\".\"request_hash\" ~ '^[a-f0-9]{64}$' and \"offline_field_batches\".\"result\" is not null and \"offline_field_batches\".\"receipt\" is not null)"
-        },
-        "offline_field_batches_hash_check": {
-          "name": "offline_field_batches_hash_check",
-          "value": "\"offline_field_batches\".\"preparation_hash\" ~ '^[a-f0-9]{64}$'"
         }
       },
       "isRLSEnabled": false

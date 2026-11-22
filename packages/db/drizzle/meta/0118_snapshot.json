@@ -1,6 +1,6 @@
 {
-  "id": "751a50f7-0e20-4520-9eb9-b447ba18ff60",
-  "prevId": "33a8c9af-ae64-4202-bea0-8117e8e21f09",
+  "id": "8979d2ad-4db4-4cfa-bb74-b44ca5301385",
+  "prevId": "b23312c5-bd55-4bfd-aa3c-40eb145a0d1c",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -292,6 +292,13 @@
           "notNull": true,
           "default": "'usd'"
         },
+        "default_language": {
+          "name": "default_language",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'en'"
+        },
         "tax_rate_percent": {
           "name": "tax_rate_percent",
           "type": "numeric(5, 2)",
@@ -349,13 +356,6 @@
           "type": "varchar(64)",
           "primaryKey": false,
           "notNull": false
-        },
-        "default_language": {
-          "name": "default_language",
-          "type": "varchar(8)",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'en'"
         }
       },
       "indexes": {
@@ -524,6 +524,12 @@
           "notNull": true,
           "default": "'front_desk'"
         },
+        "language": {
+          "name": "language",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "is_veterinarian": {
           "name": "is_veterinarian",
           "type": "boolean",
@@ -600,12 +606,6 @@
         "mfa_pending_expires_at": {
           "name": "mfa_pending_expires_at",
           "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "language": {
-          "name": "language",
-          "type": "varchar(8)",
           "primaryKey": false,
           "notNull": false
         }
@@ -907,6 +907,12 @@
           "notNull": false,
           "default": "'phone'"
         },
+        "preferred_language": {
+          "name": "preferred_language",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "sms_consent": {
           "name": "sms_consent",
           "type": "boolean",
@@ -953,12 +959,6 @@
         "portal_access_token_used_at": {
           "name": "portal_access_token_used_at",
           "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "preferred_language": {
-          "name": "preferred_language",
-          "type": "varchar(8)",
           "primaryKey": false,
           "notNull": false
         }
@@ -13798,6 +13798,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "language": {
+          "name": "language",
+          "type": "varchar(8)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "status": {
           "name": "status",
           "type": "comm_status",
@@ -13857,12 +13863,6 @@
         "reminder_claim_token": {
           "name": "reminder_claim_token",
           "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "language": {
-          "name": "language",
-          "type": "varchar(8)",
           "primaryKey": false,
           "notNull": false
         }
