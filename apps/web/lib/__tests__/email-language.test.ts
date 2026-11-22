@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => {
   const resendSend = vi.fn();
   return {
     resendSend,
-    Resend: vi.fn(() => ({ emails: { send: resendSend } })),
+    Resend: vi.fn(function () { return { emails: { send: resendSend } }; }),
   };
 });
 

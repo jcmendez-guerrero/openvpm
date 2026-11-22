@@ -7,7 +7,7 @@ writing SOAP visit notes. It uses the same rich-text editor as the online visit.
 ## Prepare and use a workspace
 
 1. On a trusted device, open a patient chart or an in-exam visit's SOAP editor
-   and choose **Make available offline**.
+   and choose **Save chart for offline notes**.
 2. Choose a separate workspace passphrase of at least 12 characters. Keep it
    safe: it cannot be reset. The workspace belongs to the signed-in person and
    practice; another account cannot prepare or submit its notes.
@@ -33,6 +33,16 @@ review it online before explicitly removing a resolved device copy.
 requires the passphrase. Offline access lasts up to 24 hours after online
 authorization; reconnect and sign in to renew it. Expiry locks the workspace
 without deleting its encrypted drafts. Keep the device clock accurate.
+
+If device storage fails immediately before automatic locking, supported-size
+unsaved changes are retained as ciphertext **only in the current open tab**.
+The warning tells you to keep that tab open. Restore storage, reconnect and
+unlock as the workspace owner to persist this recovery copy. The passphrase is
+still required; a newer durable copy in another tab cannot be overwritten.
+Reloading, closing the tab, or terminating the browser loses this temporary
+copy. It is not a substitute for **Encrypted device copy saved**. Oversized or
+otherwise invalid drafts cannot be retained this way; keep each SOAP section
+within its stated limit and correct any validation warning before proceeding.
 
 ## Snapshot scope
 
@@ -101,6 +111,10 @@ device copies are not a backup or a signed clinical record. Lost passphrases
 and cleared device data cannot be recovered by the server.
 
 ## Verification
+
+The [offline acceptance runbook](testing/offline-workspace-acceptance.md) provides
+the repeatable Chromium/WebKit drill and a separate physical Safari/iPad
+checklist. Automated WebKit results do not establish physical-device acceptance.
 
 Run the ordinary type check, test suite, and build. The Golden clinic CI job
 also runs `offline-workspace.integration.test.ts` against a disposable local

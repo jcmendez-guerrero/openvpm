@@ -213,6 +213,7 @@ export default function BillingPage() {
       toast.success(t("invoiceStatusUpdated"));
       utils.billing.listInvoices.invalidate();
       utils.billing.getInvoice.invalidate();
+      utils.billing.arSummary.invalidate();
     },
     onError: (err) => {
       toast.error(err.message);
@@ -223,6 +224,7 @@ export default function BillingPage() {
     onSuccess: () => {
       toast.success(t("estimateConvertedToInvoice"));
       utils.billing.listInvoices.invalidate();
+      utils.billing.arSummary.invalidate();
     },
     onError: (err) => {
       toast.error(err.message);
@@ -234,6 +236,7 @@ export default function BillingPage() {
       toast.success(t("invoiceVoided"));
       utils.billing.listInvoices.invalidate();
       utils.billing.getInvoice.invalidate();
+      utils.billing.arSummary.invalidate();
       utils.billing.listDispenseChargeQueue.invalidate();
     },
     onError: (err) => {
@@ -1525,6 +1528,7 @@ function PaymentSection({
       utils.billing.listPayments.invalidate({ invoiceId });
       utils.billing.listInvoices.invalidate();
       utils.billing.getInvoice.invalidate({ id: invoiceId });
+      utils.billing.arSummary.invalidate();
       setShowPaymentForm(false);
       setPaymentAmount("");
       setPaymentMethod("cash");
@@ -1542,6 +1546,7 @@ function PaymentSection({
       utils.billing.listAdjustments.invalidate({ invoiceId });
       utils.billing.listInvoices.invalidate();
       utils.billing.getInvoice.invalidate({ id: invoiceId });
+      utils.billing.arSummary.invalidate();
       setShowAdjustmentForm(false);
       setAdjustmentType("credit");
       setAdjustmentAmount("");

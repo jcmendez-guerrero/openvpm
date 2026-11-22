@@ -509,6 +509,28 @@ describe("auth router input validation", () => {
     });
   });
 
+  it.each([
+    { country: "JP", currency: "jpy", taxRatePercent: "10.00", timezone: "Asia/Tokyo" },
+    { country: "MX", currency: "mxn", taxRatePercent: "16.00", timezone: "America/Mexico_City" },
+  ] as const)("registers a $country clinic with regional defaults and explicit jurisdiction", async (region) => {
+    const { db, insertValues, updateSet } = createRegistrationDb();
+    await callerWithDb(db).register({
+      email: "owner@example.com",
+      password: "password123",
+      practiceName: "Sample Clinic",
+      country: region.country,
+    });
+    expect(insertValues).toHaveBeenNthCalledWith(1, expect.objectContaining(region));
+    expect(updateSet).toHaveBeenCalledWith(expect.objectContaining({
+      settings: expect.objectContaining({
+        onboardingState: expect.objectContaining({
+          jurisdictionCountry: region.country,
+          jurisdictionSource: "registration",
+        }),
+      }),
+    }));
+  });
+
   it("fails signup before setup side effects when core account bootstrap returns no user", async () => {
     const { db, insertValues, transaction, updateSet } = createRegistrationDb({
       insertRows: [{ id: "practice-1" }, { id: "location-1" }, undefined],
