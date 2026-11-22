@@ -255,7 +255,8 @@
       "agent": "Agente",
       "controlledSubstances": "Sustancias controladas",
       "reports": "Informes",
-      "settings": "Configuración"
+      "settings": "Configuración",
+      "fieldVisits": "Visitas a domicilio"
     },
     "newActions": {
       "client": "Nuevo cliente",
@@ -1607,7 +1608,7 @@
       "startFieldVisit": "Iniciar visita a domicilio",
       "needLocation": "Agrega una sede activa antes de iniciar una visita a domicilio.",
       "chooseLocation": "Elige desde dónde se gestiona esta visita a domicilio.",
-      "offline": "Disponible sin conexión",
+      "offline": "Guardar ficha para notas sin conexión",
       "addNote": "Agregar nota",
       "newInvoice": "Nueva factura",
       "downloadSummary": "Descargar resumen",
@@ -2218,7 +2219,7 @@
       "title": "Documentación SOAP",
       "patient": "Paciente: {name}",
       "autosaveNote": "Los cambios del borrador se guardan automáticamente. Al finalizar se crea el registro clínico firmado.",
-      "offline": "Disponible sin conexión",
+      "offline": "Guardar ficha para notas sin conexión",
       "drafting": "Redactando...",
       "draftAi": "Redactar con IA",
       "addCardTrial": "Agrega una tarjeta a tu prueba para usar la IA.",
@@ -5900,7 +5901,8 @@
     "everyProductTemplateItemMustBe": "Cada producto de la plantilla debe estar vinculado a un producto activo del inventario.",
     "onlyAnAdministratorOrFrontDesk2": "Solo un administrador o un compañero de recepción puede agregar productos o cambiar sus precios e impuestos.",
     "tooManyRequestsPleaseTryAgain": "Demasiadas solicitudes. Vuelve a intentarlo más tarde o llama a la clínica.",
-    "thisClinicIsInProtectedRecovery": "Esta clínica está en modo de recuperación protegida. Los envíos externos y los cambios automáticos siguen en pausa hasta que OpenVPM complete la conciliación de la recuperación."
+    "thisClinicIsInProtectedRecovery": "Esta clínica está en modo de recuperación protegida. Los envíos externos y los cambios automáticos siguen en pausa hasta que OpenVPM complete la conciliación de la recuperación.",
+    "theFieldVisitCouldNotBePosted": "No se pudo registrar la visita a domicilio. La copia en tu dispositivo no cambió. Vuelve a intentarlo con el mismo recibo."
   },
   "offline": {
     "labels": {
@@ -6001,7 +6003,7 @@
       "retry": "Reintentar guardar borrador",
       "save": "Guardar borrador en línea",
       "reviewOnline": "Revisar visita en línea",
-      "howToStart": "Para escribir una nota de visita sin conexión, inicia la visita en línea y elige “Disponible sin conexión” en su editor SOAP."
+      "howToStart": "Para escribir una nota de visita sin conexión, inicia la visita en línea y elige “Guardar ficha para notas sin conexión” en su editor SOAP."
     },
     "notes": {
       "title": "Notas recientes de la historia clínica",

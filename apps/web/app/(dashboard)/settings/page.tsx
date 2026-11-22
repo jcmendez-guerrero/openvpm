@@ -64,7 +64,12 @@ import { cn, isValidEmail } from "@/lib/utils";
 import { toast } from "sonner";
 import { regionDefaults } from "@/lib/locale/format";
 import {
+  supportsInvoiceCardCurrency,
+  UNSUPPORTED_INVOICE_CARD_CURRENCY_MESSAGE,
+} from "@/lib/billing/invoice-card-currency";
+import {
   CLINIC_REGION_OPTIONS,
+  CLINIC_TIMEZONES,
   isClinicRegionCode,
   type ClinicRegionCode,
 } from "@/lib/locale/clinic-regions";
@@ -179,21 +184,7 @@ const tabs: { id: Tab; icon: React.ElementType }[] = [
   { id: "billing", icon: CreditCard },
 ];
 
-const TIMEZONES = [
-  "America/New_York",
-  "America/Chicago",
-  "America/Denver",
-  "America/Los_Angeles",
-  "America/Phoenix",
-  "America/Anchorage",
-  "Pacific/Honolulu",
-  "America/Toronto",
-  "Europe/London",
-  "Europe/Dublin",
-  "Australia/Sydney",
-];
-
-const CURRENCIES = ["usd", "gbp", "eur", "cad", "aud"];
+const CURRENCIES = ["usd", "gbp", "eur", "cad", "aud", "jpy", "mxn"];
 
 const PRESET_COLORS = [
   "#0d9488",
@@ -752,7 +743,7 @@ function PracticeInfoTab() {
                 value={current.timezone}
                 onChange={(e) => handleChange("timezone", e.target.value)}
               >
-                {TIMEZONES.map((tz) => (
+                {CLINIC_TIMEZONES.map((tz) => (
                   <option key={tz} value={tz}>
                     {tz.replace(/_/g, " ")}
                   </option>
@@ -769,6 +760,11 @@ function PracticeInfoTab() {
             <p className="text-xs text-muted-foreground">
               {t("controlsInvoiceCurrencyTaxRate")}
             </p>
+            {!supportsInvoiceCardCurrency(current.currency) ? (
+              <p className="text-xs text-muted-foreground" role="status">
+                {UNSUPPORTED_INVOICE_CARD_CURRENCY_MESSAGE}
+              </p>
+            ) : null}
           </div>
           <div className="grid gap-4">
             <div className="grid grid-cols-2 gap-4">

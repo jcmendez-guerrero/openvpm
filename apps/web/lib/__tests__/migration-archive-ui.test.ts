@@ -5,8 +5,8 @@ import { describe, expect, it } from "vitest";
 const page = readTranslatedSource(
   new URL("../../app/(dashboard)/migration-archive/page.tsx", import.meta.url),
 );
-const sidebar = readTranslatedSource(
-  new URL("../../components/layout/sidebar.tsx", import.meta.url),
+const navigation = readTranslatedSource(
+  new URL("../navigation.ts", import.meta.url),
 );
 const router = readTranslatedSource(
   new URL("../../server/routers/migration-archive.ts", import.meta.url),
@@ -17,8 +17,8 @@ const checklist = readTranslatedSource(
 
 describe("imported history workspace", () => {
   it("is discoverable and explains its non-operational safety boundary", () => {
-    expect(sidebar).toContain('href: "/migration-archive"');
-    expect(sidebar).toContain('labelKey: "importedHistory"');
+    expect(navigation).toContain('href: "/migration-archive"');
+    expect(navigation).toContain('labelKey: "importedHistory"');
     expect(en.shell.nav.importedHistory).toBe("Imported History");
     expect(page).toContain("Source-attributed history from a prior system");
     expect(page).toContain("do not silently create live");

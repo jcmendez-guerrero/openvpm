@@ -100,7 +100,7 @@ export const OFFLINE_MESSAGES = {
         "retry": "Retry draft save",
         "save": "Save draft online",
         "reviewOnline": "Review online visit",
-        "howToStart": "To write an offline visit note, start the visit online and choose “Make available offline” in its SOAP editor."
+        "howToStart": "To write an offline visit note, start the visit online and choose “Save chart for offline notes” in its SOAP editor."
       },
       "notes": {
         "title": "Recent chart notes",
@@ -243,7 +243,7 @@ export const OFFLINE_MESSAGES = {
         "retry": "Reintentar guardar borrador",
         "save": "Guardar borrador en línea",
         "reviewOnline": "Revisar visita en línea",
-        "howToStart": "Para escribir una nota de visita sin conexión, inicia la visita en línea y elige “Disponible sin conexión” en su editor SOAP."
+        "howToStart": "Para escribir una nota de visita sin conexión, inicia la visita en línea y elige “Guardar ficha para notas sin conexión” en su editor SOAP."
       },
       "notes": {
         "title": "Notas recientes de la historia clínica",

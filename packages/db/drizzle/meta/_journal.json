@@ -827,6 +827,13 @@
       "when": 1794333592352,
       "tag": "0117_language_preferences",
       "breakpoints": true
+    },
+    {
+      "idx": 118,
+      "version": "7",
+      "when": 1794600380709,
+      "tag": "0118_offline_field_visits",
+      "breakpoints": true
     }
   ]
 }

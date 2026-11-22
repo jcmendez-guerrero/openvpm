@@ -54,7 +54,7 @@
     "jspdf": "^4.2.1",
     "lucide-react": "^0.577.0",
     "motion": "^12",
-    "next": "^15.5.28",
+    "next": "^15.5.29",
     "next-auth": "^4.24.15",
     "next-themes": "^0.4.0",
     "qrcode": "^1.5.4",
@@ -88,6 +88,6 @@
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.23.12",
     "typescript": "^5.5.0",
-    "vitest": "^3.2.6"
+    "vitest": "^4.1.12"
   }
 }

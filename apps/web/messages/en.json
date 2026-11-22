@@ -255,7 +255,8 @@
       "agent": "Agent",
       "controlledSubstances": "Controlled Substances",
       "reports": "Reports",
-      "settings": "Settings"
+      "settings": "Settings",
+      "fieldVisits": "Field Visits"
     },
     "newActions": {
       "client": "New Client",
@@ -1607,7 +1608,7 @@
       "startFieldVisit": "Start field visit",
       "needLocation": "Add an active location before starting a field visit.",
       "chooseLocation": "Choose where this field visit is managed.",
-      "offline": "Make available offline",
+      "offline": "Save chart for offline notes",
       "addNote": "Add chart note",
       "newInvoice": "New invoice",
       "downloadSummary": "Download Summary",
@@ -2218,7 +2219,7 @@
       "title": "SOAP Documentation",
       "patient": "Patient: {name}",
       "autosaveNote": "Draft changes save automatically. Finalization creates the signed clinical record.",
-      "offline": "Make available offline",
+      "offline": "Save chart for offline notes",
       "drafting": "Drafting...",
       "draftAi": "Draft with AI",
       "addCardTrial": "Add a card to your trial to try AI.",
@@ -5900,7 +5901,8 @@
     "everyProductTemplateItemMustBe": "Every product template item must be linked to an active inventory product.",
     "onlyAnAdministratorOrFrontDesk2": "Only an administrator or front desk teammate can add products or change product prices and tax status.",
     "tooManyRequestsPleaseTryAgain": "Too many requests. Please try again later or call the clinic.",
-    "thisClinicIsInProtectedRecovery": "This clinic is in protected recovery mode. External delivery and automated changes remain paused until OpenVPM completes recovery reconciliation."
+    "thisClinicIsInProtectedRecovery": "This clinic is in protected recovery mode. External delivery and automated changes remain paused until OpenVPM completes recovery reconciliation.",
+    "theFieldVisitCouldNotBePosted": "The field visit could not be posted. Your device copy is unchanged. Retry the same receipt."
   },
   "offline": {
     "labels": {
@@ -6001,7 +6003,7 @@
       "retry": "Retry draft save",
       "save": "Save draft online",
       "reviewOnline": "Review online visit",
-      "howToStart": "To write an offline visit note, start the visit online and choose “Make available offline” in its SOAP editor."
+      "howToStart": "To write an offline visit note, start the visit online and choose “Save chart for offline notes” in its SOAP editor."
     },
     "notes": {
       "title": "Recent chart notes",

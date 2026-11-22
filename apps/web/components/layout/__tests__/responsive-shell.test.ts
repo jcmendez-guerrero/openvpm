@@ -1,4 +1,5 @@
 import en from "@/messages/en.json";
+import { readFileSync } from "node:fs";
 import { readTranslatedSource } from "@/i18n/translated-source";
 import { describe, expect, it } from "vitest";
 
@@ -56,7 +57,7 @@ describe("responsive dashboard shell", () => {
   it("does not default the sidebar to a writable staff role before session resolution", () => {
     const source = readTranslatedSource("components/layout/sidebar.tsx");
 
-    expect(source).toContain("function isUserRole(role?: string | null): role is UserRole");
+    expect(readFileSync("lib/navigation.ts", "utf8")).toContain("function isUserRole(role?: string | null): role is UserRole");
     expect(source).toContain("const { data: session, status } = useSession()");
     expect(source).toContain(
       "const role = isUserRole(session?.user?.role) ? session.user.role : undefined"
@@ -64,7 +65,7 @@ describe("responsive dashboard shell", () => {
     expect(source).toContain(
       'const canShowNav = status === "authenticated" && role !== undefined'
     );
-    expect(source).toContain("const visibleNavItems = canShowNav");
+    expect(source).toContain("const availableItems = canShowNav");
     expect(source).not.toContain('?? "front_desk"');
   });
 

@@ -3,7 +3,7 @@ import { messageLanguage } from "@/i18n/message-language";
 
 const mocks = vi.hoisted(() => {
   const resendSend = vi.fn();
-  return { resendSend, Resend: vi.fn(() => ({ emails: { send: resendSend } })) };
+  return { resendSend, Resend: vi.fn(function () { return { emails: { send: resendSend } }; }) };
 });
 vi.mock("@/lib/billing/plans", () => ({ billingEnforced: () => false, TRIAL_DAYS: 14 }));
 vi.mock("resend", () => ({ Resend: mocks.Resend }));
